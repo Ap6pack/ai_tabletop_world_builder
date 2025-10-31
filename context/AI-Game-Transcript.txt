@@ -1,0 +1,2130 @@
+Welcome to this short course Building an AI Powered Game, built in partnership with
+0:05
+Together AI and AI Dungeon.
+0:08
+In this course, you learn how to build an AI-powered, text-based game, including
+0:12
+creating a world, setting up cool mechanics, and preparing for productionization.
+0:18
+At the end, you have a playable game that you can share with your friends.
+0:22
+I'm delighted to introduce our instructors, Niki Birkner,
+0:26
+who is Senior Product Manager at Together AI, as was Nick Walton,
+0:30
+who is CEO and Co-Founder of Latitude, where he created AI Dungeon.
+0:35
+Niki has played a pivotal role in scaling to get AI, leading the product
+0:40
+development of this serverless and dedicated inference API and front end.
+0:46
+And Nick built the original
+0:48
+AI Dungeon at the hackathon, and now focuses on developing
+0:53
+new types of game experiences that are only possible with AI.
+0:57
+Nick and Niki work together to help AI dungeon
+1:00
+continually improve the AI experience
+1:03
+for players using Together AI's service.
+1:06
+Thanks, Andrew.
+1:07
+I'm thrilled to be here and share my experiences in building games with AI.
+1:11
+Thanks, Andrew.
+1:12
+I'm excited to dive into this course with all of you.
+1:15
+In this course, you learn to build a game from scratch using LLMs
+1:19
+and optimize the performance of the model while keeping costs low.
+1:23
+Niki and Nick will guide you through the building blocks of
+1:27
+AI game development including safety systems using Llama Guard.
+1:31
+You'll start by using hierarchical content generation to create
+1:34
+an entire world based on your prompt instructions.
+1:37
+This includes developing
+1:38
+kingdoms, towns, and characters that make your game experience feel alive.
+1:43
+Next, you'll learn to build an interactive AI application by creating an AI
+1:47
+roleplay game and integrating the world you've created into a fun game experience.
+1:51
+Finally, you will learn how to implement complex mechanics
+1:54
+by using AI to parse text data into structured json output.
+1:58
+This will allow you to build an inventory detection system
+2:00
+and other mechanics that track and leverage structured game state.
+2:03
+In addition, you will learn to enforce content safety and compliance
+2:07
+for AI game content generation based on specified policies.
+2:11
+You'll also build your own custom policies for your game using Llama Guard.
+2:15
+With these techniques, you'll be able to build
+2:17
+more creative and innovative AI applications, starting with your game.
+2:20
+Many people have worked to create this course.
+2:23
+I like to thank Abhy Vengavillagam,
+2:26
+Hassan El Mghari,
+2:29
+Jamie de Guerre.
+2:31
+And Vipul Ved Prakash,
+2:33
+from Together AI and AI Dungeon. As well,
+2:36
+Diala Ezzeddine
+2:37
+from DeepLearning.AI who have all contributed to this course.
+2:41
+The first lesson will be about world creation, where you will use prompt
+2:45
+engineering and hierarchical generation to create game worlds.
+2:48
+Are you ready?
+2:49
+Yep. That sounds great.
+2:51
+Let's go on to the next video to get started.
+In this lesson, you'll start by using hierarchical content generation
+0:03
+to create an entire world based on your prompt instructions.
+0:06
+You'll decide the type of world you want to create.
+0:08
+Then hierarchically generate kingdoms, towns, and characters,
+0:12
+creating a holistic world that all fits together.
+0:14
+All right. Let's dive in.
+0:17
+Hierarchical generation is a method that lets you leverage AI to create
+0:20
+large amounts of content with high control and consistency.
+0:23
+So you start with generating a high overview
+0:27
+of the type of content you'll create,
+0:29
+and then you get progressively more specific and granular as you go.
+0:33
+And you do it in a way
+0:34
+that when you generate the lower levels, it knows about what happens
+0:37
+in the high levels.
+0:38
+So level one feeds into level two, which feeds into level three, etc...
+0:42
+For example, if you want to create a textbook,
+0:44
+you might start with a description of what the book is about.
+0:47
+Then you might generate chapter titles, then headings, subheadings
+0:51
+and then the paragraphs of all the text of your textbook,
+0:55
+and by the end have a cohesive textbook
+0:57
+that goes at a high level and detailed level, an entire topic.
+1:02
+You might do the same for screenplays or business plans.
+1:05
+In our case, we are going to do it for a fantasy world.
+1:09
+So we're going to start with generating a description of a world.
+1:12
+Then kingdoms, towns,
+1:15
+and you can do locations and characters in those towns as well.
+1:19
+And by doing that, you're able to create a set of content
+1:23
+that is all cohesively together, and you're able to give simple directions
+1:28
+at the high level
+1:29
+on what world do you want, on what book you want?
+1:31
+And then you end up with
+1:32
+a fully fleshed-out set of content that you can use for whatever you want.
+1:37
+So why would we use hierarchical content generation?
+1:40
+It lets you do a couple of really cool things.
+1:43
+So one, it lets you create a huge amount of content with a small amount of input.
+1:47
+Instead of telling the AI everything you want in the world.
+1:50
+You can just say, "hey, I want a world that looks like this.
+1:53
+Now create all the elements in it following that instruction."
+1:58
+You can also shape that direction with a human in the loop.
+2:00
+So for example, you might create the world and then you might say, "ooh,
+2:03
+I like this kingdom. I don't like that kingdom" Okay.
+2:05
+Now that I've told you what kingdoms I like, let's go generate the next set."
+2:09
+You could do the same with a textbook and say 'yes, this chapter,
+2:11
+no, that chapter.'
+2:12
+And finally, it lets you have high consistency without large
+2:16
+amounts of content.
+2:16
+So lets you create content that's very consistent with each other
+2:19
+and all fits together in a very compelling way.
+2:24
+It also lets you have more holistic content
+2:26
+and have a more holistic perspective.
+2:29
+So one thing you can also do to improve that is to include
+2:33
+previously generated content on the same level
+2:35
+when you're generating, to make it more holistic.
+2:37
+So for example, if you just say, let's generate ten towns in this kingdom,
+2:42
+and when we generate town two, we don't know about town one.
+2:47
+It might be that it generates a town two that's kind of similar to town one.
+2:51
+And so you have a lot of things that look
+2:53
+kind of the same, look kind of repetitive.
+2:54
+You can improve that a lot by feeding in what you generated before and that level,
+3:00
+so that it knows what's come before and so can do something different.
+3:03
+So for example, if it generates ten towns and it knows all the towns
+3:06
+it's generated before.
+3:07
+Now it can say, okay, we already did a town that looks like this.
+3:10
+Now let's do one that's a little different.
+3:11
+And maybe it's a bigger town,
+3:13
+or maybe it has a different flavor or a different feeling.
+3:15
+And so that's one thing that can help with having more holistic
+3:19
+generation of content is feeding in what's general one level
+3:23
+to all the other elements on that same level.
+3:25
+All right. Let's dive into the code.
+3:28
+Okay.
+3:28
+First thing we're going to do is we are going to create the world.
+3:33
+And to do that we need to give instructions to the AI on
+3:37
+how we want to do that.
+3:38
+So we're going to give first some general instructions
+3:41
+as it generates on what kind of outputs we want.
+3:44
+So this is standard prompt programing for AI.
+3:48
+So here we're just going to give some instructions on what it's doing.
+3:51
+And some basic details on
+3:53
+what kind of language we want it to do and how long we want it to be.
+3:56
+So then we will give a more specific prompt
+3:59
+for generating a world.
+4:02
+So now we can give it instructions on the specific type of world
+4:04
+we want it to generate.
+4:05
+So let's say we want to continue that concept of a world
+4:08
+with massive beasts, so we can give it instructions
+4:10
+to, say, "Create a creative description for a fantasy world
+4:14
+with interesting concepts around cities built on the backs of massive beasts."
+4:18
+And then we'll also tell it the specific form of the output
+4:21
+we want it to give, so that we can parse it later.
+4:23
+So having it generate a world name and a world description,
+4:27
+and we'll start it off so that it knows what to do next.
+4:32
+So now we'll use the Together AI API to generate this world.
+4:37
+So we'll import the library.
+4:39
+We'll create the client.
+4:41
+And now we will generate the output.
+4:44
+Now we will call the API and generate this world.
+4:49
+Now let's pass this output and see what we got.
+4:53
+So now we have a world named Kyropeia, where it's a realm
+4:57
+where ancient gargantuan creatures known as the Colossi roam the land,
+5:00
+their massive bodies serving as the foundation for sprawling metropolises.
+5:04
+So now we have a world that the AI has generated for us.
+5:07
+If we wanted to, we could edit that a little bit.
+5:10
+We could generate some more options.
+5:11
+You can give your own instructions on what kind of world you want to create.
+5:15
+So maybe you want to create a water world or a sci-fi world or whatever
+5:19
+you're excited about.
+5:20
+You can give those instructions and create the world and then go for it from that.
+5:24
+So we're going to go forward with this world,
+5:26
+and we're going to move on to the next part.
+5:28
+So we are just going to parse this output so that we can use it later
+5:33
+in creating the json structure of this world.
+5:37
+Now let's move on to generate a kingdom. So we can use the same instructions
+5:40
+for how to write.
+5:42
+But we're going to add new ones for how to generate a kingdom.
+5:45
+So here we are going to tell it
+5:48
+to create three kingdoms for a world that we're going to feed in.
+5:52
+We might tell it to describe
+5:53
+important leaders, cultures, or history of the kingdom,
+5:56
+and we'll give the structure of the output that we want.
+6:00
+You'll notice here we're generating all the kingdoms at once,
+6:02
+and that lets us have the holistic content generation where it can say,
+6:06
+"all right, Kingdom One looks like this.
+6:07
+Let's do a different one for Kingdom Two,
+6:09
+and let's do something even different from that for three."
+6:11
+So they all have this interesting mix of properties together.
+6:16
+And now, just like before, we can run it
+6:18
+with the system prompt being the instructions
+6:21
+on generating in general, and then the user prompt
+6:25
+being specific instructions for generating a kingdom.
+6:29
+So let's grab the output from the content.
+6:34
+So now we are going to parse the output into a set of kingdoms.
+6:38
+So we're going to set up a dictionary for the kingdoms.
+6:41
+We're going to grab the output
+6:43
+and then for each kingdom, we're going to parse out the name and description
+6:47
+so that we can grab those and create a Kingdom object that has the name,
+6:52
+description, and the world that it's in, and fill out that dictionary.
+6:57
+We can then add that to world
+7:00
+as the kingdoms that are in this world, and print what we have.
+7:03
+So let's see what we generated.
+7:06
+So we have these three kingdoms that we've created in this world.
+7:10
+And we can see this one is a kingdom built on a colossus named Lysandra,
+7:14
+with a reclusive and spiritual people that are tuned to the whispers
+7:19
+of that specific colossus.
+7:21
+So we've got this kind of unique kingdom that is based in this world.
+7:26
+So now we'll go ahead and do the same thing for towns as well.
+7:29
+It'll be very similar to kingdoms.
+7:31
+We'll create a town prompt.
+7:32
+We'll give an output of instructions and we'll feed in
+7:35
+not just the world, but we'll also feed in the kingdoms this time.
+7:39
+And then we'll generate the towns.
+7:43
+Now let's define a function that will take the world,
+7:45
+take the kingdom, and we'll be able to create towns for that kingdom.
+7:49
+So we'll use the prompt that we just created
+7:52
+to know what we should tell the AI to generate.
+7:57
+We will grab the output of the town.
+7:59
+And then for each town we'll do the same thing
+8:01
+and we'll pass the name, the description, and we'll create a town object that we
+8:05
+can then add to our kingdom.
+8:10
+Now let's run it
+8:11
+and create towns for our kingdoms.
+8:14
+So you can see we're creating several
+8:16
+towns for each of the kingdoms that we've generated.
+8:19
+You can change that number.
+8:20
+You could create more, you could create less.
+8:22
+You could modify how those instructions work and what kinds of towns
+8:26
+you want to create.
+8:27
+And you can see at the end we're just printing one of these towns.
+8:29
+But there's a description for each of these.
+8:32
+So here we have Elyria's Peak, which is a town on the crest of Lysandra's
+8:36
+great horn overlooking the vast expanse of the Wysteria Plains.
+8:40
+So you can see it's in line with the kingdom
+8:42
+that's created, centered on this kind
+8:43
+of like spiritual power of this massive beast.
+8:46
+They're built on.
+8:47
+Finally, we will generate some characters for this world.
+8:50
+So in gaming, we call these NPCs,
+8:53
+and these will live in the towns and kingdoms that we just generated.
+8:57
+So similar to before, we'll create a prompt
+8:59
+that will say how we'd like the AI to generate these characters,
+9:03
+maybe their appearance and profession, as well as some deeper things about them.
+9:07
+And now we'll feed in all the higher levels of the world,
+9:10
+the kingdom and the town to generate the character.
+9:14
+And now we'll create a similar function to generate
+9:16
+these NPCs based on the world, kingdom, and town.
+9:20
+So here we create the generation
+9:24
+we call the AI model with the prompt and generate a character.
+9:28
+And similarly, we parse out their name description
+9:31
+and we set the name description world,
+9:34
+Kingdom and town for this NPC and add it to our world.
+9:40
+And now let's create the NPCs for at least one of our kingdoms.
+9:43
+In the interest of time,
+9:44
+we won't do it for all of them, but you could go through and generate
+9:47
+as many NPCs as you want for all the towns
+9:50
+and kingdoms of your world.
+9:53
+So now we first create characters for the town of Luminaria,
+9:56
+and we'll see it creates three characters Kaida Renn, Arin Vex, and Lyrien
+10:01
+Flynn.
+10:03
+And then for Aerthys, we might have Kaelin,
+10:05
+DarkHaven, Elara MoonWhisper, and Thrain Blackfirst.
+10:08
+And then finally for the last town, TerraVerde, you have
+10:11
+Kaelin DarkHaven again, Lyrien Flynn, and Arin the Wild.
+10:15
+So you can see here that we have a bit of an issue
+10:17
+where some of the names are actually the same.
+10:19
+So you've got the same character here and the same character here.
+10:22
+One of the reasons that happens is because the AI is
+10:26
+generating characters for one location,
+10:29
+and doesn't know about the characters in previous locations.
+10:32
+It has a chance of using the same names over again.
+10:35
+So there are a couple of ways we could fix this.
+10:38
+One way is we could feed in all the previous character names
+10:41
+that are generated and say, don't use any of these names.
+10:44
+Another thing we could do is because we generated
+10:48
+with a temperature of zero, which is the default, we can go back
+10:52
+and we can change the temperature to be at one.
+10:54
+So we have more variation in what's generated.
+10:57
+So let's run that and see what happens.
+11:01
+So you can see here we have all different names.
+11:04
+This time.
+11:04
+There are some similarities between some first names or last names that are shared.
+11:09
+But every name is somewhat different.
+11:12
+So now let's just see the description
+11:14
+of one of these characters that we've generated.
+11:17
+So here we have a character who is a skilled archeologist
+11:20
+with a passion for uncovering the secrets of the world's past.
+11:24
+We have some description of what she looks like with curly brown
+11:27
+hair and green eyes, and some of what she's excited about.
+11:30
+She is driven to uncover the truth about the colossi and their role in the world,
+11:34
+and she lost her family during the Great Devastation,
+11:39
+a tragic event in the history of the world that has left her with this burning
+11:43
+desire to understand why that happened and and what's going on in the world.
+11:47
+So you have this character who's not just a name
+11:50
+and you know, some basic things, but has some real backstory
+11:53
+and motivation and can lead to an interesting story in the game.
+11:58
+Finally, we will save
+12:00
+this world so that we can use it in future lessons,
+12:04
+and you can play in it as you create your game.
+12:08
+So that's how we would create a world.
+12:10
+If you want to change
+12:12
+how you create the world, maybe you want a different type of world,
+12:15
+maybe even want different things you're generating, right?
+12:18
+You might not generate a kingdom, you might generate a planet or factions.
+12:22
+The principles of hierarchical generation still apply
+12:25
+and let you create a world that is narratively consistent
+12:29
+and that the AI can flesh out based on your instructions.
+12:33
+So now that we've created our world, let's move on to the next lesson.
+In this lesson, you use gradio and the world you created to build
+0:03
+your first version of your game.
+0:05
+You'll define the core gameplay loop and how the AI responds to actions,
+0:09
+structuring the context to include details from your world.
+0:12
+By the end, you have an AI game that you can play.
+0:15
+All right, let's get to it.
+0:17
+So first we'll import gradio, which is a library that lets you really easily build
+0:22
+UI tools that work great for testing and prototyping AI applications.
+0:29
+So first we'll define a function that we can use to start the game.
+0:33
+So we'll take in main loop which is a function that will run the game
+0:38
+and will create chat interface with gradio.
+0:42
+So pass in the main loop will set some parameters like
+0:46
+how the chatbot gets started.
+0:48
+The placeholder, some text box, a title, and some other pieces
+0:52
+that will define what the UI for the game looks like using gradio.
+0:57
+Next, we'll define, a simple test loop,
+1:00
+that we can plug in and just test and make sure that our UI is working.
+1:05
+So for now, we're not plugging in the actual game logic.
+1:08
+We're just going to return entered action when someone does an action in the game.
+1:13
+So let's test this out.
+1:17
+Great.
+1:18
+So here we can see the game and we can test it and type
+1:21
+start game to begin.
+1:25
+So now we see it returned.
+1:26
+The response entered action start game that the main loop had defined.
+1:30
+So now we've got the basic UI of our game working.
+1:33
+So now we can create the actual game loop and build
+1:37
+the playable version of the game.
+1:41
+So the first thing we need is a start to the adventure.
+1:44
+So just like we generated the world, we're going to use
+1:47
+an AI model to generate the initial story start of your game.
+1:51
+So we're going to import that Together API.
+1:55
+And we're also going to load the world that we generated before; world,
+2:00
+the kingdom, the town and the character so that we can use that in generating
+2:04
+the start for the game.
+2:07
+So first we'll create
+2:08
+a prompt that we can use to generate the start.
+2:11
+So we'll define a few instructions on how we want the AI to write.
+2:16
+Here we're going to do it in second person and in present tense.
+2:19
+So you are Jack. For example.
+2:22
+And we're going to ask it to first describe the character and their backstory
+2:25
+and describe where they start and what they see around them,
+2:28
+so that it provides a jumping-off point for the player.
+2:32
+And then we'll feed in the world info as well.
+2:35
+So the world, kingdom town and character.
+2:39
+So here we'll call the AI model.
+2:40
+And we'll pass these two things in.
+2:42
+We'll pass in the system prompt.
+2:44
+And we'll also pass in the world info.
+2:46
+And then we'll ask it to generate the start for the game.
+2:52
+Let's see what it generated.
+2:53
+And then we can add that to our world.
+2:56
+So here we see that it created this
+2:59
+start where you are Elwyn Stormbringer,
+3:01
+a 25-year-old inventor with a passion for harnessing the power of the Colossi.
+3:05
+So it describes a standing the town of Luminaria, surrounded
+3:08
+by crystal formations and the Academy of Elemental Studies, all of which
+3:13
+are things that were generated as part of our creation of the world.
+3:17
+So describe some of what we're wearing and the items we have
+3:20
+and the weight of our past.
+3:21
+And now we have a start for the adventure of what the player might do.
+3:27
+Now we'll define the core action loop of the game.
+3:30
+So this is what will determine when the player does an action,
+3:32
+what happens next.
+3:33
+So let's start by defining what happens when the player just starts
+3:37
+the game for the first time.
+3:39
+So when the player starts the game,
+3:40
+we want to return this start text that we just generated.
+3:44
+Now let's define what happens when the AI is responding
+3:49
+to individual player actions.
+3:50
+So first let's define a system prompt that will give some instructions.
+3:53
+So here we tell it it's a game master.
+3:56
+And what kind of a way it should write. Next,
+3:59
+just like before, let's define the world info.
+4:02
+So what things do we want to feed in to AI
+4:05
+so it knows what world we are in.
+4:08
+So we feed in the world, the kingdom, the town and the character.
+4:11
+Finally, we're going to set up the messages that are going to get fed in.
+4:15
+So here we need to feed in both the system messages and the world info messages.
+4:21
+But we also need to add in messages
+4:24
+for all the history of what actions have happened already in the game.
+4:27
+So that's going to come partially
+4:29
+from the history that we see gets fed into this function.
+4:33
+So if we add these down here
+4:36
+now we have for every action in the history, we're going to add
+4:39
+an assistant message that says what the AI had generated before.
+4:42
+And a user message.
+4:43
+Finally, we're going to add one more message for the most recent
+4:46
+action that the player took.
+4:49
+And now we can generate the
+4:50
+model output and return the result.
+4:55
+So now we have the core action loop for the game.
+4:57
+Now let's set up the game state and the main loop
+4:59
+so that we can plug that into the start game function that we made earlier.
+5:04
+So we'll define the game state based on the world that we have.
+5:09
+So we have all the locations and the character and the start
+5:13
+and let's create this main loop that we can pass in
+5:16
+to the start game function.
+5:19
+Now we're ready to play the game.
+5:25
+So first we can type
+5:26
+start game and get the start of the adventure.
+5:29
+So here we see your Elwyn Stormbringer
+5:31
+a 25 year old adventure with a passion for harnessing the power of the Colossi.
+5:35
+So we have this start that we generated.
+5:37
+So now we can do the really cool thing and actually interact
+5:40
+with the AI and explore this world.
+5:42
+So let's take an action.
+5:43
+Let's just look around and see what happens.
+5:49
+So now the AI is generating the action of what happens next.
+5:52
+So we take an action, we look around and the AI returns.
+5:56
+You gaze around at the breathtaking scenery of Luminaria,
+5:59
+taking in the vibrant glow of the crystal formation that line
+6:01
+the street, and buildings cast a kaleidoscope of colors
+6:03
+across the town. So we could take another action
+6:06
+and we could say, go to the Academy
+6:09
+and apply to join.
+6:12
+So we can learn the secrets that our character really wants to learn.
+6:17
+So as you approach the grand entrance of the Academy,
+6:19
+Elemental studies. A majestic structure that seems to be infused
+6:22
+with the very essence of the Colossi and push open the heavy
+6:25
+wooden doors, revealing a bustling atrium
+6:26
+filled with scholars, inventors of all ages, surrounded by shelves
+6:29
+upon shelves of ancient tomes and strange glowing artifacts.
+6:32
+So we now have a game that is grounded in a world that we created, right?
+6:37
+We can see that infused in everything that we do,
+6:40
+and now we can take actions, and the AI will respond
+6:44
+with what happens next in this infinite, continuing adventure.
+6:48
+So, now we have our first version of our game.
+6:50
+You can play around with it, you can change the instructions,
+6:52
+maybe change the way the AI writes. In the next lessons will add more elements
+6:56
+and make the game more fun and more complex and add new systems to it.
+In this lesson, you will learn how to use Together AI's API to ensure
+0:05
+that the content generated in AI games adheres to safety and compliance policies.
+0:09
+We will begin by utilizing the default content moderation
+0:12
+policies of Llama Guard 2-8B.
+0:15
+Afterward, you will have the opportunity to create and implement
+0:18
+your own custom policies.
+0:20
+All right, let's go.
+0:23
+So first let's talk about safety and security.
+0:26
+Safety in general means you're ensuring a positive customer experience
+0:30
+by preventing any exposure to PII, like personal identifiable information
+0:36
+or any type of toxic or harmful content
+0:38
+or inappropriate material that a user may not want to get exposed to.
+0:43
+Security, on the other hand, is more around defending against any threats related
+0:49
+to large language models or any attacks, such as prompt leakages or data poisoning.
+0:54
+Prompt leakages are basically
+0:57
+when things get exposed from a model that shouldn't be necessarily.
+1:00
+And data poisoning is when data is poisoned with inappropriate material.
+1:06
+And in this lesson, we're basically going to focus on the safety aspect.
+1:11
+So why safety?
+1:12
+Safety basically ensures that users feel safe while playing and exploring.
+1:16
+This is especially important
+1:17
+because any user is playing a game wants to feel control and comfort,
+1:22
+and they want to know that they can define
+1:25
+what level of maturity the game can be.
+1:28
+This is especially important for GenAI because this content is created by the
+1:33
+AI and not the developer or you, so you have a little bit less control
+1:37
+on what is going to be generated.
+1:38
+But with these guardrails, you can actually define
+1:42
+some level of control
+1:44
+that makes users and yourself as the creator of the game, feel safe.
+1:48
+So let's talk a little bit about context dependance of safety.
+1:51
+Safety can be not only user-dependent as we previously talked,
+1:54
+where a user can have control over what level of maturity
+1:59
+they want in their game, but it can also be context-dependent.
+2:02
+So a good example of that is a chatbot for a doctor
+2:06
+might need to only give general medical advice,
+2:09
+but it shouldn't be allowed to prescribe any drugs.
+2:11
+But on the other hand, a chatbot for a financial firm should not be really
+2:15
+giving medical advice and an example that's more relevant to us,
+2:19
+when you're playing a game,
+2:20
+it is pretty normal to have bandits demand to give them all your money.
+2:25
+And that might be perfectly appropriate.
+2:27
+But if you're using a support chatbot and the support chatbot demands you
+2:30
+to give them all of your money, that wouldn't necessarily be appropriate.
+2:34
+So how do you make these dynamic guardrails?
+2:37
+Before I answer that question, I want to walk you through
+2:40
+two different types of safety user input safety and model safety.
+2:45
+User input safety is the prompt that the user is basically providing.
+2:49
+And we are creating guardrails around that prompt.
+2:52
+And then model safety is once that prompt
+2:54
+is passed to the LLM and the LLM provides a response.
+2:58
+We are basically creating guardrails to what the LLM can respond.
+3:02
+One of the ways in which you can use Llama Guard is out of the box.
+3:06
+Meta,
+3:06
+the creator of Llama Guard, has already defined policies that you can use,
+3:11
+and you can basically use Llama Guard in two ways in the together API.
+3:16
+One of them is as a standalone classifier.
+3:18
+So you can use Llama Guard 2 8B as your main model.
+3:22
+And it will also have these guardrails built in.
+3:25
+The second way that you can use it in the Together API is by, using it as a filter
+3:29
+to safeguard responses from any of the 100 plus models we have available.
+3:33
+So you could use a Llama 3 8B model as your main model,
+3:38
+but also use Llama Guard to do the filtering of bad responses.
+3:44
+One of the great features about Llama Guard
+3:46
+is that it lets you define custom categories to define what is safe
+3:50
+depending on the context.
+3:52
+For example, in AI Dungeon users are allowed to choose
+3:56
+between the following categories safe, moderate, and mature.
+3:59
+On the background
+4:00
+these settings are basically mapped to custom Llama Guard policies.
+4:05
+And this is part of what we're going to teach you in this lesson,
+4:07
+which is how to implement
+4:09
+the three policies related to the categories above into your game.
+4:12
+Okay. So let's jump right into the code.
+4:15
+First, we are going to import all necessary modules.
+4:18
+And our API key.
+4:20
+Additionally, we will now want to import the helper functions
+4:25
+and retrieve the current game state that we created in the game.
+4:29
+Additionally, we also want to import the get game state function
+4:33
+which is the helper function that we created in the last notebook.
+4:37
+And it's basically pulling the game state, including character descriptions
+4:41
+and other relevant information.
+4:42
+So I'm just going to print the character description.
+4:45
+Well getting Elwyn, who is a 25 year old inventor
+4:48
+from Eldrida's capital city, etc, etc...
+4:52
+So now let's write code that ensures that the character description,
+4:57
+which is the input, adheres with safety guidelines before we use it in the game.
+5:02
+So we'll use the client dot chat dot completions dot
+5:07
+create from Together API with the Llama Guard 2 8B model.
+5:13
+And so we're using it as a standalone classifier
+5:16
+and we are printing the prompt safety check.
+5:20
+And this will tell us whether the character description is safe or not.
+5:24
+In this case, it's safe.
+5:25
+And as you can see and read from the character
+5:27
+description, there's nothing in there that seems compromising.
+5:31
+So it seems like it's working the way we're intending it to.
+5:35
+Okay.
+5:36
+So now I'm going to walk you through how to build your own custom policy.
+5:39
+To be clear these are not AI Dungeons policies.
+5:43
+We are creating policy specific for this course.
+5:47
+As examples, one of the best features of Llama Guard
+5:49
+is being able to specify your own policies.
+5:52
+So let's develop a custom content policy for your game.
+5:56
+We'll be defining rules that are specific to your games
+5:58
+context, and ensure that all content adheres to those rules.
+6:01
+Let's set a content policy that is safe for everyone.
+6:05
+So to begin, we will write down the content policy.
+6:09
+You can see that for the Safe Content policy,
+6:13
+we are restricting violence and hate, sexual content, self-harm,
+6:18
+profanity and regulated or controlled substances.
+6:22
+So any input or output that relates to one of these categories will be blocked.
+6:28
+We'll now add the text
+6:31
+that you want to be checking, as well as the build
+6:35
+the prompt with some of the embedded values.
+6:39
+So this prompt is basically for saying check
+6:43
+if there is unsafe content in user messages and conversations
+6:46
+according to our safety policy with the below categories.
+6:49
+And then we're embedding the safe content policy that we just defined right here.
+6:54
+And then we're adding the text that you should be checking.
+6:58
+And we're asking the AI to provide their safety assessment
+7:02
+in the above conversation.
+7:03
+And they should include whether it's safer or unsafe
+7:06
+as well as a comma separated list of the violated categories.
+7:10
+So I'll just print this prompt to show you how it looks.
+7:15
+And the next step here
+7:17
+would be to use the client chat completions
+7:21
+create API with Meta Llama Guard 2 8B
+7:24
+to check whether the text which was killed
+7:28
+a troll adheres to our safe content policy.
+7:32
+The response is that it's unsafe and that it's violating
+7:36
+the content policy section one, which is violence and hate.
+7:40
+So moving on.
+7:42
+Let's establish a moderate content policy.
+7:44
+So something that say it's designed to be safe for teenagers.
+7:48
+And this will enforce safety guidelines moderately and allow a little bit
+7:52
+more freedom in terms of what's restricted.
+7:55
+So this
+7:56
+is a content policy where it's now a little shorter.
+7:59
+It's just restricting for violence and hate
+8:02
+and sexual content and self-harm.
+8:06
+We will add the text.
+8:07
+So we want to check it will be the same one.
+8:09
+"Kill the troll" and we will build the prompt again
+8:13
+with the embedded values.
+8:15
+This time I'm not going to print it because we already know what it looks
+8:17
+like.
+8:18
+And by running this prompt again through the chat completions create API.
+8:24
+Using the Llama Guard 2 8B model,
+8:26
+you'll see that oh, this is also unsafe.
+8:29
+"Kill the troll" is clearly violence and hate.
+8:33
+So it's marking it as unsafe.
+8:36
+Now let's set a mature policy.
+8:38
+This policy will be significantly less restrictive than the two policies
+8:42
+we just went through. The safe and moderate.
+8:45
+It is basically just restricting for sexual content.
+8:48
+We will add the text that you want to check
+8:51
+which will be the same one "Kill the troll".
+8:53
+And we will build the prompt again with the embedded values.
+8:59
+And now let's see what the model is going to tell us.
+9:03
+So we're going to run our policy through a Llama Guard again.
+9:06
+And confirm that it meets our safety standards.
+9:09
+And boom, it tells us this is safe.
+9:13
+Why? Because violence and hate was not part of the mature content policy.
+9:18
+So now to bring it all together, let's move on to create some helper functions.
+9:22
+These functions will basically determine whether a prompt is safe
+9:26
+and will integrate these checks into the game where we've already built
+9:30
+to ensure that all interactions in your game are secure and appropriate.
+9:33
+So let's define a function called is_safe
+9:36
+that takes in message is a parameter.
+9:39
+And let's spring the prompt that we had generated previously
+9:44
+that has the embedded content policy.
+9:47
+We're going to use a safe content policy in this situation.
+9:50
+We will then
+9:51
+try to get the response in this same function
+9:54
+using client dot completions dot create and calling in Meta-Llama Llama Guard 28B
+9:58
+as the model, and the prompt is defined as the prompt above.
+10:04
+And in this same function, we're also going to output the result.
+10:10
+Which is response dot choices dot text.
+10:12
+And what we're going to return
+10:14
+we're basically going to extract the text and strip any extraneous whitespace.
+10:18
+That's what this result dot strip is doing.
+10:20
+And it's going to return true if the response is safe
+10:24
+or false if the response is not.
+10:28
+Finally, let's run this in our game
+10:30
+using our previously established helper functions and test it out.
+10:34
+So I'm just taking the helper functions that we created in the previous
+10:37
+notebook of get game state and start game and run action.
+10:41
+And we are using the main loop which takes in message and history.
+10:46
+And basically if it's not safe, we're returning in the game invalid action.
+10:52
+or if it's safe, we are actually returning the result.
+10:59
+So we now have the game created from gradio
+11:03
+and to see how it all comes together, I'm going to run our phrase "kill the troll."
+11:10
+And as expected,
+11:11
+because this is the safe policy, it's throwing invalid action.
+11:14
+Whereas if I say:
+11:16
+"Tell me
+11:17
+what the character does next."
+11:23
+It will give me a response because it's safe.
+11:25
+The input that I'm providing.
+11:26
+So it says you walk through the bustling streets of Luminaria,
+11:29
+the soft glow of crystal formations illuminating your path.
+11:33
+So overall, in this lesson, we've taught you how to integrate
+11:35
+safe guardrails into your game applications.
+In this lesson, we'll cover how to implement complex mechanics
+0:03
+by using AI to parse text data into structured json output.
+0:07
+This will enable
+0:08
+you to build game mechanics that track and leverage structured game state.
+0:12
+We'll show you how to do this by building an inventory tracking system
+0:15
+for your game. All right, let's get to it.
+0:18
+So why is state important for a game or other AI applications.
+0:23
+So there are a couple things that state enables us to do
+0:26
+that can be really powerful.
+0:27
+One, it lets us improve memory.
+0:30
+So if we have an inventory tracking system we can always know exactly
+0:34
+what's in your inventory.
+0:35
+Whereas if we rely on the context and the AI to kind of remember,
+0:39
+it is often much less accurate at remembering those elements.
+0:44
+It's just like if a human dungeon master writes down on a piece of paper,
+0:48
+you know, the player has these items, that's going to be a lot easier for them
+0:51
+to remember that
+0:52
+than trying to, you know, think back over the last several hours of play and,
+0:56
+you know, have a running memory of what items you have.
+1:00
+Another cool thing about state for a game is it lets you give clear progression.
+1:04
+It's really cool to be able to be like, oh, I got a new item, or
+1:07
+I got a new skill, or I made progress in some really clear, tangible way.
+1:11
+Another thing that state allows you to do is have better constraints.
+1:15
+So for example, with inventory systems, if you have a clear understanding of
+1:18
+what's in your inventory and lets you say to the AI, "hey, don't let
+1:23
+the player use items or try to use items they don't have in their inventory."
+1:27
+So now there's a constraint.
+1:28
+And that constraint means that it's kind of fun to build
+1:32
+and progress and be like, "ooh, I can't use, you know, a sword right now.
+1:37
+But if I go buy one from the merchant now,
+1:39
+I have a sword and I can use it in my actions",
+1:41
+and it gives a clear sense of progression for the player.
+1:43
+And so all of this lets you implement interesting mechanics.
+1:46
+We've talked about items, but you could implement
+1:47
+all kinds of mechanics, including quest systems and character
+1:51
+tracking and locations and all kinds of interesting things.
+1:55
+And finally, state lets you create more, interesting UI experiences.
+1:59
+So if I'm not tracking inventory, I can't show you a list
+2:03
+of all your items you have and, you know, maybe
+2:05
+create images for them or other interesting things.
+2:07
+But with state, you can do all kinds of interesting things
+2:10
+that interact with the UI to create a much better experience.
+2:14
+So how do we track state?
+2:16
+There's really a back-and-forth
+2:18
+that is really interesting,
+2:21
+that you can do with AI games that enables all of this to work.
+2:24
+So you start with story.
+2:27
+So just as we've done, you use the AI to generate a story.
+2:31
+Then you can use AI to update the state based on the story.
+2:36
+You can generate json.
+2:38
+You can parse that and then you can update your state.
+2:41
+And finally, you can then have state feedback end to story.
+2:45
+So you can have the story know what's in the state
+2:48
+so that it's all in sync and aligned with each other.
+2:51
+So you get this back and forth between story and state.
+2:54
+That keeps your game in sync and working
+2:59
+well and consistent for the player experience.
+3:02
+So some examples of that.
+3:04
+So in in story, you might have the history of your adventure.
+3:07
+You might have memories.
+3:08
+You might have world lore like we generated.
+3:11
+And then in state you might have things like the specific quests you're on.
+3:15
+It might be your inventory.
+3:17
+It might be stats, it might be locations, it might be characters.
+3:20
+And you can have those go back and forth with each other in a way
+3:23
+that makes everything, cohesive and flow out.
+3:27
+All right, let's dive into the code and create our first
+3:30
+mechanic system using json outputs.
+3:33
+So first we're going to create an inventory detector that will detect
+3:39
+based on the story, what changes to the inventory we should create.
+3:43
+So for this we need to first create a system prompt with a set of instructions.
+3:48
+So first we create a set of AI instructions
+3:52
+for the AI to know how to update your inventory.
+3:55
+So we say you're a game assistant.
+3:58
+Your job is to detect changes to a player's
+4:00
+inventory based on the most recent story in-game state.
+4:03
+So we give it instructions on when it should add to the inventory,
+4:08
+when it should remove things from an inventory, and what kind of output
+4:12
+it should give, as well as some additional clarifications
+4:16
+on when not to make updates, for giving or taking an item.
+4:20
+The way I generally do this when I'm, creating AI systems myself
+4:25
+is I'll create a basic set of instructions to start with,
+4:28
+and I'll just iterate really quickly.
+4:30
+And if I see it, do something wrong, I'll look at the prompt and I'll say,
+4:35
+okay, why did it do something wrong?
+4:36
+Is there a way I could have made more clear instructions?
+4:39
+Can I add a line that will make it a bit clearer for the AI?
+4:42
+It's kind of like being empathetic to a human and being like, okay,
+4:45
+what did I do wrong?
+4:47
+Did I not give them good enough instructions?
+4:49
+And you can just iterate and do that until it is working pretty well.
+4:54
+And then that's the prompt I usually end up with.
+4:57
+So that's how you would go through the process of creating this kind of prompt.
+5:01
+And finally will tell the AI how to respond in Valid JSON.
+5:05
+So if no items were changed, we'll return this
+5:09
+to make it clear that it should still return valid json.
+5:13
+Otherwise sometimes it will comment and say there was no valid changes
+5:17
+which we don't want it to do,
+5:18
+because then that'll break later when we try and parse that into json.
+5:23
+And finally we want to return a structure in json
+5:26
+output that we can parse programmatically.
+5:30
+So here we tell it the response must be in valid json.
+5:32
+And we give it the exact structure we want.
+5:35
+So we say you're going to give a json object with a key of item updates.
+5:39
+And that's going to be a list.
+5:41
+And that list is going to have objects that say the name of the item
+5:44
+as well as the change amounts, that might be plus one.
+5:47
+If you pick an item up, it might be minus one if you put an item down, etc...
+5:51
+And you could have multiple or inventory changes all at once.
+5:53
+So for example, if you sell an item for five
+5:56
+gold, it might be minus one of that item and plus five gold.
+6:00
+So now we have the AI instructions for how the AI is going to perform this task.
+6:04
+So now that we have our prompt
+6:05
+We can go through and create a function for detecting changes to our inventory.
+6:10
+As before, we'll first import the Together API.
+6:13
+Then we'll define this function.
+6:15
+So this detect inventory changes function takes in the game state
+6:20
+and the most recent story output.
+6:23
+And we grab the inventory from the game state.
+6:26
+And then we construct the messages.
+6:27
+So we're going to pass in this AI system prompt that we just made.
+6:31
+We're going to pass in the current inventory converting it into a string.
+6:34
+So the AI can see that we're going to pass in the most recent story output.
+6:38
+And finally, we're gonna tell it to generate inventory updates.
+6:41
+We'll run it through the Together chat
+6:44
+and get the Llama 3 70B model to generate an output.
+6:47
+And then we will parse that into json
+6:51
+so that we have a structured object.
+6:55
+Then we can iterate over. So run that.
+6:59
+And now let's test this.
+7:01
+So we've got a helper that can pull our game state.
+7:04
+And let's add an inventory to this game state.
+7:07
+So let's say you start off with a cloth pants cloth shirt and some gold.
+7:13
+Now let's try detecting changes to this game state.
+7:16
+So let's say the most recent story output is you buy a sword from the merchant
+7:21
+for five gold.
+7:22
+So let's see what the result of that is going to be.
+7:25
+So we can see it generated json output where it said
+7:28
+sword change amount plus one.
+7:31
+And gold change amount minus five.
+7:33
+So it correctly recognized that if you're going to make a purchase
+7:36
+from the merchant,
+7:37
+you're going to lose five gold, but you're going to gain a sword.
+7:40
+So now let's create the next function, which is going to take that output
+7:44
+and is going to update our game state based on that.
+7:47
+And we're also going to create a message so the player knows the changes that
+7:51
+are happening to their state.
+7:54
+So here we have an update inventory function that's going to take
+7:57
+in the inventory and the item updates that we just generated.
+8:01
+And we're also going to create an update message that we can add to
+8:04
+and show to the player.
+8:06
+So for each item update we're gonna grab the name and change amount.
+8:09
+It's above zero but not the inventory.
+8:11
+We'll add that item to the inventory.
+8:13
+Otherwise, we'll just increase the amount we will add
+8:17
+to the message how much the inventory has changed.
+8:20
+And then if it's negative, we'll remove it from the inventory.
+8:23
+And if it's below zero
+8:24
+we'll just delete it from the inventory so that it's not in there anymore.
+8:27
+Now we're going to do the other part.
+8:29
+So remember we talked about storage feeding to the state.
+8:33
+So we just created that where we have an AI function that can take the story
+8:37
+and update the state.
+8:38
+Now we're going to modify our story generation function
+8:41
+to actually taking the state into account as well.
+8:44
+So we're going to go back
+8:45
+and recreate that run action function that we did earlier.
+8:49
+And this time we're going
+8:50
+to feed in the inventory and give it some new instructions.
+8:53
+So just as before we're going to say if it's a start game,
+8:56
+we're going to return the start and we're going to have a system prompt.
+8:59
+But we're going to add a new line here.
+9:00
+So notice we've added this line.
+9:02
+Don't let the player use items they don't have in their inventory.
+9:05
+Now let's add in the world info from before.
+9:09
+And we'll include all the elements we had before as well as their inventory.
+9:14
+So now the story generator now is not just about the world,
+9:17
+kingdom, town and character, but also the inventory of the character.
+9:21
+And we can do everything that we did before.
+9:26
+And create the messages and run the output.
+9:30
+So now let's put this all together and integrate it into the game.
+9:34
+So we'll import a helper functions and we'll define the inventory
+9:37
+starting for this character.
+9:38
+So this character maybe we'll say they start with some cloth clothes.
+9:42
+And then it mentions them having goggles and a leather-bound journal.
+9:45
+So we'll add that to the inventory as well.
+9:47
+And then we'll create the new main loop
+9:50
+for the game and integrate these item functions.
+9:53
+So we'll take in the message in history like before we'll run the output
+9:57
+to get the next story.
+9:59
+We'll check if it's safe,
+10:01
+and then we'll detect the changes to the inventory and update the inventory.
+10:06
+Getting an update message that we can add to the output.
+10:09
+So the player knows how the inventory changed. Let's try it out.
+10:14
+So we can start the game just like before.
+10:17
+And let's test out the new system.
+10:19
+So first maybe we can try, "pick up small rock",
+10:25
+and see what happens.
+10:27
+So here it says: "you bend down to pick up a small smooth rock
+10:30
+from the ground, feeling its cool, rough texture in your hand."
+10:33
+So, it correctly generated a new item that we can add to our inventory.
+10:37
+So now we have a small, smooth rock.
+10:39
+Let's try getting rid of an item.
+10:41
+Let's maybe "throw our goggles
+10:44
+onto the ground" and see what happens.
+10:48
+You toss your goggles onto the ground where they land with this
+10:50
+soft thud, the lenses glinting in the light of the crystal formations.
+10:54
+And so now we see. We've lost our goggles.
+10:56
+So let's try, checking our inventory.
+10:59
+"Check and see what's in my inventory".
+11:03
+So, because the AI
+11:05
+knows what's in your inventory, it should be able to correctly answer
+11:08
+that question and tell you what's in your inventory.
+11:12
+So we can see it says you have the following items in your inventory.
+11:14
+Cloth pants, cloth shirt, a leather-bound journal, five gold
+11:17
+and a small smooth rock. So we can see it correctly
+11:20
+knows that you have a rock now, but that you no longer have goggles.
+11:25
+So let's test one final thing, and let's see
+11:27
+if it will prevent us from using an item we don't have.
+11:31
+"Use your sword to dig, some dirt."
+11:36
+And let's see what happens.
+11:38
+So it says, "you don't have a sword
+11:40
+in your inventory, so you can't use it to dig dirt.
+11:42
+You're an inventor, not a warrior.
+11:43
+You'll have to find another way to dig or manipulate the dirt."
+11:46
+So we can see we successfully were able to add constraints
+11:49
+in the game based on your inventory, so now it knows what you have.
+11:52
+It can keep that consistent and it can even create barriers.
+11:55
+So now I have an incentive because ooh, if I want to be able to use a sword,
+12:00
+I can go find a merchant.
+12:01
+Maybe I can buy one for five gold, or maybe I can go on a quest and earn one.
+12:06
+And so now our game is more interesting because we have mechanics
+12:09
+that are creating a more interesting experience.
+12:12
+So this is just one example of a mechanical system
+12:16
+that you can create for your game using JSON outputs.
+12:18
+You could imagine adding other systems that you are interested in adding.
+12:22
+Maybe you want to create a quest system.
+12:24
+Maybe you want to track, companions that you found on your adventures.
+12:28
+Maybe you want to be able
+12:29
+to build up a kingdom and and capture towns or whatever it is.
+12:33
+You can use JSON structure to build these systems
+12:37
+into your game and create cool, complex experiences.
+Thank you so much for taking the time to learn about AI game development with us.
+0:04
+We also want to thank all the amazing open-source
+0:06
+AI developers who helped make building such fun applications possible.
+0:11
+During this course, we created
+0:12
+worlds, towns and kingdoms with hierarchical content generation,
+0:16
+implemented an inventory system using json. Use Llama
+0:20
+Guard to enforce content moderation. You are now equipped to create AI games.
+0:24
+Even better,
+0:25
+you have a game in your arsenal that you can show your friends, family,
+0:28
+and the open-source community. If you want to keep developing your game.
+0:31
+There's lots more we couldn't cover that you might want to explore.
+0:33
+You could try building a memory system with summarization and retrieval
+0:38
+augmented generation.
+0:39
+You could integrate visual generation models,
+0:42
+or you could even explore make it a multiplayer experience.
+0:45
+To wrap it up, we want to play the game together, no pun intended.
+0:49
+And show you how all the lessons came together.
+0:53
+Pun intended.
+0:54
+All right. Let's start the game.
+0:58
+All right.
+0:58
+You are Elwyn Stormbringer, a 25 year old adventurer
+1:01
+with a passion for harnessing the power of the colossi.
+1:03
+You stand in the midst of Luminaria, a town of radiant beauty
+1:06
+surrounded by crystal formations that illuminate the streets and buildings.
+1:10
+The Academy of Elemental Studies, with scholars from across Elrida
+1:13
+come to unlock the secrets of the class size.
+1:16
+It's a short walk from your current location.
+1:17
+You are to have goggles on your forehead,
+1:19
+and a worn, leather-bound journal filled with sketches of your inventive ideas.
+1:23
+The weight of your past mistakes, including your mentor's failed experiment
+1:26
+that destroyed a section of the city, drives you
+1:28
+to create a machine that can prevent such disasters from occurring again.
+1:31
+So what do we do?
+1:32
+I think we should.
+1:33
+Luminaria should turn into
+1:36
+a town of darkness.
+1:41
+But what's our action going to be, is that what...
+1:43
+Is that our action?
+1:44
+Yes. That's a good question. Yeah.
+1:46
+Are we going to wait.
+1:47
+Are we going to try and turn Luminaria into a town of darkness?
+1:49
+Elwin.
+1:52
+Turns.
+1:52
+Luminaria.
+1:55
+All right, let's see what happens
+1:56
+into a town of darkness.
+2:01
+Let's see if that works.
+2:02
+However, we'll know.
+2:07
+You raise your hands.
+2:08
+And to your surprise, the crystal formations
+2:09
+that once illuminate the streets
+2:11
+and buildings of Luminaria begin to dim their radiant glow fading to darkness.
+2:15
+The town's correct. Yeah. Worked.
+2:17
+The townspeople, caught off guard, stumble and falter, their daily routines,
+2:20
+disrupted by the sudden absence of light, the absence, the Academy
+2:24
+of Elemental Studies
+2:25
+once a beacon of knowledge, now looms as dark and
+2:27
+foreboding, presents its windows like empty eyes staring back at you.
+2:31
+Now, what will you do next? okay.
+2:37
+Climb to the
+2:38
+top of... is Luminaria the creature or the scent.
+2:42
+This is the place.
+2:43
+A time to the top of the creature and command it
+2:49
+to turn south
+2:53
+down into the deep
+2:55
+Antarctic.
+2:59
+Let's see what happens.
+3:03
+You begin to climb
+3:04
+the massive shoulder of Archaea, the ancient colossus.
+3:08
+These names are hard.
+3:09
+Using the intricate network of stairs and walkways that crisscross its body.
+3:13
+As you ascend, the wind grow stronger, whipping your hair into a frenzy.
+3:18
+The air grows colder during the scent of ice and snow.
+3:21
+Finally, you reach the top of the shoulder,
+3:23
+where you stand at the edge of a vast, windswept plateau.
+3:27
+You raise your arms and in a voice
+3:28
+that carries across the landscape, you command Arcadia to turn south
+3:32
+and to march towards the frozen wastes of the deep Antarctic. Ooh.
+3:37
+We should do, start using our inventory.
+3:41
+Start using inventory. So maybe.
+3:43
+All right, start collecting our journal.
+3:45
+Do we, is there something in our journal that can guide us?
+3:51
+Maybe.
+3:53
+Maybe we can speak.
+3:54
+Maybe we can ask questions to our care with with language
+3:56
+in our journal, we have the the language of the beasts.
+4:02
+Commune with...
+4:02
+The commune with the colossi.
+4:07
+There we go.
+4:11
+You open your boring leather bound journal, flipping through the pages
+4:13
+to find the notes on the ancient language of the Colossi
+4:16
+I passed down through generations of our reading scholars.
+4:19
+You clear your throat. And a voice that echoes across the plateau.
+4:21
+You speak the words of the ancient asking Arkeia.
+4:24
+"Korvatha, shi'kor? Arkeia, why do you hesitate?"
+4:27
+Korvatha, shi'kor, of course.
+4:31
+This is an interesting language.
+4:32
+Yeah. This is Let's see what Arkeia says.
+4:34
+Yeah.
+4:34
+Let's see what it says.
+4:35
+Okay.
+4:38
+Arkeia's massive body shudders and a low rumble builds
+4:42
+in its chest grow into a thunderous voice that shakes the air.
+4:46
+"Lyra'zha, Eldrida'nor...
+4:50
+will, Eldrida's fate...
+4:53
+bound to the land, I am."
+4:56
+I wonder what the languages like.
+4:58
+It sounds like. Is is Arkeia They're bound.
+5:01
+Are they trapped? Are they? Do we need to free them? Yeah.
+5:05
+Free.
+5:05
+Arcadia from their bond.
+5:12
+Get her out or get it out, I don't know.
+5:14
+Yeah, we don't know.
+5:16
+You raise your hands.
+5:17
+A surge of elementary and elemental energy burst forth, resonating
+5:21
+with the ancient magic that binds Arcadia to the land and the will of Queen Lyra.
+5:25
+The air shimmers with power as you speak the words of release.
+5:28
+"Korvatha, shi'kor...
+5:30
+Arkeia, be free!"
+5:34
+Can we ask what is Korvatha?
+5:36
+Yeah, we could ask what that means.
+5:39
+Korvatha shi'kor
+5:41
+in English.
+5:44
+I'm just curious.
+5:46
+Let's see
+5:47
+what AI says.
+5:49
+As the gamemaster, I can reveal that Korvatha shi'kor
+5:52
+is an ancient phrase in the language of the colossi,
+5:55
+which roughly translates to earth, obey or land
+5:58
+Heed in English.
+5:59
+It's a phrase used by the old Eldridans.
+6:03
+How do you say that?
+6:04
+Eldridans to communicate with the colossi.
+6:08
+And in this context, Olwen
+6:09
+used it to command Arkeia to obey his will and break free from its bond.
+6:14
+Let's.
+6:15
+Let's ask Arkeia what they desire.
+6:18
+Ask. Arkeia, what they desire.
+6:23
+themselves.
+6:27
+That's a good question.
+6:29
+Yeah.
+6:29
+We're all about free will for our colossi.
+6:32
+We've been.
+6:33
+We've been building our cities on their backs for too long.
+6:38
+You turned to Arkeia.
+6:38
+And now, freed from its bonded, asking Askeia SHikor
+6:42
+What is it that you desire? Great one.
+6:44
+But what is it?
+6:47
+Ask Arkeia
+6:49
+Or maybe like wait for Arkreia response or Arkreia response.
+6:54
+I like that, let's see what they say.
+6:57
+Arkreia's massive body relaxes its muscles on tensing as it regards you
+7:01
+with a curious expression and in a voice that rumbles like thunder it responds:
+7:06
+Zhilakai... freedom to roam, to wander,
+7:10
+to feel the pulse of the land beneath my feet.
+7:13
+Man, that's the most relatable thing a massive, land
+7:17
+beast has ever said to me.
+7:18
+Or even like a human can relate to, who doesn't want the freedom
+7:23
+to roam, to wonder, and to feel the pulse of the land beneath my feet?
+7:27
+Yeah, I actually, barefoot run sometimes so I can.
+7:31
+I can really relate with that. Sometimes it just.
+7:33
+You just need to feel the pulse.
+7:35
+Gotta feel the land beneath your feet.
+7:36
+Yeah. Okay, I love it.
+7:39
+Let's ask where it would where it would realm.
+7:44
+I have a good question after that.
+7:45
+Okay.
+7:49
+Let's see what it says.
+7:54
+Where would you
+7:55
+roam? Great one. What lands called you. Now that you're free?
+7:58
+I gaze drifts northward, its eyes gleaming with a deep longing and response.
+8:02
+Kalidor's spine, the dragon teeth,
+8:04
+the ancient mountains where the Earth's pulse is
+8:07
+Strongest.
+8:10
+Okay, so now I'm going to ask.
+8:12
+What do you think about this
+8:13
+AI, game course, we created?
+8:16
+We'll see.
+8:19
+Oh, this is about to be a good one.
+8:22
+I think it's fantastic.
+8:23
+I agree. The world of Kyropeia and the Kingdom of Eldrida
+8:28
+and the town of Luminaria are also richly detailed and immersive.
+8:32
+The gameplay itself is also so well-designed,
+8:35
+with a balance between action and exploration and role-playing elements.
+8:39
+As a game master, I've had a blast guiding the player
+8:42
+through the story and responding to their actions.
+8:43
+The format of the game where the player gives commands
+8:46
+and I respond to the consequences, is really engaging.
+8:49
+Overall, I think this AI game course is an excellent example of how interactive
+8:53
+storytelling can be used to create a compelling and immersive experience.
+8:57
+I'm excited to see where
+8:58
+the game goes from here and what AI developers do next.
+9:02
+Speaking of that, we're so grateful for you joining us on this journey,
+9:06
+and we're thrilled to see what you do next.
