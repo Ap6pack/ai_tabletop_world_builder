@@ -49,6 +49,7 @@ venv.bak/
 scenarios/generated/*.json
 data/*.db
 data/*.sqlite
+data/sessions/*.json
 *.log
 
 # Testing

@@ -12,12 +12,40 @@ from datetime import datetime
 
 class LLMRequest(BaseModel):
     """Request model for LLM completion."""
-    prompt: str = Field(..., description="The prompt to send to the LLM")
-    provider: Optional[Literal["openai", "anthropic", "together", "ollama"]] = None
-    model: Optional[str] = None
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    max_tokens: Optional[int] = Field(None, ge=1, le=8000)
-    system_message: Optional[str] = None
+    prompt: str = Field(
+        ...,
+        description="The prompt to send to the LLM",
+        examples=["Explain what a SIEM is in cybersecurity"]
+    )
+    provider: Optional[Literal["openai", "anthropic", "ollama"]] = Field(
+        None,
+        description="LLM provider to use. If not specified, uses default from settings.",
+        examples=["openai"]
+    )
+    model: Optional[str] = Field(
+        None,
+        description="Model to use. If not specified, uses default for the provider. Examples: 'gpt-4', 'claude-3-5-sonnet-20241022', 'llama3'",
+        examples=["gpt-4-turbo-preview"]
+    )
+    temperature: Optional[float] = Field(
+        None,
+        ge=0.0,
+        le=2.0,
+        description="Sampling temperature (0.0-2.0). Higher values make output more random.",
+        examples=[0.7]
+    )
+    max_tokens: Optional[int] = Field(
+        None,
+        ge=1,
+        le=8000,
+        description="Maximum tokens to generate",
+        examples=[1000]
+    )
+    system_message: Optional[str] = Field(
+        None,
+        description="System message to set context for the LLM",
+        examples=["You are a cybersecurity expert helping train security professionals."]
+    )
 
 
 class LLMResponse(BaseModel):

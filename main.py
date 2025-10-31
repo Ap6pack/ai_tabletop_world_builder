@@ -26,6 +26,11 @@ app.add_middleware(
 app.include_router(llm_router)
 app.include_router(content_policy_router)
 
+# Import scenarios and game routers
+from api.routers import scenarios_router, game_router
+app.include_router(scenarios_router)
+app.include_router(game_router)
+
 
 @app.get("/")
 async def root():

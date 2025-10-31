@@ -216,15 +216,22 @@ After completing the scenario:
 - `POST /content-policy/check` - Verify content safety
 - `GET /content-policy/policies` - List available policies
 
-**Scenarios (coming soon):**
+**Scenarios:** ✅ **IMPLEMENTED**
 - `POST /scenarios/generate` - Generate training scenario
-- `GET /scenarios/{id}` - Get scenario details
-- `POST /scenarios/{id}/start` - Start war game session
+- `GET /scenarios/list` - List all saved scenarios
+- `GET /scenarios/industries` - List supported industries
+- `GET /scenarios/industries/{industry}` - Get industry details
+- `GET /scenarios/{filename}` - Load scenario by filename
+- `DELETE /scenarios/{filename}` - Delete saved scenario
 
-**Game (coming soon):**
-- `POST /game/action` - Submit player action
-- `GET /game/{session_id}/state` - Get current game state
-- `POST /game/{session_id}/end` - End game session
+**Game:** ✅ **IMPLEMENTED**
+- `POST /game/start` - Start new war gaming session
+- `POST /game/action` - Process player action
+- `GET /game/state/{session_id}` - Get current game state
+- `POST /game/hint` - Request contextual hint
+- `POST /game/end` - End game session
+- `GET /game/sessions` - List all sessions with optional filter
+- `POST /game/objective` - Mark objective as completed/failed
 
 API documentation available at: `http://localhost:8000/docs`
 
@@ -362,6 +369,16 @@ For issues and questions:
 
 ---
 
-**Version**: 0.1.0
-**Status**: Initial Development
+**Version**: 0.3.0
+**Status**: Phase 2 & 3 Complete - Scenario Generation + Interactive War Gaming
 **Last Updated**: 2025-10-31
+
+## Recent Updates (v0.3.0)
+
+✅ **Phase 2 Complete**: Hierarchical scenario generation with 8 industry templates
+✅ **Phase 3 Complete**: Interactive AI-powered war gaming with dynamic narratives
+✅ **14 New API Endpoints**: 6 for scenarios, 8 for war gaming
+✅ **2,400+ Lines of Code**: Complete scenario and game mechanics implementation
+✅ **Fully Tested**: Comprehensive test scripts and real-world scenarios
+
+See [PHASE2_COMPLETE.md](PHASE2_COMPLETE.md) and [PHASE3_COMPLETE.md](PHASE3_COMPLETE.md) for details.

@@ -42,10 +42,18 @@ class LLMProviderFactory:
             if not api_key:
                 raise ValueError("OpenAI API key is required")
 
+            model = kwargs.get("model")
+            if model is None:
+                model = settings.openai_model
+
+            temperature = kwargs.get("temperature")
+            if temperature is None:
+                temperature = settings.openai_temperature
+
             return OpenAIProvider(
                 api_key=api_key,
-                model=kwargs.get("model") or settings.openai_model,
-                temperature=kwargs.get("temperature") or settings.openai_temperature,
+                model=model,
+                temperature=temperature,
             )
 
         elif provider_type == "anthropic":
@@ -53,17 +61,37 @@ class LLMProviderFactory:
             if not api_key:
                 raise ValueError("Anthropic API key is required")
 
+            model = kwargs.get("model")
+            if model is None:
+                model = settings.anthropic_model
+
+            temperature = kwargs.get("temperature")
+            if temperature is None:
+                temperature = settings.anthropic_temperature
+
             return AnthropicProvider(
                 api_key=api_key,
-                model=kwargs.get("model") or settings.anthropic_model,
-                temperature=kwargs.get("temperature") or settings.anthropic_temperature,
+                model=model,
+                temperature=temperature,
             )
 
         elif provider_type == "ollama":
+            base_url = kwargs.get("base_url")
+            if base_url is None:
+                base_url = settings.ollama_base_url
+
+            model = kwargs.get("model")
+            if model is None:
+                model = settings.ollama_model
+
+            temperature = kwargs.get("temperature")
+            if temperature is None:
+                temperature = settings.ollama_temperature
+
             return OllamaProvider(
-                base_url=kwargs.get("base_url") or settings.ollama_base_url,
-                model=kwargs.get("model") or settings.ollama_model,
-                temperature=kwargs.get("temperature") or settings.ollama_temperature,
+                base_url=base_url,
+                model=model,
+                temperature=temperature,
             )
 
         else:

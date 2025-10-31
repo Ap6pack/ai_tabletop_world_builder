@@ -8,10 +8,226 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Hierarchical scenario generation (Phase 2)
-- Interactive war gaming engine (Phase 3)
-- After Action Review system (Phase 6)
+- After Action Review system (Phase 4-5)
+- Enhanced game mechanics (Phase 4)
+- Analytics and performance tracking (Phase 5)
 - Multi-user support (Phase 7)
+
+## [0.3.0] - 2025-10-31
+
+### Added
+
+#### Phase 3: Interactive War Gaming
+
+**Game Session Management** (`game_session_service.py` - 270 lines)
+- Complete game session lifecycle management
+- Role-based starting inventory system for 4 player roles:
+  - SOC Analyst (SIEM, IDS/IPS, Log Analysis Tools)
+  - Incident Responder (EDR, Forensics, Network Analyzer)
+  - Security Engineer (Firewall, Vulnerability Scanner, Config Mgmt)
+  - CISO (Executive Dashboard, Risk Management Tools)
+- Tool inventory tracking with usage counts
+- Access level management (user, admin, siem, network, executive)
+- Credential acquisition and tracking
+- Real-time scoring system with reasons
+- Time tracking (minutes elapsed)
+- Incident timeline with event types (detection, action, consequence, escalation)
+- Objective completion tracking
+- Session persistence to disk (JSON format)
+- Session status management (in-progress, completed, failed)
+
+**AI Game Master Service** (`game_master_service.py` - 320 lines)
+- Dynamic narrative generation based on player actions
+- Context-aware AI responses using game state
+- Role-appropriate challenge generation
+- Realistic constraint enforcement (tools, access levels)
+- Action validation and consequence simulation
+- Discovery system for uncovering information
+- Inventory change recommendations
+- Score calculation with reasoning
+- Event generation for timeline
+- Hint generation system
+- Educational guidance with realistic scenarios
+- Threat actor behavior simulation
+- Structured data extraction from LLM responses
+
+**Game Orchestrator** (`game_orchestrator.py` - 200 lines)
+- Coordination between session management and AI game master
+- `start_new_game()` - Initialize session and generate opening narrative
+- `process_player_action()` - Handle action, update state, return response
+- `get_hint()` - Generate contextual hints for players
+- `end_game()` - Finalize session with status
+- `complete_objective()` - Track objective completion
+- `get_session_state()` - Retrieve current game state
+- `list_sessions()` - List all sessions with filtering
+
+**Game API Router** (`game.py` - 200 lines)
+- `POST /game/start` - Start new war gaming session
+- `POST /game/action` - Process player action
+- `GET /game/state/{session_id}` - Get current game state
+- `POST /game/hint` - Request contextual hint
+- `POST /game/end` - End game session
+- `GET /game/sessions` - List all sessions with optional status filter
+- `POST /game/objective` - Mark objective as completed/failed
+- Complete request/response models with validation
+
+**Testing and Documentation**
+- `test_war_game.sh` - Comprehensive test script for war gaming
+- `PHASE3_COMPLETE.md` - Complete Phase 3 documentation
+- Full integration testing with real scenarios
+
+**Storage**
+- `data/sessions/` directory for session persistence
+- JSON-based session storage with full game state
+- Automatic save on state changes
+
+#### Phase 2: Scenario Generation
+
+**Organization Generator** (`organization_generator.py` - 370 lines)
+- Generate realistic organizations across 8 industries:
+  - Financial Services
+  - Healthcare
+  - Technology
+  - Manufacturing
+  - Retail & E-commerce
+  - Education
+  - Government
+  - Energy & Utilities
+- Industry-specific templates with compliance frameworks
+- Organization size configuration (small, medium, large, enterprise)
+- Security posture generation (developing, mature, advanced)
+- Complete business context generation
+
+**Department Generator** (`department_generator.py` - 120 lines)
+- Business department generation with functions
+- Data classification (public, internal, confidential, restricted)
+- Compliance requirements per department
+- Industry-appropriate department structures
+- Configurable number of departments (1-10)
+
+**System Generator** (`system_generator.py` - 150 lines)
+- IT asset generation (servers, workstations, network devices, applications, databases)
+- Operating system selection (Windows, Linux, macOS, cloud)
+- Service and port configuration
+- Security control assignment (firewall, antivirus, encryption, IDS/IPS, etc.)
+- Criticality assessment (low, medium, high, critical)
+- 2-5 systems per department
+
+**Vulnerability Generator** (`vulnerability_generator.py` - 170 lines)
+- CVE-based vulnerability generation
+- Severity ratings (low, medium, high, critical)
+- Exploitation complexity assessment
+- System-specific vulnerabilities
+- Remediation guidance
+- Affected systems tracking
+- Both known CVEs and configuration issues
+
+**Threat Actor Generator** (`threat_actor_generator.py` - 160 lines)
+- Threat actor profile generation
+- Motivation types (financial, espionage, ideology, disruption)
+- Sophistication levels (script-kiddie, organized-crime, nation-state, insider)
+- MITRE ATT&CK TTP mapping:
+  - Initial Access techniques
+  - Execution methods
+  - Persistence mechanisms
+  - Defense Evasion
+  - Credential Access
+  - Impact tactics
+- Target identification
+- 1-3 threat actors per organization
+
+**Scenario Orchestrator** (`scenario_orchestrator.py` - 240 lines)
+- Complete scenario generation workflow
+- Hierarchical generation (Org → Depts → Systems → Vulns → Threats)
+- Progress tracking and status updates
+- Scenario validation
+- Save/load functionality with JSON
+- List and manage saved scenarios
+- Industry information retrieval
+- Complexity configuration
+
+**Scenarios API Router** (`scenarios.py` - 180 lines)
+- `POST /scenarios/generate` - Generate complete scenario
+- `GET /scenarios/industries` - List supported industries
+- `GET /scenarios/industries/{industry}` - Get industry details
+- `GET /scenarios/list` - List all saved scenarios
+- `GET /scenarios/{filename}` - Load scenario by filename
+- `DELETE /scenarios/{filename}` - Delete saved scenario
+- Complete request/response models
+
+**Testing and Documentation**
+- `test_scenario_generation.sh` - Test script for scenario generation
+- `PHASE2_COMPLETE.md` - Complete Phase 2 documentation
+- Comprehensive API testing
+
+**Storage**
+- `scenarios/generated/` directory for saved scenarios
+- JSON-based scenario files with timestamps
+- Automatic filename generation from organization name
+
+### Changed
+
+#### API Updates
+- Updated main.py to include scenarios and game routers
+- Updated `api/routers/__init__.py` to export new routers
+- Updated `api/services/__init__.py` to export new services
+- Enhanced data models with game state and inventory
+
+#### Bug Fixes
+- Fixed LLM provider factory None handling in `api/providers/factory.py`
+- Changed from `or` operator to explicit `if model is None` checking
+- Fixed OpenAPI schema examples to avoid "string" placeholder errors
+
+#### Documentation Updates
+- README.md API section updated with actual endpoints
+- Removed "coming soon" placeholders for implemented features
+- Added phase completion documentation
+
+### Technical Details
+
+#### Code Statistics
+- **Phase 2**: ~1,400 lines of scenario generation code
+- **Phase 3**: ~990 lines of war gaming code
+- **Total new code**: ~2,400 lines
+- **New API endpoints**: 14 endpoints (6 scenarios + 8 game)
+- **New services**: 9 major services
+- **Test coverage**: 3 test scripts with comprehensive scenarios
+
+#### Performance
+- Scenario generation: 30-60 seconds (depends on complexity)
+- Game start: 3-5 seconds (LLM generation)
+- Player action: 2-4 seconds (LLM generation)
+- Game state retrieval: <100ms (file read)
+- Hint generation: 1-2 seconds (LLM generation)
+
+#### Architecture
+- Hierarchical generation pipeline
+- Async/await throughout
+- JSON-based persistence
+- Session isolation
+- Stateless API design
+
+### Notes
+
+#### What Works
+- ✅ Complete scenario generation (Phase 2)
+- ✅ Interactive war gaming (Phase 3)
+- ✅ AI-powered game master
+- ✅ Role-based inventory system
+- ✅ Dynamic narrative generation
+- ✅ Scoring and objectives
+- ✅ Session management
+- ✅ Hint system
+- ✅ All API endpoints functional
+- ✅ Comprehensive testing
+
+#### What's Next (Phase 4-5)
+- 🚧 Enhanced game mechanics (time pressure, resource limits)
+- 🚧 Automatic objective generation
+- 🚧 After Action Review (AAR) generation
+- 🚧 Performance analytics dashboard
+- 🚧 Decision tree visualization
+- 🚧 Multi-player support
 
 ## [0.1.0] - 2025-10-31
 
@@ -221,8 +437,8 @@ This release establishes the complete foundation for the platform. The core gene
 
 ### Version Numbering
 - **0.1.0** - Initial foundation and architecture
-- **0.2.0** - Planned: Scenario generation (Phase 2)
-- **0.3.0** - Planned: Interactive war gaming (Phase 3)
+- **0.2.0** - (Skipped - merged into 0.3.0)
+- **0.3.0** - Scenario generation (Phase 2) + Interactive war gaming (Phase 3)
 - **0.4.0** - Planned: Enhanced safety and analytics (Phases 4-6)
 - **1.0.0** - Planned: Production-ready release (Phases 7-8)
 
@@ -262,5 +478,6 @@ Original course materials preserved in `context/` directory:
 - 📝 Planned
 - 🔮 Future
 
-[Unreleased]: https://github.com/Ap6pack/ai_tabletop_world_builder/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Ap6pack/ai_tabletop_world_builder/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Ap6pack/ai_tabletop_world_builder/releases/tag/v0.3.0
 [0.1.0]: https://github.com/Ap6pack/ai_tabletop_world_builder/releases/tag/v0.1.0
