@@ -1,0 +1,27 @@
+# FastAPI Backend
+fastapi==0.120.4
+uvicorn[standard]==0.38.0
+pydantic==2.12.3
+pydantic-settings==2.11.0
+python-multipart==0.0.9
+
+# Streamlit Frontend
+streamlit==1.51.0
+streamlit-chat==0.1.1
+
+# LLM Providers
+openai==2.6.1
+anthropic==0.72.0
+
+# Data & Storage
+aiofiles==23.2.1
+python-json-logger==2.0.7
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+httpx==0.28.1
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3

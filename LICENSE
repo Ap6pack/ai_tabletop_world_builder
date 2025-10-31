@@ -1,0 +1,189 @@
+Copyright (c) 2025 [Your Name/Company]
+
+All Rights Reserved
+
+PROPRIETARY AND CONFIDENTIAL LICENSE
+
+This software and associated documentation files (the "Software") are the proprietary
+property of [Your Name/Company] ("Licensor"). The Software is protected by copyright
+laws and international copyright treaties, as well as other intellectual property laws
+and treaties.
+
+IMPORTANT: By accessing, downloading, or using this Software, you agree to be bound by
+the terms of this license agreement.
+
+1. LICENSE GRANT
+
+   Subject to the terms and conditions of this license, Licensor grants you a limited,
+   non-exclusive, non-transferable, revocable license to:
+
+   a) View and review the source code for evaluation purposes only;
+   b) Fork the repository for personal development and testing purposes only;
+   c) Submit contributions back to the project (see Section 3 below).
+
+   This license does NOT grant you the right to:
+   - Use the Software for commercial purposes without a commercial license;
+   - Distribute, sublicense, sell, or lease the Software;
+   - Create derivative works for commercial purposes;
+   - Remove or modify any copyright notices or proprietary markings;
+   - Deploy the Software as a service (SaaS) without explicit permission;
+   - Use the Software in production environments without a commercial license.
+
+2. COMMERCIAL USE
+
+   Any commercial use of this Software requires a separate commercial license agreement
+   with Licensor. Commercial use includes, but is not limited to:
+
+   - Using the Software to provide services to third parties for compensation;
+   - Deploying the Software as a Software-as-a-Service (SaaS) offering;
+   - Incorporating the Software into a commercial product or service;
+   - Using the Software within a for-profit organization for business purposes;
+   - Providing training or consulting services using the Software for compensation.
+
+   To inquire about commercial licensing, please contact: [your-email@example.com]
+
+3. CONTRIBUTIONS
+
+   By submitting contributions (including code, documentation, or other materials) to
+   this project, you:
+
+   a) Grant Licensor a perpetual, worldwide, non-exclusive, royalty-free, irrevocable
+      license to use, reproduce, modify, display, perform, distribute, and sublicense
+      your contributions;
+   b) Retain copyright to your contributions;
+   c) Agree that Licensor may use your contributions in both open-source and commercial
+      versions of the Software;
+   d) Represent that you have the legal right to grant these licenses;
+   e) Waive any rights to attribution for commercial use (though attribution will be
+      provided in open-source releases).
+
+4. INTELLECTUAL PROPERTY
+
+   The Software, including all source code, documentation, designs, algorithms, and
+   associated materials, is and shall remain the exclusive property of Licensor. This
+   license does not transfer any ownership rights to you.
+
+5. RESTRICTIONS
+
+   You may NOT:
+
+   - Use the Software for any commercial purpose without a commercial license;
+   - Remove, alter, or obscure any copyright, trademark, or other proprietary notices;
+   - Reverse engineer, decompile, or disassemble the Software (except as permitted by law);
+   - Use the Software in any way that violates applicable laws or regulations;
+   - Deploy the Software publicly without explicit written permission from Licensor;
+   - Use the Software to compete with Licensor's commercial offerings;
+   - Transfer, sublicense, sell, or distribute the Software or any portion thereof;
+   - Use Licensor's trademarks or trade names without permission.
+
+6. FUTURE LICENSING OPTIONS
+
+   Licensor reserves the right to:
+
+   - Release the Software under different license terms in the future;
+   - Offer commercial licenses with different terms and pricing;
+   - Dual-license the Software (open source for non-commercial, proprietary for commercial);
+   - Change this license at any time for future versions.
+
+   Your use of the Software is governed by the license that accompanied the version you
+   obtained. Changes to the license do not apply retroactively.
+
+7. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+   PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY CLAIM,
+   DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+   ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+   IN THE SOFTWARE.
+
+8. LIMITATION OF LIABILITY
+
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL LICENSOR BE LIABLE
+   FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING,
+   WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS
+   OF BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR
+   INABILITY TO USE THE SOFTWARE, EVEN IF LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY
+   OF SUCH DAMAGES.
+
+9. DATA AND PRIVACY
+
+   Users of the Software are responsible for:
+   - Complying with applicable data protection laws (GDPR, CCPA, etc.);
+   - Securing any API keys, credentials, or sensitive information;
+   - Ensuring proper handling of training data and generated content;
+   - Implementing appropriate security measures for deployment.
+
+10. TERMINATION
+
+    This license is effective until terminated. Your rights under this license will
+    terminate automatically without notice if you fail to comply with any term of this
+    license. Upon termination, you must:
+
+    - Cease all use of the Software;
+    - Destroy all copies of the Software in your possession;
+    - Remove any deployed instances of the Software.
+
+    Sections 4, 7, 8, and 11 shall survive termination.
+
+11. GOVERNING LAW
+
+    This license shall be governed by and construed in accordance with the laws of
+    [Your Jurisdiction], without regard to its conflict of law provisions.
+
+12. TRADEMARKS
+
+    "Cybersecurity War Gaming Platform" and related names, logos, and branding are
+    trademarks of Licensor. No license is granted to use these trademarks without
+    explicit written permission.
+
+13. EXPORT COMPLIANCE
+
+    You agree to comply with all applicable export and import control laws and regulations
+    in your use of the Software. You shall not export, re-export, or transfer the Software
+    to any prohibited country, entity, or person.
+
+14. ENTIRE AGREEMENT
+
+    This license constitutes the entire agreement between you and Licensor regarding the
+    Software and supersedes all prior agreements and understandings, whether written or oral.
+
+15. CONTACT INFORMATION
+
+    For questions about this license or to inquire about commercial licensing:
+
+    Email: [your-email@example.com]
+    Website: [your-website.com]
+    GitHub: https://github.com/Ap6pack/ai_tabletop_world_builder
+
+16. ACKNOWLEDGMENT
+
+    BY USING THE SOFTWARE, YOU ACKNOWLEDGE THAT YOU HAVE READ THIS LICENSE, UNDERSTAND IT,
+    AND AGREE TO BE BOUND BY ITS TERMS AND CONDITIONS.
+
+---
+
+ADDITIONAL NOTES FOR COMMERCIAL LICENSING:
+
+If you are interested in using this Software for commercial purposes, we offer flexible
+commercial licensing options:
+
+- **Startup License**: For small teams and early-stage companies
+- **Enterprise License**: For large organizations with custom requirements
+- **White-Label License**: For resellers and partners
+- **SaaS Provider License**: For hosting and providing the platform as a service
+
+Benefits of commercial licensing:
+- Full commercial usage rights
+- Priority support and maintenance
+- Custom feature development
+- Service Level Agreements (SLAs)
+- White-label branding options
+- Deployment assistance
+- Training and documentation
+
+Contact us at [your-email@example.com] to discuss your needs.
+
+---
+
+Last Updated: 2025-10-31
