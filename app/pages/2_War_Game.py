@@ -4,6 +4,12 @@ Streamlit War Game Page - Interactive cybersecurity incident response.
 import streamlit as st
 import requests
 from datetime import datetime
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from constants import PLAYER_ROLES_DISPLAY, DIFFICULTY_LEVELS_DISPLAY
 
 # API configuration
 API_BASE_URL = "http://127.0.0.1:8000"
@@ -56,9 +62,11 @@ else:
         with col1:
             st.metric("Organization", scenario.get("name", "Unknown"))
         with col2:
-            st.metric("Role", metadata.get("player_role", "soc-analyst").replace("-", " ").title())
+            role_key = metadata.get("player_role", "soc-analyst")
+            st.metric("Role", PLAYER_ROLES_DISPLAY.get(role_key, role_key.replace("-", " ").title()))
         with col3:
-            st.metric("Difficulty", metadata.get("difficulty", "intermediate").capitalize())
+            diff_key = metadata.get("difficulty", "intermediate")
+            st.metric("Difficulty", DIFFICULTY_LEVELS_DISPLAY.get(diff_key, diff_key.capitalize()))
 
     st.markdown("---")
 
@@ -188,6 +196,11 @@ else:
                                     st.rerun()
                                 else:
                                     st.error(f"❌ Failed to start game: {response.status_code}")
+                                    try:
+                                        error_detail = response.json()
+                                        st.error(f"Details: {error_detail.get('detail', 'Unknown error')}")
+                                    except:
+                                        st.error(f"Response: {response.text[:500]}")
 
                         except Exception as e:
                             st.error(f"❌ Error starting game: {str(e)}")

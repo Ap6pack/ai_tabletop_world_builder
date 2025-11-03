@@ -5,6 +5,12 @@ import streamlit as st
 import json
 import requests
 from datetime import datetime
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from constants import PLAYER_ROLES, ORG_SIZES, COMPLEXITY_LEVELS, SCENARIO_TYPES, DIFFICULTY_LEVELS
 
 # API configuration
 API_BASE_URL = "http://127.0.0.1:8000"
@@ -100,7 +106,7 @@ focus_areas = st.multiselect(
 st.markdown("### Player Role")
 player_role = st.radio(
     "What role will trainees assume?",
-    ["SOC Analyst", "Incident Responder", "Security Engineer", "CISO", "Mixed Team"]
+    list(PLAYER_ROLES.keys())
 )
 
 # Learning objectives
@@ -117,60 +123,79 @@ st.markdown("---")
 col1, col2, col3 = st.columns([2, 1, 2])
 with col2:
     if st.button("Generate Scenario", use_container_width=True, type="primary"):
-        with st.spinner("Generating scenario... This may take 30-60 seconds."):
-            try:
-                # Prepare API request
-                size_map = {
-                    "Small (< 100 employees)": "small",
-                    "Medium (100-1000)": "medium",
-                    "Large (1000-5000)": "large",
-                    "Enterprise (5000+)": "enterprise"
+        # Create a progress container
+        progress_text = st.empty()
+        progress_bar = st.progress(0)
+
+        try:
+            progress_text.text("🔧 Preparing scenario generation...")
+            progress_bar.progress(10)
+
+            # Prepare API request using constants for proper mapping
+            payload = {
+                "industry": industry,
+                "size": ORG_SIZES.get(organization_size, "medium"),
+                "complexity": COMPLEXITY_LEVELS.get(complexity, "moderate"),
+                "focus_areas": focus_areas if focus_areas else None,
+                "num_departments": 3
+            }
+
+            progress_text.text("🏢 Generating organization profile...")
+            progress_bar.progress(20)
+
+            # Call API with extended timeout
+            response = requests.post(
+                f"{API_BASE_URL}/scenarios/generate",
+                json=payload,
+                timeout=180  # Increased to 3 minutes
+            )
+
+            progress_bar.progress(90)
+
+            if response.status_code == 200:
+                organization_data = response.json()
+                progress_bar.progress(100)
+                progress_text.empty()
+                progress_bar.empty()
+
+                st.success("✅ Scenario generated successfully!")
+
+                # Store full organization data
+                st.session_state.generated_organization = organization_data
+                st.session_state.scenario_metadata = {
+                    "scenario_type": SCENARIO_TYPES.get(scenario_type, "incident-response"),
+                    "difficulty": DIFFICULTY_LEVELS.get(difficulty, "intermediate"),
+                    "duration_minutes": duration,
+                    "focus_areas": focus_areas,
+                    "player_role": PLAYER_ROLES.get(player_role, "soc-analyst")
                 }
+            else:
+                progress_text.empty()
+                progress_bar.empty()
+                st.error(f"❌ Failed to generate scenario: {response.status_code}")
+                st.error(response.text)
 
-                complexity_map = {
-                    "Basic": "basic",
-                    "Moderate": "moderate",
-                    "Complex": "complex"
-                }
-
-                payload = {
-                    "industry": industry,
-                    "size": size_map.get(organization_size, "medium"),
-                    "complexity": complexity_map.get(complexity, "moderate"),
-                    "focus_areas": focus_areas if focus_areas else None,
-                    "num_departments": 3
-                }
-
-                # Call API
-                response = requests.post(
-                    f"{API_BASE_URL}/scenarios/generate",
-                    json=payload,
-                    timeout=120
-                )
-
-                if response.status_code == 200:
-                    organization_data = response.json()
-                    st.success("✅ Scenario generated successfully!")
-
-                    # Store full organization data
-                    st.session_state.generated_organization = organization_data
-                    st.session_state.scenario_metadata = {
-                        "scenario_type": scenario_type,
-                        "difficulty": difficulty.lower(),
-                        "duration_minutes": duration,
-                        "focus_areas": focus_areas,
-                        "player_role": player_role.lower().replace(" ", "-")
-                    }
-                else:
-                    st.error(f"❌ Failed to generate scenario: {response.status_code}")
-                    st.error(response.text)
-
-            except requests.exceptions.Timeout:
-                st.error("⏱️ Request timed out. The scenario generation is taking longer than expected.")
-            except requests.exceptions.ConnectionError:
-                st.error("🔌 Could not connect to API. Make sure the backend is running on http://127.0.0.1:8000")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+        except requests.exceptions.Timeout:
+            progress_text.empty()
+            progress_bar.empty()
+            st.error("⏱️ Request timed out after 3 minutes.")
+            st.warning("**Troubleshooting tips:**")
+            st.markdown("""
+            - The LLM API might be slow or rate-limited
+            - Try reducing complexity to 'Basic'
+            - Check your API key and quotas
+            - Review backend logs for errors
+            """)
+        except requests.exceptions.ConnectionError:
+            progress_text.empty()
+            progress_bar.empty()
+            st.error("🔌 Could not connect to API. Make sure the backend is running on http://127.0.0.1:8000")
+            st.info("Run: `uvicorn api.main:app --reload`")
+        except Exception as e:
+            progress_text.empty()
+            progress_bar.empty()
+            st.error(f"❌ Error: {str(e)}")
+            st.info("Check the backend logs for more details.")
 
 # Display generated scenario
 if st.session_state.generated_organization:
