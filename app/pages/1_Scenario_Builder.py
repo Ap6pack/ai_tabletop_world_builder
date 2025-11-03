@@ -294,19 +294,25 @@ if st.session_state.generated_organization:
 
     # Action buttons
     st.markdown("---")
-    col1, col2, col3 = st.columns([1, 1, 1])
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         # Scenario is automatically saved by the API
-        st.info("✅ Scenario already saved to scenarios/generated/")
+        st.info("✅ Auto-saved")
 
     with col2:
+        if st.button("✏️ Customize Scenario", use_container_width=True):
+            st.session_state.active_scenario = org
+            st.session_state.scenario_metadata = metadata
+            st.switch_page("pages/4_Scenario_Editor.py")
+
+    with col3:
         if st.button("🎮 Start War Game", use_container_width=True, type="primary"):
             st.session_state.active_scenario = org
             st.session_state.scenario_metadata = metadata
             st.switch_page("pages/2_War_Game.py")
 
-    with col3:
+    with col4:
         if st.button("🔄 Generate New", use_container_width=True):
             st.session_state.generated_organization = None
             st.session_state.scenario_metadata = None
