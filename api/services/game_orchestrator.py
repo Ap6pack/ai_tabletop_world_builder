@@ -207,6 +207,21 @@ class GameOrchestrator:
         """
         return self.session_service.list_sessions(status_filter)
 
+    def delete_session(self, session_id: str) -> bool:
+        """
+        Delete a game session.
+
+        Args:
+            session_id: Session ID to delete
+
+        Returns:
+            True if deleted successfully, False if not found
+
+        Raises:
+            FileNotFoundError: If session doesn't exist
+        """
+        return self.session_service.delete_session(session_id)
+
     def complete_objective(
         self,
         session_id: str,

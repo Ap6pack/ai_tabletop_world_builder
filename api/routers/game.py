@@ -211,6 +211,38 @@ async def list_sessions(status: Optional[str] = None):
         raise HTTPException(status_code=500, detail=f"Failed to list sessions: {str(e)}")
 
 
+@router.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """
+    Delete a game session.
+
+    Args:
+        session_id: Game session ID to delete
+
+    Returns:
+        Success message
+
+    Raises:
+        HTTPException: If session not found or deletion fails
+    """
+    try:
+        game_orchestrator = GameOrchestrator()
+        success = game_orchestrator.delete_session(session_id)
+
+        if success:
+            return {"message": f"Session {session_id} deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    except Exception as e:
+        import traceback
+        print(f"ERROR deleting session: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to delete session: {str(e)}")
+
+
 @router.post("/objective")
 async def complete_objective(
     session_id: str,

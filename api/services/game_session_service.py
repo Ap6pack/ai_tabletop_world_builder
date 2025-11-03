@@ -423,3 +423,24 @@ class GameSessionService:
                     continue
 
         return sorted(sessions, key=lambda x: x.get("created_at", ""), reverse=True)
+
+    def delete_session(self, session_id: str) -> bool:
+        """
+        Delete a game session.
+
+        Args:
+            session_id: Session ID to delete
+
+        Returns:
+            True if deleted successfully
+
+        Raises:
+            FileNotFoundError: If session file doesn't exist
+        """
+        filepath = os.path.join(self.sessions_dir, f"{session_id}.json")
+
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"Session {session_id} not found")
+
+        os.remove(filepath)
+        return True
