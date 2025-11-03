@@ -34,15 +34,25 @@ st.title("🎮 Cybersecurity War Game")
 st.markdown("Interactive incident response training")
 st.markdown("---")
 
-# Check if scenario is loaded
-if "active_scenario" not in st.session_state or not st.session_state.active_scenario:
-    st.warning("⚠️ No scenario loaded. Please generate or load a scenario first.")
+# Check if scenario is loaded OR if we have an active game session
+has_scenario = st.session_state.get("active_scenario") is not None
+has_game_session = st.session_state.get("game_state") is not None
+
+if not has_scenario and not has_game_session:
+    st.warning("⚠️ No scenario or game session loaded. Please generate a scenario or load an existing session.")
     col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        if st.button("📋 Go to Scenario Builder", use_container_width=True, type="primary"):
+    with col1:
+        if st.button("📋 Scenario Builder", use_container_width=True, type="primary"):
             st.switch_page("pages/1_Scenario_Builder.py")
+    with col3:
+        if st.button("📊 Session Manager", use_container_width=True, type="primary"):
+            st.switch_page("pages/3_Session_Manager.py")
 else:
-    scenario = st.session_state.active_scenario
+    # Get scenario from either active_scenario or game_state
+    scenario = st.session_state.get("active_scenario")
+    if not scenario and st.session_state.get("game_state"):
+        scenario = st.session_state.game_state.get("organization", {})
+
     metadata = st.session_state.get("scenario_metadata", {})
 
     # Game header with metrics
@@ -411,10 +421,8 @@ with st.sidebar:
                                                 "content": event.get("description", "")
                                             })
 
-                                    # Load scenario
-                                    org_name = game_data.get("organization", {}).get("name")
-                                    if org_name:
-                                        st.session_state.active_scenario = game_data.get("organization", {})
+                                    # Load scenario - always set it from game_data
+                                    st.session_state.active_scenario = game_data.get("organization", {})
 
                                     st.success("✅ Session loaded!")
                                     st.rerun()

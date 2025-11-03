@@ -167,21 +167,21 @@ try:
                             st.session_state.selected_session_id = session['session_id']
                             st.rerun()
 
-                        # Delete session
-                        if status in ["completed", "failed"]:
-                            if st.button("🗑️ Delete", key=f"delete_{session['session_id']}", use_container_width=True):
-                                try:
-                                    delete_response = requests.delete(
-                                        f"{API_BASE_URL}/game/sessions/{session['session_id']}",
-                                        timeout=5
-                                    )
-                                    if delete_response.status_code == 200:
-                                        st.success("✅ Session deleted")
-                                        st.rerun()
-                                    else:
-                                        st.error("Failed to delete session")
-                                except Exception as e:
-                                    st.error(f"Error: {str(e)}")
+                        # Delete session - allow for any status
+                        if st.button("🗑️ Delete", key=f"delete_{session['session_id']}", use_container_width=True):
+                            try:
+                                delete_response = requests.delete(
+                                    f"{API_BASE_URL}/game/sessions/{session['session_id']}",
+                                    timeout=5
+                                )
+                                if delete_response.status_code == 200:
+                                    st.success("✅ Session deleted")
+                                    st.rerun()
+                                else:
+                                    error_msg = delete_response.json().get('detail', 'Unknown error')
+                                    st.error(f"Failed to delete: {error_msg}")
+                            except Exception as e:
+                                st.error(f"Error: {str(e)}")
 
                     # Show details if selected
                     if st.session_state.get("selected_session_id") == session.get("session_id"):
