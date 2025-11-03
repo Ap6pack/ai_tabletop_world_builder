@@ -64,9 +64,13 @@ async def start_game(request: StartGameRequest):
 
         return response
 
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=f"Scenario '{request.scenario_filename}' not found")
     except Exception as e:
+        # Log the full error for debugging
+        import traceback
+        print(f"ERROR starting game: {str(e)}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}")
 
 
