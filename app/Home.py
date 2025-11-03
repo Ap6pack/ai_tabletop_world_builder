@@ -41,6 +41,32 @@ in incident response, threat detection, and defensive security operations.
 
 st.markdown("---")
 
+# Show tutorial for first-time users
+if "hide_tutorial" not in st.session_state:
+    st.session_state.hide_tutorial = False
+
+if not st.session_state.hide_tutorial:
+    with st.container(border=True):
+        st.markdown("### 👋 Welcome to the Cybersecurity War Gaming Platform!")
+
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown("""
+            This platform helps you practice incident response through AI-powered simulations:
+
+            1. **Generate Scenarios** - Create realistic cybersecurity incidents
+            2. **Play War Games** - Make decisions and respond to threats
+            3. **Learn & Improve** - Review your performance and learn from mistakes
+
+            **Quick Start:** Click "Create Scenario" below to begin!
+            """)
+        with col2:
+            if st.button("✖️ Hide Tutorial", use_container_width=True):
+                st.session_state.hide_tutorial = True
+                st.rerun()
+
+st.markdown("---")
+
 # Quick start section
 col1, col2, col3 = st.columns(3)
 
@@ -65,13 +91,13 @@ with col2:
         st.switch_page("pages/2_War_Game.py")
 
 with col3:
-    st.markdown("### Settings")
+    st.markdown("### 📊 Session Manager")
     st.markdown("""
-    Configure LLM providers, content
-    policies, and platform settings.
+    View and manage your war gaming
+    sessions, scores, and history.
     """)
-    if st.button("Open Settings", use_container_width=True):
-        st.switch_page("pages/3_Settings.py")
+    if st.button("View Sessions", use_container_width=True):
+        st.switch_page("pages/3_Session_Manager.py")
 
 st.markdown("---")
 
@@ -79,16 +105,46 @@ st.markdown("---")
 st.markdown("### System Status")
 
 # Check if API is running
+import requests
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric("API Status", "Running", delta="Ready")
+    try:
+        response = requests.get("http://127.0.0.1:8000/health", timeout=2)
+        if response.status_code == 200:
+            st.metric("API Status", "✅ Running", delta="Ready")
+        else:
+            st.metric("API Status", "⚠️ Issues", delta="Check logs")
+    except:
+        st.metric("API Status", "❌ Offline", delta="Start server")
 
 with col2:
-    st.metric("LLM Provider", st.session_state.get("llm_provider", "Not Configured"))
+    try:
+        response = requests.get("http://127.0.0.1:8000/llm/providers", timeout=2)
+        if response.status_code == 200:
+            providers = response.json()
+            available = [p for p, status in providers.items() if status.get("available")]
+            if available:
+                st.metric("LLM Provider", f"✅ {len(available)} Available")
+            else:
+                st.metric("LLM Provider", "⚠️ None Ready")
+        else:
+            st.metric("LLM Provider", "Unknown")
+    except:
+        st.metric("LLM Provider", "Unknown")
 
 with col3:
-    st.metric("Content Policy", st.session_state.get("content_policy", "Educational"))
+    # Get scenarios count
+    try:
+        response = requests.get("http://127.0.0.1:8000/scenarios/list", timeout=2)
+        if response.status_code == 200:
+            count = len(response.json())
+            st.metric("Saved Scenarios", count)
+        else:
+            st.metric("Saved Scenarios", "0")
+    except:
+        st.metric("Saved Scenarios", "0")
 
 # Sidebar
 with st.sidebar:
@@ -111,5 +167,6 @@ with st.sidebar:
     incident response and defensive
     security operations.
 
-    Version: 0.1.0
+    Version: 0.3.0
+    Status: Phase 2 & 3 Complete
     """)
