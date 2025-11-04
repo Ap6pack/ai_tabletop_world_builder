@@ -199,6 +199,19 @@ class SystemState(BaseModel):
     notes: Optional[str] = None  # Additional context about the state
 
 
+class ThreatActorState(BaseModel):
+    """Current state of a threat actor during gameplay."""
+    threat_actor_id: str
+    status: Literal["active", "contained", "eliminated", "dormant"]
+    current_tactics: List[str] = Field(default_factory=list)  # Currently employed TTPs
+    systems_compromised: List[str] = Field(default_factory=list)  # Compromised system IDs
+    detection_level: int = Field(0, ge=0, le=100)  # How aware they are of being detected
+    aggression_level: int = Field(50, ge=0, le=100)  # How aggressively they're acting
+    last_action: Optional[str] = None  # Description of last action taken
+    last_update: datetime
+    notes: Optional[str] = None  # Additional context
+
+
 class GameState(BaseModel):
     """Current state of a war gaming session."""
     session_id: str
@@ -213,6 +226,7 @@ class GameState(BaseModel):
     objectives_completed: List[str] = Field(default_factory=list)  # Legacy support
     objectives_failed: List[str] = Field(default_factory=list)  # Legacy support
     system_states: Dict[str, SystemState] = Field(default_factory=dict)  # system_id: state
+    threat_states: Dict[str, ThreatActorState] = Field(default_factory=dict)  # threat_id: state
     status: Literal["in-progress", "completed", "failed"]
 
 
