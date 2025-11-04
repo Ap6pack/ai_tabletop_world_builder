@@ -352,6 +352,107 @@ Check the After Action Review for detailed analysis.
 
             st.markdown("---")
 
+            # System Status Dashboard
+            st.markdown("### 🖥️ System Status")
+            with st.expander("View Systems", expanded=True):
+                system_states = game_state.get("system_states", {})
+
+                if system_states:
+                    # Status summary
+                    status_counts = {}
+                    for state in system_states.values():
+                        status = state.get("status", "online")
+                        status_counts[status] = status_counts.get(status, 0) + 1
+
+                    # Display summary
+                    st.markdown("**Status Summary:**")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        online = status_counts.get("online", 0) + status_counts.get("patched", 0)
+                        st.metric("🟢 Online", online)
+                    with col2:
+                        at_risk = status_counts.get("compromised", 0) + status_counts.get("recovering", 0)
+                        st.metric("🟡 At Risk", at_risk)
+                    with col3:
+                        offline = status_counts.get("offline", 0)
+                        st.metric("🔴 Offline", offline)
+
+                    st.markdown("---")
+
+                    # Group systems by status
+                    compromised = []
+                    offline_systems = []
+                    recovering = []
+                    healthy = []
+
+                    # Get system details from organization
+                    org = game_state.get("organization", {})
+                    system_lookup = {}
+                    for dept in org.get("departments", []):
+                        for sys in dept.get("systems", []):
+                            system_lookup[sys.get("id")] = {
+                                "name": sys.get("name"),
+                                "type": sys.get("type"),
+                                "criticality": sys.get("criticality"),
+                                "department": dept.get("name")
+                            }
+
+                    # Categorize systems
+                    for system_id, state in system_states.items():
+                        system_info = system_lookup.get(system_id, {"name": system_id, "type": "unknown", "criticality": "medium"})
+                        system_data = {**system_info, "state": state}
+
+                        status = state.get("status", "online")
+                        if status == "compromised":
+                            compromised.append(system_data)
+                        elif status == "offline":
+                            offline_systems.append(system_data)
+                        elif status == "recovering":
+                            recovering.append(system_data)
+                        else:
+                            healthy.append(system_data)
+
+                    # Display compromised systems first (priority)
+                    if compromised:
+                        st.markdown("**🔴 COMPROMISED:**")
+                        for sys in compromised:
+                            health = sys["state"].get("health", 100)
+                            criticality_badge = {"critical": "🔥", "high": "⚠️", "medium": "📌", "low": "ℹ️"}.get(sys.get("criticality", "medium"), "📌")
+                            st.markdown(f"{criticality_badge} **{sys.get('name', 'Unknown')}**")
+                            st.caption(f"Health: {health}% | {sys.get('type', 'system')} | {sys.get('department', 'Unknown')}")
+                            if sys["state"].get("notes"):
+                                st.caption(f"_{sys['state']['notes']}_")
+                        st.markdown("---")
+
+                    # Display offline systems
+                    if offline_systems:
+                        st.markdown("**🔴 OFFLINE:**")
+                        for sys in offline_systems:
+                            st.markdown(f"⛔ {sys.get('name', 'Unknown')}")
+                            st.caption(f"{sys.get('type', 'system')} | {sys.get('department', 'Unknown')}")
+                        st.markdown("---")
+
+                    # Display recovering systems
+                    if recovering:
+                        st.markdown("**🟡 RECOVERING:**")
+                        for sys in recovering:
+                            health = sys["state"].get("health", 100)
+                            st.markdown(f"🔄 {sys.get('name', 'Unknown')} ({health}%)")
+                            st.caption(f"{sys.get('type', 'system')}")
+                        st.markdown("---")
+
+                    # Display healthy systems (collapsed by default)
+                    if healthy:
+                        with st.expander(f"🟢 Healthy Systems ({len(healthy)})", expanded=False):
+                            for sys in healthy:
+                                health = sys["state"].get("health", 100)
+                                status_icon = "✅" if sys["state"].get("status") == "patched" else "🟢"
+                                st.markdown(f"{status_icon} {sys.get('name', 'Unknown')} ({health}%)")
+                else:
+                    st.info("System states will appear here during gameplay")
+
+            st.markdown("---")
+
             # Objectives
             st.markdown("### 🎯 Objectives")
             with st.expander("View Objectives", expanded=True):

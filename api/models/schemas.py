@@ -189,6 +189,16 @@ class IncidentEvent(BaseModel):
     actor: str  # "system", "player", "threat_actor"
 
 
+class SystemState(BaseModel):
+    """Current state of a system during gameplay."""
+    system_id: str
+    status: Literal["online", "offline", "compromised", "recovering", "patched"]
+    health: int = Field(100, ge=0, le=100)  # 0-100 health percentage
+    last_update: datetime
+    affected_services: List[str] = Field(default_factory=list)
+    notes: Optional[str] = None  # Additional context about the state
+
+
 class GameState(BaseModel):
     """Current state of a war gaming session."""
     session_id: str
@@ -202,6 +212,7 @@ class GameState(BaseModel):
     objectives: List[Objective] = Field(default_factory=list)  # Active objectives
     objectives_completed: List[str] = Field(default_factory=list)  # Legacy support
     objectives_failed: List[str] = Field(default_factory=list)  # Legacy support
+    system_states: Dict[str, SystemState] = Field(default_factory=dict)  # system_id: state
     status: Literal["in-progress", "completed", "failed"]
 
 
