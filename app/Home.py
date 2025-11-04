@@ -133,9 +133,12 @@ with col2:
                 st.metric("LLM Providers", "⚠️ None Configured")
                 st.caption("Check .env file")
         else:
-            st.metric("LLM Providers", "Unknown")
+            st.metric("LLM Providers", f"Error {response.status_code}")
+    except requests.exceptions.ConnectionError:
+        st.metric("LLM Providers", "❌ API Offline")
     except Exception as e:
-        st.metric("LLM Providers", "Unable to check")
+        st.metric("LLM Providers", "Error")
+        st.caption(str(e)[:50])
 
 with col3:
     # Get scenarios count
