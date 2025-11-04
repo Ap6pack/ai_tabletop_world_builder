@@ -8,10 +8,143 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- After Action Review system (Phase 4-5)
-- Enhanced game mechanics (Phase 4)
-- Analytics and performance tracking (Phase 5)
+- After Action Review system (Phase 6)
+- Enhanced game mechanics (Phase 4-5)
+- Automatic objective generation (Phase 4)
+- Analytics and performance tracking (Phase 6)
 - Multi-user support (Phase 7)
+
+## [0.4.0] - 2025-01-04
+
+### Added
+
+#### Phase 3.5: UI Integration & Code Quality
+
+**UI Integration - Complete End-to-End Functionality**
+- Connected Scenario Builder to `/scenarios/generate` API with proper error handling
+- **NEW: Scenario Editor** (`4_Scenario_Editor.py` - 590 lines)
+  - 6 tabs: Organization, Departments, Systems, Vulnerabilities, Threat Actors, Game Objectives
+  - Full CRUD operations on all scenario elements
+  - Deep copy pattern to preserve originals
+  - Revert changes functionality
+  - 8 suggested objectives for quick setup
+- Connected War Game to all `/game/*` endpoints
+- **NEW: Session Manager** (`3_Session_Manager.py`)
+  - List sessions with filtering (all/in-progress/completed/failed)
+  - Load and resume saved sessions
+  - Delete sessions (including active ones)
+- **NEW: Fully Functional Settings Page**
+  - Save settings to `.env` file (persistent)
+  - Real-time storage statistics
+  - Export configuration as JSON
+  - Clear all data with confirmation
+  - Reset to defaults while preserving API keys
+  - Test LLM connection with user credentials
+
+**Settings API** (`api/routers/settings.py` - 310 lines)
+- `GET /settings/current` - Get current configuration
+- `POST /settings/update` - Update and persist to .env
+- `GET /settings/storage/stats` - Real-time storage metrics
+- `POST /settings/export` - Export config as JSON
+- `DELETE /settings/data/clear` - Delete all scenarios/sessions
+- `POST /settings/reset/defaults` - Reset configuration
+
+**Configuration Management**
+- **NEW: Frontend Config** (`app/config.py`)
+  - Centralized API_BASE_URL configuration
+  - Environment-based host/port settings
+  - Standardized timeout constants (DEFAULT_TIMEOUT, HEALTH_CHECK_TIMEOUT, LONG_OPERATION_TIMEOUT)
+- **NEW: Constants Mapping** (`app/constants.py`)
+  - UI ↔ API value mappings for player roles, scenario types, etc.
+  - Single source of truth for dropdown values
+
+**Professional Logging System**
+- **NEW: Logger Utility** (`api/utils/logger.py`)
+  - Structured logging with timestamps
+  - File and console handlers
+  - Separate log files per module
+  - Proper log levels (INFO, DEBUG, WARNING, ERROR)
+
+**Documentation**
+- **NEW: Scenario Editor Guide** (`app/SCENARIO_EDITOR.md`)
+- **NEW: Phase Completion Doc** (`UI_INTEGRATION_AND_QUALITY_COMPLETE.md`)
+
+### Fixed
+
+#### Critical Bug Fixes
+
+**Bug #1: Player Role Validation Error**
+- Fixed: "literal_error" when starting games with "mixed-team" role
+- Root cause: String manipulation produced "mixed-team" but backend expected "mixed"
+- Solution: Created `constants.py` with proper UI → API mappings
+- Files: `app/constants.py` (NEW), `app/pages/1_Scenario_Builder.py`, `app/pages/2_War_Game.py`
+
+**Bug #2: Session Loading Display Issue**
+- Fixed: "No scenario loaded" shown after successfully loading session
+- Root cause: Only checked `active_scenario`, missed `game_state`
+- Solution: Check both sources for scenario data
+- File: `app/pages/2_War_Game.py`
+
+**Bug #3: Cannot Delete Active Sessions**
+- Fixed: Delete button only appeared for completed/failed sessions
+- Root cause: Missing DELETE endpoint + UI restriction
+- Solution: Added `DELETE /game/sessions/{session_id}` endpoint
+- Files: `api/routers/game.py`, `api/services/game_orchestrator.py`, `api/services/game_session_service.py`
+
+**Bug #4: Scenario Editor Changes Not Persisting**
+- Fixed: All edits lost on page rerun
+- Root cause: Local list updates never saved to `st.session_state`
+- Solution: Update session state after every modification
+- File: `app/pages/4_Scenario_Editor.py`
+
+**Bug #5: Settings Page Showing Fake Success**
+- Fixed: Test Connection always succeeded even with invalid keys
+- Root cause: TODO comment with fake `st.success()` call
+- Solution: Implement actual API test calling `/llm/complete`
+- File: `app/pages/3_Settings.py`
+
+### Changed
+
+#### Professional Code Cleanup
+
+**Removed Debug Code**
+- Eliminated all 11 `print()` statements from production code
+- Replaced with proper `logger.info()`, `logger.debug()`, `logger.error()` calls
+- Files: `api/services/scenario_orchestrator.py`, `api/routers/game.py`, `api/routers/scenarios.py`
+
+**Fixed Exception Handling**
+- Replaced all 10 bare `except:` clauses with specific exception types
+- Used `requests.exceptions.RequestException`, `requests.exceptions.Timeout`, etc.
+- Added proper error logging with context
+- Files: `app/Home.py`, all pages in `app/pages/`, `app/utils/api_client.py`
+
+**Centralized Configuration**
+- Removed 19 instances of hardcoded `http://127.0.0.1:8000`
+- Replaced with `API_BASE_URL` from `app/config.py`
+- Replaced hardcoded timeouts with named constants
+- Files: All frontend files
+
+**Consistent Error Messages**
+- User-friendly error messages in UI
+- Detailed error logging in backend
+- No stack traces exposed to end users
+- Full tracebacks logged to files for debugging
+
+### Documentation
+
+- Updated README.md with v0.4.0 features
+- Updated ROADMAP.md with Phase 3.5 completion
+- Added UI_INTEGRATION_AND_QUALITY_COMPLETE.md
+- Added app/SCENARIO_EDITOR.md
+
+### Metrics
+
+- **Lines of Code**: ~4,400 total production code (+2,000 this release)
+- **API Endpoints**: 20 total (+7 this release: 1 game DELETE, 6 settings)
+- **Files Created**: 7 (Scenario Editor, Config, Constants, Logger, Settings API, Docs)
+- **Files Modified**: 12 (Backend routers/services, All frontend pages)
+- **Bugs Fixed**: 5 critical bugs with root cause analysis
+- **Code Quality**: 0 debug prints, 0 bare excepts, 0 hardcoded URLs
 
 ## [0.3.0] - 2025-10-31
 
