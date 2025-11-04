@@ -4,6 +4,7 @@ Pydantic models for API requests and responses.
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime
+import uuid
 
 
 # ============================================================================
