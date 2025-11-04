@@ -121,19 +121,25 @@ with col1:
 
 with col2:
     try:
-        response = requests.get("http://127.0.0.1:8000/llm/providers", timeout=2)
+        # Increased timeout - health checks can take 1-2 seconds
+        response = requests.get("http://127.0.0.1:8000/llm/providers", timeout=5)
         if response.status_code == 200:
             providers = response.json()
             # API returns {"openai": true, "anthropic": false, ...}
+
             available = [p for p, is_available in providers.items() if is_available]
+
             if available:
                 st.metric("LLM Providers", f"✅ {len(available)} Active")
                 st.caption(", ".join(available))
             else:
                 st.metric("LLM Providers", "⚠️ None Configured")
-                st.caption("Check .env file")
+                st.caption("All providers returned false")
         else:
             st.metric("LLM Providers", f"Error {response.status_code}")
+    except requests.exceptions.Timeout:
+        st.metric("LLM Providers", "⏱️ Timeout")
+        st.caption("Health check took >5s")
     except requests.exceptions.ConnectionError:
         st.metric("LLM Providers", "❌ API Offline")
     except Exception as e:
