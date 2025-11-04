@@ -174,8 +174,18 @@ with col1:
 
 with col2:
     st.markdown("**Storage Statistics**")
-    st.metric("Saved Scenarios", "0")
-    st.metric("Disk Usage", "0 MB")
+    try:
+        stats_response = requests.get("http://127.0.0.1:8000/settings/storage/stats", timeout=2)
+        if stats_response.status_code == 200:
+            stats = stats_response.json()
+            st.metric("Saved Scenarios", stats["saved_scenarios"])
+            st.metric("Disk Usage", f"{stats['disk_usage_mb']} MB")
+        else:
+            st.metric("Saved Scenarios", "Error")
+            st.metric("Disk Usage", "Error")
+    except:
+        st.metric("Saved Scenarios", "Unavailable")
+        st.metric("Disk Usage", "Unavailable")
 
 st.markdown("---")
 
@@ -184,19 +194,82 @@ col1, col2, col3 = st.columns([1, 1, 1])
 
 with col1:
     if st.button("Save Settings", use_container_width=True, type="primary"):
-        # TODO: Save settings to config
-        st.session_state.llm_provider = provider
-        st.session_state.content_policy = policy_level
-        st.success("Settings saved successfully!")
+        # Build update payload
+        update_payload = {
+            "default_llm_provider": provider.lower().replace(" (local)", ""),
+            "default_content_policy": policy_level.lower(),
+            "session_timeout": session_timeout * 60,  # Convert minutes to seconds
+            "max_context_length": max_context,
+            "scenarios_path": scenarios_path,
+            "data_path": data_path
+        }
+
+        # Add provider-specific settings
+        if provider == "OpenAI" and api_key:
+            update_payload["openai_api_key"] = api_key
+            update_payload["openai_model"] = model
+            update_payload["openai_temperature"] = temperature
+        elif provider == "Anthropic" and api_key:
+            update_payload["anthropic_api_key"] = api_key
+            update_payload["anthropic_model"] = model
+            update_payload["anthropic_temperature"] = temperature
+        elif provider == "Ollama (Local)":
+            update_payload["ollama_base_url"] = base_url
+            update_payload["ollama_model"] = model
+            update_payload["ollama_temperature"] = temperature
+
+        try:
+            response = requests.post(
+                "http://127.0.0.1:8000/settings/update",
+                json=update_payload,
+                timeout=5
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                st.session_state.llm_provider = provider
+                st.session_state.content_policy = policy_level
+                st.success(f"✅ Settings saved successfully! Updated: {', '.join(result['updated_keys'])}")
+                st.info(result.get('note', ''))
+            else:
+                st.error(f"❌ Failed to save settings: {response.json().get('detail', 'Unknown error')}")
+        except Exception as e:
+            st.error(f"❌ Failed to save settings: {str(e)}")
 
 with col2:
     if st.button("Reset to Defaults", use_container_width=True):
-        st.info("Settings reset to defaults")
-        st.rerun()
+        try:
+            response = requests.post("http://127.0.0.1:8000/settings/reset/defaults", timeout=5)
+            if response.status_code == 200:
+                result = response.json()
+                st.success("✅ " + result['message'])
+                st.info(result.get('note', ''))
+                st.rerun()
+            else:
+                st.error(f"❌ Failed to reset: {response.json().get('detail', 'Unknown error')}")
+        except Exception as e:
+            st.error(f"❌ Failed to reset: {str(e)}")
 
 with col3:
     if st.button("Export Config", use_container_width=True):
-        st.info("Config export coming soon")
+        try:
+            response = requests.post("http://127.0.0.1:8000/settings/export", timeout=5)
+            if response.status_code == 200:
+                config_data = response.json()
+                import json
+                config_json = json.dumps(config_data, indent=2)
+                st.download_button(
+                    label="📥 Download Config",
+                    data=config_json,
+                    file_name="platform_config.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
+                st.success("✅ Config ready for download")
+            else:
+                st.error(f"❌ Failed to export: {response.json().get('detail', 'Unknown error')}")
+        except Exception as e:
+            st.error(f"❌ Failed to export: {str(e)}")
 
 # Sidebar
 with st.sidebar:
@@ -240,7 +313,32 @@ with st.sidebar:
 
     st.markdown("## Danger Zone")
     with st.expander("Advanced Actions"):
-        if st.button("Clear All Data", use_container_width=True):
-            st.warning("This will delete all saved scenarios and game data!")
-        if st.button("Reset Database", use_container_width=True):
-            st.warning("This will reset all database tables!")
+        st.warning("⚠️ These actions are destructive and cannot be undone!")
+
+        if st.button("🗑️ Clear All Data", use_container_width=True, type="secondary"):
+            # Add confirmation
+            if "confirm_clear" not in st.session_state:
+                st.session_state.confirm_clear = False
+
+            if not st.session_state.confirm_clear:
+                st.session_state.confirm_clear = True
+                st.warning("⚠️ Click again to confirm deletion of all scenarios and sessions!")
+                st.rerun()
+            else:
+                try:
+                    response = requests.delete("http://127.0.0.1:8000/settings/data/clear", timeout=10)
+                    if response.status_code == 200:
+                        result = response.json()
+                        st.success(f"✅ {result['message']}")
+                        st.session_state.confirm_clear = False
+                    else:
+                        st.error(f"❌ Failed: {response.json().get('detail', 'Unknown error')}")
+                        st.session_state.confirm_clear = False
+                except Exception as e:
+                    st.error(f"❌ Failed: {str(e)}")
+                    st.session_state.confirm_clear = False
+
+        # Reset confirmation if user navigates away
+        if st.session_state.get("confirm_clear") and st.button("Cancel", use_container_width=True):
+            st.session_state.confirm_clear = False
+            st.rerun()
