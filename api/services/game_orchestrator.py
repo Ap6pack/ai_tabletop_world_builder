@@ -6,6 +6,7 @@ from api.models import GameState, GameResponse, Organization
 from api.services.game_session_service import GameSessionService
 from api.services.game_master_service import GameMasterService
 from api.services.objective_generator import ObjectiveGenerator
+from api.services.system_state_manager import SystemStateManager
 from api.providers import LLMProviderFactory
 
 
@@ -19,6 +20,7 @@ class GameOrchestrator:
         self.session_service = GameSessionService()
         self.game_master = GameMasterService(llm_provider, content_policy)
         self.objective_generator = ObjectiveGenerator()
+        self.system_state_manager = SystemStateManager()
 
     async def start_new_game(
         self,
@@ -56,7 +58,11 @@ class GameOrchestrator:
         )
         game_state.objectives = objectives
 
-        # Save session with objectives
+        # Initialize system states
+        system_states = self.system_state_manager.initialize_system_states(organization)
+        game_state.system_states = system_states
+
+        # Save session with objectives and system states
         self.session_service.save_session(game_state)
 
         # Generate opening narrative
