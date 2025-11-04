@@ -266,3 +266,88 @@ class GenerateScenarioRequest(BaseModel):
     duration_minutes: int = Field(60, ge=15, le=480)
     player_role: Literal["soc-analyst", "incident-responder", "security-engineer", "ciso", "mixed"]
     learning_objectives: Optional[List[str]] = None
+
+
+# Phase 4: Enhanced Safety & Policies Models
+
+class ActionCheckResult(BaseModel):
+    """Result of action content check."""
+    is_allowed: bool
+    reason: Optional[str] = None
+    violations: List[str] = Field(default_factory=list)
+    severity: Literal["low", "medium", "high", "critical"] = "medium"
+    suggested_alternative: Optional[str] = None
+    pattern_matches: int = 0
+
+
+class ValidationResult(BaseModel):
+    """Result of content validation."""
+    is_safe: bool
+    can_sanitize: bool = False
+    violations: List[str] = Field(default_factory=list)
+    severity: Literal["low", "medium", "high", "critical"] = "low"
+    reason: Optional[str] = None
+    sanitized_content: Optional[str] = None
+
+
+class AuditLog(BaseModel):
+    """Audit log entry for policy checks and violations."""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    event_type: Literal["policy_check", "violation", "filter", "sanitization"]
+    severity: Literal["info", "warning", "error", "critical"]
+    policy_level: str
+    content_hash: str  # SHA256 hash for privacy
+    result: str  # "allowed", "blocked", "sanitized"
+    violations: List[str] = Field(default_factory=list)
+    action_taken: Optional[str] = None
+    user_id: Optional[str] = None
+    session_id: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class PolicyViolation(BaseModel):
+    """Policy violation record."""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    severity: Literal["low", "medium", "high", "critical"]
+    violation_type: str
+    content_hash: str
+    policy_level: str
+    user_id: Optional[str] = None
+    session_id: Optional[str] = None
+    action_taken: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ViolationResponse(BaseModel):
+    """Response to a policy violation."""
+    action: Literal["allow", "warn", "block", "escalate"]
+    message: str
+    educational_content: Optional[str] = None
+    suggested_alternative: Optional[str] = None
+    requires_review: bool = False
+
+
+class ComplianceReport(BaseModel):
+    """Compliance report for a time period."""
+    period_start: datetime
+    period_end: datetime
+    total_checks: int
+    total_violations: int
+    violation_rate: float
+    violations_by_type: Dict[str, int] = Field(default_factory=dict)
+    violations_by_severity: Dict[str, int] = Field(default_factory=dict)
+    policy_level_distribution: Dict[str, int] = Field(default_factory=dict)
+    top_violation_patterns: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class FilterConfig(BaseModel):
+    """Content filter configuration."""
+    enable_credential_detection: bool = True
+    enable_pii_detection: bool = True
+    enable_exploit_detection: bool = True
+    enable_sensitive_detection: bool = True
+    redaction_style: Literal["remove", "mask", "replace"] = "mask"
+    custom_patterns: Dict[str, List[str]] = Field(default_factory=dict)
+    allowlist: List[str] = Field(default_factory=list)
