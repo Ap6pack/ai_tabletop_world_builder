@@ -52,9 +52,9 @@ app/
 └── pages/
     ├── 1_Scenario_Builder.py   # Generate training scenarios
     ├── 2_War_Game.py            # Interactive war gaming
-    ├── 3_Session_Manager.py     # Manage game sessions
     ├── 3_Settings.py            # Platform configuration
-    └── 4_Scenario_Editor.py     # Customize generated scenarios
+    ├── 4_Session_Manager.py     # Manage game sessions
+    └── 5_Scenario_Editor.py     # Customize generated scenarios
 ```
 
 ### Data Models
