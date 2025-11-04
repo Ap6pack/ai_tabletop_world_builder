@@ -382,19 +382,23 @@ For issues and questions:
 
 ---
 
-**Version**: 0.4.0
-**Status**: Phase 2, 3 & UI Integration Complete - Fully Functional End-to-End Platform
-**Last Updated**: 2025-01-04
+**Version**: 0.5.0
+**Status**: Phase 5A Core Mechanics Complete - Advanced War Gaming with Dynamic Mechanics
+**Last Updated**: 2025-11-04
 
-## Recent Updates (v0.4.0)
+## Recent Updates (v0.5.0) - PHASE 5A COMPLETE! 🎉
 
-✅ **UI Integration Complete**: All frontend pages wired to backend APIs
-✅ **Scenario Editor Added**: Full scenario customization with 6 tabs (590 lines)
-✅ **Settings Functional**: All features work with real backends (not placeholders)
-✅ **Session Management**: Load, save, delete sessions with proper state handling
-✅ **Code Quality**: Professional logging, centralized config, proper error handling
-✅ **20 API Endpoints**: 6 scenarios + 9 game + 6 settings
-✅ **Critical Bugs Fixed**: Player role validation, session loading, data persistence
-✅ **Enterprise Ready**: No debug code, no bare excepts, no hardcoded values
+✅ **Automatic Objective Generation**: AI-powered objective creation from scenarios
+✅ **System State Tracking**: Real-time health and status monitoring (online/compromised/recovering)
+✅ **Dynamic Threat Responses**: Threats react to player actions with escalation and evasion
+✅ **3 New Services**: ~1,110 lines of intelligent game mechanics
+✅ **3 Real-Time Dashboards**: Objectives, Systems, and Threats with visual indicators
+✅ **Sophistication-Based Behavior**: Threat aggression scales with capability
+✅ **Contextual Generation**: Objectives match scenario vulnerabilities and threats
+✅ **All Core Mechanics Working**: Complete end-to-end dynamic gameplay
 
-See [UI_INTEGRATION_AND_QUALITY_COMPLETE.md](UI_INTEGRATION_AND_QUALITY_COMPLETE.md) for details.
+### Previous Updates (v0.4.0)
+✅ UI Integration Complete | ✅ Scenario Editor (6 tabs) | ✅ Session Management
+✅ Settings with .env persistence | ✅ 20 API Endpoints | ✅ Enterprise code quality
+
+See [CHANGELOG.md](CHANGELOG.md) for complete details.

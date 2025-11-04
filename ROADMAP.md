@@ -378,13 +378,13 @@ This document outlines the implementation phases for the Cybersecurity War Gamin
 
 ---
 
-## Phase 5: Game Mechanics & Inventory (PARTIALLY COMPLETE)
+## Phase 5: Game Mechanics & Inventory (PHASE 5A COMPLETE)
 
-**Status**: ⚠️ Partially Complete (Most features implemented in Phase 3)
+**Status**: ✅ Phase 5A Complete | 📋 Phase 5B Future
 
 **Goal**: Implement Lesson 4 - JSON-based game mechanics
 
-### Completed in Phase 3
+### Phase 5A: Core Mechanics (COMPLETED) ✅
 
 #### 5.1 Inventory System ✅
 - [x] Track available tools
@@ -401,33 +401,79 @@ This document outlines the implementation phases for the Cybersecurity War Gamin
 - [ ] Implement privilege escalation scenarios (enhancement)
 - [ ] Show access requirements in UI (pending)
 
-#### 5.3 Objective System ⚠️ Partial
+#### 5.3 Automatic Objective Generation ✅ **NEW**
 - [x] Objective tracking
 - [x] Success/failure conditions
 - [x] Objective completion API
-- [ ] Dynamic objective generation from scenarios
-- [ ] Hidden objectives
-- [ ] Objective-specific hints
+- [x] **Dynamic objective generation from scenarios**
+- [x] **6 objective types: detect, contain, mitigate, investigate, protect, report**
+- [x] **Contextual generation from vulnerabilities, threats, systems**
+- [x] **Difficulty-based point values (15-50 points)**
+- [x] **Success criteria and hints**
+- [x] **Objectives dashboard UI with type icons and difficulty badges**
+- [ ] Hidden objectives (future enhancement)
 
-#### 5.4 Consequence Engine ✅
+**File created**: `api/services/objective_generator.py` (380 lines)
+
+#### 5.4 System State Tracking ✅ **NEW**
 - [x] Simulate action consequences via AI
 - [x] Generate cascading events in timeline
 - [x] Score-based effectiveness tracking
-- [ ] Update threat status dynamically (enhancement)
-- [ ] Modify system states explicitly (enhancement)
-- [ ] Business impact simulation (enhancement)
+- [x] **Real-time health tracking (0-100%)**
+- [x] **5 status types: online, offline, compromised, recovering, patched**
+- [x] **Severity-based damage calculation**
+- [x] **System recovery mechanics**
+- [x] **System status dashboard with criticality badges**
+- [ ] Business impact simulation (Phase 5B)
 
-### Remaining Tasks
+**File created**: `api/services/system_state_manager.py` (330 lines)
 
-#### 5.5 Advanced Features (Future)
-- [ ] Automatic objective generation from scenario vulnerabilities
-- [ ] Dynamic threat actor responses based on player actions
-- [ ] System state modifications (online/offline/compromised)
-- [ ] Business impact calculations (downtime, data loss)
-- [ ] Resource constraints (limited tool usage)
-- [ ] Time pressure mechanics (ticking clock scenarios)
+#### 5.5 Dynamic Threat Responses ✅ **NEW**
+- [x] **Sophistication-based aggression (30-85%)**
+- [x] **Detection level tracking (0-100%)**
+- [x] **Player action responses (detection, containment, mitigation)**
+- [x] **Automatic escalation mechanics**
+- [x] **Evasion mechanics when detected**
+- [x] **Threat status dashboard with aggression/detection meters**
+- [x] **4 threat statuses: active, contained, eliminated, dormant**
+- [ ] Advanced multi-stage campaigns (future enhancement)
 
-**Estimated Time**: 1-2 weeks for remaining enhancements
+**File created**: `api/services/threat_response_engine.py` (400 lines)
+
+**Phase 5A Total**: ~1,110 lines of new code + 3 real-time dashboards
+
+**Actual Time**: 3 features completed
+
+**Testing**: ✅ Complete
+- [x] Objectives generated contextually from scenarios
+- [x] System states initialized and tracked
+- [x] Threat responses react to player actions
+- [x] All dashboards display correctly
+
+### Phase 5B: Polish & Advanced Features (FUTURE)
+
+#### 5.6 Business Impact Calculations (Future)
+- [ ] Downtime cost calculations
+- [ ] Data loss impact
+- [ ] Compliance violation tracking
+- [ ] Reputation damage simulation
+- [ ] Financial impact dashboard
+
+#### 5.7 Time Pressure Mechanics (Future)
+- [ ] Countdown timers for critical objectives
+- [ ] Automatic threat escalation over time
+- [ ] Time-based scoring multipliers
+- [ ] Urgent vs non-urgent objectives
+- [ ] Real-time incident progression
+
+#### 5.8 Resource Constraints (Future)
+- [ ] Tool usage cooldowns
+- [ ] Limited action points per turn
+- [ ] Budget tracking for tool purchases
+- [ ] Staff availability constraints
+- [ ] Resource management dashboard
+
+**Estimated Time**: 2-3 weeks for Phase 5B
 
 ---
 
@@ -599,10 +645,12 @@ Want to help? Pick a task and submit a PR!
 
 **High Priority**:
 1. ~~Streamlit UI Integration~~ ✅ **COMPLETE**
-2. Content Policy Enforcement (Phase 4)
-3. Automatic Objective Generation (Phase 5)
-4. After Action Review System (Phase 6)
-5. Dynamic Threat Actor Responses (Phase 5)
+2. ~~Automatic Objective Generation~~ ✅ **COMPLETE (Phase 5A)**
+3. ~~Dynamic Threat Actor Responses~~ ✅ **COMPLETE (Phase 5A)**
+4. ~~System State Tracking~~ ✅ **COMPLETE (Phase 5A)**
+5. Content Policy Enforcement (Phase 4)
+6. After Action Review System (Phase 6)
+7. Business Impact Calculations (Phase 5B)
 
 **Good First Issues**:
 - Additional industry templates for scenarios
@@ -621,27 +669,29 @@ Want to help? Pick a task and submit a PR!
 | Phase 2: Scenario Gen | 1 day | ✅ Complete |
 | Phase 3: War Gaming | 1 day | ✅ Complete |
 | Phase 3.5: UI Integration | 2 days | ✅ Complete |
+| Phase 5A: Core Mechanics | 3 features | ✅ Complete |
 | Phase 4: Safety & Policies | 2 weeks | 📋 Future |
-| Phase 5: Game Mechanics | Mostly done in Phase 3 | ⚠️ Partial |
+| Phase 5B: Polish & Advanced | 2-3 weeks | 📋 Future |
 | Phase 6: Analytics & AAR | 2-3 weeks | 📋 Future |
 | Phase 7: Advanced Features | 4-6 weeks | 📋 Future |
 | Phase 8: Deployment | 2-3 weeks | 📋 Future |
-| **Total Remaining** | **~11-15 weeks** | **3 months** |
+| **Total Remaining** | **~12-17 weeks** | **3-4 months** |
 
 ---
 
-**Last Updated**: 2025-01-04
-**Current Phase**: Phase 3.5 Complete - Full end-to-end functionality → Next: Phase 4 (Safety) or Phase 5 (Game Mechanics) or Phase 6 (Analytics)
+**Last Updated**: 2025-11-04
+**Current Phase**: Phase 5A Complete - Advanced War Gaming with Dynamic Mechanics → Next: Phase 5B (Polish) or Phase 6 (Analytics)
 
 ## Progress Summary
 
-### ✅ Completed (Phases 1-3.5)
+### ✅ Completed (Phases 1-3.5, 5A)
 - **Foundation**: Complete project structure, API, LLM providers, content policies
 - **Scenario Generation**: 8 industries, 5 generators, complete orchestration
 - **War Gaming**: AI Game Master, session management, scoring, inventory, timeline
 - **UI Integration**: All pages wired to backend, Scenario Editor, fully functional Settings
 - **Code Quality**: Professional logging, centralized config, enterprise-grade error handling
-- **Total**: ~4,400 lines of production code, 20 API endpoints, fully tested, production-ready
+- **Core Mechanics (Phase 5A)**: Automatic objectives, system state tracking, dynamic threat responses
+- **Total**: ~5,500+ lines of production code, 20 API endpoints, 3 game mechanic services, fully tested, production-ready
 
 ### 🔄 Next Priority Options
 
@@ -653,12 +703,12 @@ Want to help? Pick a task and submit a PR!
 - Compliance tracking and reports
 - **Time**: 2 weeks
 
-**Option B: Enhanced Game Mechanics** (Phase 5)
-- Automatic objective generation from scenarios
-- Dynamic threat actor responses to player actions
-- System state management (online/offline/compromised)
-- Resource constraints and time pressure
-- **Time**: 1-2 weeks
+**Option B: Enhanced Game Mechanics Polish** (Phase 5B)
+- Business impact calculations (downtime, data loss)
+- Time pressure mechanics (countdown timers, escalation)
+- Resource constraints (cooldowns, budgets, limits)
+- Advanced multi-stage threat campaigns
+- **Time**: 2-3 weeks
 
 **Option C: Analytics & AAR** (Phase 6)
 - After Action Review generation
