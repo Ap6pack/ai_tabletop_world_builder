@@ -9,10 +9,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 - After Action Review system (Phase 6)
-- Enhanced game mechanics (Phase 4-5)
-- Automatic objective generation (Phase 4)
+- Business impact calculations (Phase 5 Feature 4)
+- Time pressure mechanics (Phase 5 Feature 5)
+- Resource constraints (Phase 5 Feature 6)
 - Analytics and performance tracking (Phase 6)
 - Multi-user support (Phase 7)
+
+## [0.5.0] - 2025-11-04
+
+### Added
+
+#### Phase 5A: Core Game Mechanics - COMPLETE
+
+**Feature 1: Automatic Objective Generation**
+- NEW: `ObjectiveGenerator` service (380 lines) - Intelligently generates training objectives
+- NEW: `Objective` model with structured fields (type, success_criteria, hints, time_limits, points)
+- 6 objective types: detect, contain, mitigate, investigate, protect, report
+- Contextual generation based on scenario vulnerabilities, threats, and systems
+- Difficulty-appropriate point values (15-50 points)
+- Enhanced War Game UI with objective dashboard
+  - Type-specific icons (🔍 🛡️ 🔧 🔬 🔐 📝)
+  - Difficulty badges (🟢 🟡 🔴)
+  - Status grouping (in-progress, pending, completed, failed)
+
+**Feature 2: System State Modifications**
+- NEW: `SystemStateManager` service (330 lines) - Real-time system health tracking
+- NEW: `SystemState` model with status and health fields
+- 5 status types: online, offline, compromised, recovering, patched
+- Health tracking (0-100%) with severity-based damage
+- Automatic initialization of all systems on game start
+- System status dashboard in War Game UI (100+ lines)
+  - Visual summary metrics (🟢 Online, 🟡 At Risk, 🔴 Offline)
+  - Priority-based display (compromised first)
+  - Criticality badges (🔥 critical, ⚠️ high, 📌 medium)
+  - Real-time health percentages
+
+**Feature 3: Dynamic Threat Responses**
+- NEW: `ThreatResponseEngine` service (400 lines) - Simulates intelligent threat behavior
+- NEW: `ThreatActorState` model with detection/aggression tracking
+- Sophistication-based initial aggression (nation-state: 85%, organized-crime: 70%, hacktivist: 50%)
+- Dynamic responses to player actions:
+  - Detection actions increase detection level (10-25%)
+  - Containment actions: 60% success, 40% escalation
+  - Mitigation actions remove compromised systems (40% per system)
+- Automatic escalation mechanics:
+  - Aggression increases 10-20% over time
+  - 50% chance to compromise new systems
+- Evasion behavior when highly detected (>60%)
+  - 30% chance to go dormant if detection >80%
+- Threat status dashboard in War Game UI (115+ lines)
+  - Status summary (🔴 Active, 🟡 Contained, 🔵 Dormant, 🟢 Eliminated)
+  - Sophistication badges and aggression meters
+  - Current tactics and compromised system counts
+
+### Technical Details
+- Added 3 new Pydantic models: Objective, SystemState, ThreatActorState
+- Created 3 new services: ~1,110 lines of game logic
+- Enhanced GameState model with objectives, system_states, threat_states fields
+- Updated Game Orchestrator to initialize all mechanics on game start
+- Added ~285 lines of UI components across 3 dashboards
+- All features fully tested and working end-to-end
 
 ## [0.4.0] - 2025-01-04
 
