@@ -453,6 +453,123 @@ Check the After Action Review for detailed analysis.
 
             st.markdown("---")
 
+            # Threat Actor Status
+            st.markdown("### 🎭 Threat Actors")
+            with st.expander("View Threat Status", expanded=True):
+                threat_states = game_state.get("threat_states", {})
+
+                if threat_states:
+                    # Status summary
+                    status_counts = {}
+                    for state in threat_states.values():
+                        status = state.get("status", "active")
+                        status_counts[status] = status_counts.get(status, 0) + 1
+
+                    # Display summary
+                    st.markdown("**Threat Summary:**")
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        active = status_counts.get("active", 0)
+                        st.metric("🔴 Active", active)
+                    with col2:
+                        contained = status_counts.get("contained", 0)
+                        st.metric("🟡 Contained", contained)
+                    with col3:
+                        dormant = status_counts.get("dormant", 0)
+                        st.metric("🔵 Dormant", dormant)
+                    with col4:
+                        eliminated = status_counts.get("eliminated", 0)
+                        st.metric("🟢 Eliminated", eliminated)
+
+                    st.markdown("---")
+
+                    # Get threat actor details from organization
+                    org = game_state.get("organization", {})
+                    threat_lookup = {}
+                    for threat in org.get("threat_actors", []):
+                        threat_lookup[threat.get("id")] = {
+                            "name": threat.get("name"),
+                            "motivation": threat.get("motivation"),
+                            "sophistication": threat.get("sophistication"),
+                            "ttps": threat.get("ttps", [])
+                        }
+
+                    # Group threats by status
+                    active_threats = []
+                    contained_threats = []
+                    other_threats = []
+
+                    for threat_id, state in threat_states.items():
+                        threat_info = threat_lookup.get(threat_id, {"name": threat_id, "motivation": "unknown", "sophistication": "unknown"})
+                        threat_data = {**threat_info, "state": state}
+
+                        status = state.get("status", "active")
+                        if status == "active":
+                            active_threats.append(threat_data)
+                        elif status == "contained":
+                            contained_threats.append(threat_data)
+                        else:
+                            other_threats.append(threat_data)
+
+                    # Display active threats first (priority)
+                    if active_threats:
+                        st.markdown("**🔴 ACTIVE THREATS:**")
+                        for threat in active_threats:
+                            state = threat["state"]
+                            aggression = state.get("aggression_level", 50)
+                            detection = state.get("detection_level", 0)
+
+                            # Sophistication badge
+                            soph_badge = {
+                                "nation-state": "🔥",
+                                "organized-crime": "⚠️",
+                                "hacktivist": "📢",
+                                "script-kiddie": "💻"
+                            }.get(threat.get("sophistication", "unknown"), "❓")
+
+                            st.markdown(f"{soph_badge} **{threat.get('name', 'Unknown Threat')}**")
+
+                            # Aggression bar
+                            agg_color = "🔴" if aggression > 70 else "🟡" if aggression > 40 else "🟢"
+                            st.caption(f"Aggression: {agg_color} {aggression}% | Detection: {detection}%")
+
+                            # Current tactics
+                            if state.get("current_tactics"):
+                                tactics_str = ", ".join(state["current_tactics"][:2])
+                                st.caption(f"Tactics: {tactics_str}")
+
+                            # Compromised systems count
+                            sys_count = len(state.get("systems_compromised", []))
+                            if sys_count > 0:
+                                st.caption(f"💀 {sys_count} systems compromised")
+
+                            # Last action
+                            if state.get("last_action"):
+                                st.caption(f"_{state['last_action']}_")
+
+                        st.markdown("---")
+
+                    # Display contained threats
+                    if contained_threats:
+                        st.markdown("**🟡 CONTAINED:**")
+                        for threat in contained_threats:
+                            st.markdown(f"🛡️ {threat.get('name', 'Unknown')} - Partially neutralized")
+                            aggression = threat["state"].get("aggression_level", 0)
+                            st.caption(f"Reduced threat level: {aggression}%")
+                        st.markdown("---")
+
+                    # Display other threats (dormant/eliminated)
+                    if other_threats:
+                        with st.expander(f"Other Threats ({len(other_threats)})", expanded=False):
+                            for threat in other_threats:
+                                status = threat["state"].get("status", "unknown")
+                                status_icon = "🔵" if status == "dormant" else "🟢"
+                                st.markdown(f"{status_icon} {threat.get('name', 'Unknown')} - {status.title()}")
+                else:
+                    st.info("Threat intelligence will appear here during gameplay")
+
+            st.markdown("---")
+
             # Objectives
             st.markdown("### 🎯 Objectives")
             with st.expander("View Objectives", expanded=True):
