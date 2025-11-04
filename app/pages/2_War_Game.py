@@ -357,9 +357,63 @@ Check the After Action Review for detailed analysis.
             with st.expander("View Objectives", expanded=True):
                 objectives = game_state.get("objectives", [])
                 if objectives:
-                    for obj in objectives:
-                        status = "✅" if obj.get("completed") else "⏳"
-                        st.markdown(f"{status} {obj.get('description', 'Objective')}")
+                    # Group by status
+                    pending = [obj for obj in objectives if obj.get("status", "pending") == "pending"]
+                    in_progress = [obj for obj in objectives if obj.get("status") == "in-progress"]
+                    completed = [obj for obj in objectives if obj.get("status") == "completed"]
+                    failed = [obj for obj in objectives if obj.get("status") == "failed"]
+
+                    # Display in progress first
+                    if in_progress:
+                        st.markdown("**🔄 In Progress**")
+                        for obj in in_progress:
+                            obj_type = obj.get("type", "task")
+                            difficulty = obj.get("difficulty", "medium")
+                            points = obj.get("points", 25)
+
+                            # Emoji based on type
+                            type_emoji = {
+                                "detect": "🔍", "contain": "🛡️", "mitigate": "🔧",
+                                "investigate": "🔬", "protect": "🔐", "report": "📝"
+                            }.get(obj_type, "📌")
+
+                            # Color badge for difficulty
+                            difficulty_color = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(difficulty, "⚪")
+
+                            st.markdown(f"{type_emoji} **{obj.get('description', 'Objective')}**")
+                            st.caption(f"{difficulty_color} {difficulty.title()} | {points} points | {obj.get('success_criteria', 'Complete objective')}")
+
+                            # Time limit warning
+                            if obj.get("time_limit_minutes"):
+                                st.warning(f"⏱️ Time limit: {obj['time_limit_minutes']} minutes")
+                        st.markdown("---")
+
+                    # Then pending
+                    if pending:
+                        st.markdown("**⏳ Pending**")
+                        for obj in pending:
+                            obj_type = obj.get("type", "task")
+                            points = obj.get("points", 25)
+                            type_emoji = {
+                                "detect": "🔍", "contain": "🛡️", "mitigate": "🔧",
+                                "investigate": "🔬", "protect": "🔐", "report": "📝"
+                            }.get(obj_type, "📌")
+
+                            st.markdown(f"{type_emoji} {obj.get('description', 'Objective')} ({points} pts)")
+                        st.markdown("---")
+
+                    # Then completed
+                    if completed:
+                        st.markdown("**✅ Completed**")
+                        for obj in completed:
+                            st.markdown(f"✅ ~~{obj.get('description', 'Objective')}~~ (+{obj.get('points', 25)} pts)")
+                        st.markdown("---")
+
+                    # Finally failed
+                    if failed:
+                        st.markdown("**❌ Failed**")
+                        for obj in failed:
+                            st.markdown(f"❌ ~~{obj.get('description', 'Objective')}~~")
                 else:
                     # Show generic objectives
                     st.markdown("""

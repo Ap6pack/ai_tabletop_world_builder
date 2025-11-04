@@ -158,6 +158,21 @@ class Tool(BaseModel):
     requires_access_level: Literal["user", "admin", "root"]
 
 
+class Objective(BaseModel):
+    """A training objective with success criteria."""
+    id: str
+    description: str
+    type: Literal["detect", "contain", "mitigate", "investigate", "protect", "report"]
+    success_criteria: str
+    time_limit_minutes: Optional[int] = None
+    points: int = 25
+    difficulty: Literal["easy", "medium", "hard"]
+    related_systems: List[str] = Field(default_factory=list)
+    related_threats: List[str] = Field(default_factory=list)
+    hints: List[str] = Field(default_factory=list)
+    status: Literal["pending", "in-progress", "completed", "failed"] = "pending"
+
+
 class Inventory(BaseModel):
     """Player's available tools and resources."""
     tools: Dict[str, int] = Field(default_factory=dict)  # tool_name: quantity
@@ -184,8 +199,9 @@ class GameState(BaseModel):
     incident_timeline: List[IncidentEvent] = Field(default_factory=list)
     score: int = 0
     time_elapsed: int = 0  # minutes
-    objectives_completed: List[str] = Field(default_factory=list)
-    objectives_failed: List[str] = Field(default_factory=list)
+    objectives: List[Objective] = Field(default_factory=list)  # Active objectives
+    objectives_completed: List[str] = Field(default_factory=list)  # Legacy support
+    objectives_failed: List[str] = Field(default_factory=list)  # Legacy support
     status: Literal["in-progress", "completed", "failed"]
 
 

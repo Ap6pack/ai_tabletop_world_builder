@@ -5,6 +5,7 @@ from typing import Optional
 from api.models import GameState, GameResponse, Organization
 from api.services.game_session_service import GameSessionService
 from api.services.game_master_service import GameMasterService
+from api.services.objective_generator import ObjectiveGenerator
 from api.providers import LLMProviderFactory
 
 
@@ -17,6 +18,7 @@ class GameOrchestrator:
         """Initialize the game orchestrator."""
         self.session_service = GameSessionService()
         self.game_master = GameMasterService(llm_provider, content_policy)
+        self.objective_generator = ObjectiveGenerator()
 
     async def start_new_game(
         self,
@@ -44,6 +46,18 @@ class GameOrchestrator:
             player_role=player_role,
             difficulty=difficulty
         )
+
+        # Generate objectives automatically
+        objectives = self.objective_generator.generate_objectives_from_scenario(
+            organization=organization,
+            scenario_type=scenario_type,
+            difficulty=difficulty,
+            player_role=player_role
+        )
+        game_state.objectives = objectives
+
+        # Save session with objectives
+        self.session_service.save_session(game_state)
 
         # Generate opening narrative
         opening_narrative = await self.game_master.start_game(game_state)
