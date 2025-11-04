@@ -345,7 +345,7 @@ This document outlines the implementation phases for the Cybersecurity War Gamin
 
 ---
 
-## Phase 5: Enhanced Safety & Policies (FUTURE)
+## Phase 4: Enhanced Safety & Policies (FUTURE)
 
 **Status**: Future
 
@@ -378,7 +378,7 @@ This document outlines the implementation phases for the Cybersecurity War Gamin
 
 ---
 
-## Phase 4: Game Mechanics & Inventory (PARTIALLY COMPLETE)
+## Phase 5: Game Mechanics & Inventory (PARTIALLY COMPLETE)
 
 **Status**: ⚠️ Partially Complete (Most features implemented in Phase 3)
 
@@ -599,9 +599,10 @@ Want to help? Pick a task and submit a PR!
 
 **High Priority**:
 1. ~~Streamlit UI Integration~~ ✅ **COMPLETE**
-2. Automatic Objective Generation (Phase 4)
-3. After Action Review System (Phase 6)
-4. Dynamic Threat Actor Responses (Phase 4)
+2. Content Policy Enforcement (Phase 4)
+3. Automatic Objective Generation (Phase 5)
+4. After Action Review System (Phase 6)
+5. Dynamic Threat Actor Responses (Phase 5)
 
 **Good First Issues**:
 - Additional industry templates for scenarios
@@ -620,17 +621,17 @@ Want to help? Pick a task and submit a PR!
 | Phase 2: Scenario Gen | 1 day | ✅ Complete |
 | Phase 3: War Gaming | 1 day | ✅ Complete |
 | Phase 3.5: UI Integration | 2 days | ✅ Complete |
-| Phase 4: Game Mechanics | Mostly done in Phase 3 | ⚠️ Partial |
-| Phase 5: Safety | 2 weeks | 📋 Future |
-| Phase 6: Analytics | 2-3 weeks | 📋 Future |
-| Phase 7: Advanced | 4-6 weeks | 📋 Future |
+| Phase 4: Safety & Policies | 2 weeks | 📋 Future |
+| Phase 5: Game Mechanics | Mostly done in Phase 3 | ⚠️ Partial |
+| Phase 6: Analytics & AAR | 2-3 weeks | 📋 Future |
+| Phase 7: Advanced Features | 4-6 weeks | 📋 Future |
 | Phase 8: Deployment | 2-3 weeks | 📋 Future |
 | **Total Remaining** | **~11-15 weeks** | **3 months** |
 
 ---
 
 **Last Updated**: 2025-01-04
-**Current Phase**: Phase 3.5 Complete - Full end-to-end functionality → Next: Phase 4 enhancements or Phase 5-6
+**Current Phase**: Phase 3.5 Complete - Full end-to-end functionality → Next: Phase 4 (Safety) or Phase 5 (Game Mechanics) or Phase 6 (Analytics)
 
 ## Progress Summary
 
@@ -644,14 +645,22 @@ Want to help? Pick a task and submit a PR!
 
 ### 🔄 Next Priority Options
 
-**Option A: Enhanced Mechanics** (Phase 4)
+**Option A: Enhanced Safety & Policies** (Phase 4)
+- Pre-action content checking
+- Post-generation validation
+- Policy violation handling with audit logging
+- Content filtering (sensitive info, exploit code)
+- Compliance tracking and reports
+- **Time**: 2 weeks
+
+**Option B: Enhanced Game Mechanics** (Phase 5)
 - Automatic objective generation from scenarios
 - Dynamic threat actor responses to player actions
 - System state management (online/offline/compromised)
 - Resource constraints and time pressure
 - **Time**: 1-2 weeks
 
-**Option B: Analytics & AAR** (Phase 6)
+**Option C: Analytics & AAR** (Phase 6)
 - After Action Review generation
 - Performance dashboards
 - Decision analysis
