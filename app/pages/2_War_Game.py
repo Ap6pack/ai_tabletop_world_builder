@@ -10,9 +10,7 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from constants import PLAYER_ROLES_DISPLAY, DIFFICULTY_LEVELS_DISPLAY
-
-# API configuration
-API_BASE_URL = "http://127.0.0.1:8000"
+from config import API_BASE_URL, DEFAULT_TIMEOUT, LONG_OPERATION_TIMEOUT
 
 st.set_page_config(
     page_title="War Game",
@@ -121,7 +119,7 @@ else:
                                 "session_id": st.session_state.game_session_id,
                                 "action": user_action
                             },
-                            timeout=30
+                            timeout=LONG_OPERATION_TIMEOUT
                         )
 
                         if response.status_code == 200:
@@ -166,7 +164,7 @@ else:
 
                             # Try to get from saved scenarios list
                             try:
-                                list_response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=5)
+                                list_response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
                                 if list_response.status_code == 200:
                                     scenarios = list_response.json()
                                     # Find matching scenario by name
@@ -174,7 +172,7 @@ else:
                                         if s['name'] == scenario.get('name'):
                                             scenario_filename = s['filename']
                                             break
-                            except:
+                            except requests.exceptions.RequestException:
                                 pass
 
                             if not scenario_filename:
@@ -188,7 +186,7 @@ else:
                                         "player_role": metadata.get("player_role", "soc-analyst"),
                                         "difficulty": metadata.get("difficulty", "intermediate")
                                     },
-                                    timeout=30
+                                    timeout=LONG_OPERATION_TIMEOUT
                                 )
 
                                 if response.status_code == 200:
@@ -209,7 +207,7 @@ else:
                                     try:
                                         error_detail = response.json()
                                         st.error(f"Details: {error_detail.get('detail', 'Unknown error')}")
-                                    except:
+                                    except Exception:
                                         st.error(f"Response: {response.text[:500]}")
 
                         except Exception as e:
@@ -252,7 +250,7 @@ else:
                                     "session_id": st.session_state.game_session_id,
                                     "status": "completed"
                                 },
-                                timeout=5
+                                timeout=DEFAULT_TIMEOUT
                             )
 
                             if response.status_code == 200:
@@ -380,7 +378,7 @@ with st.sidebar:
 
     # List active sessions
     try:
-        response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=5)
+        response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             sessions = response.json().get("sessions", [])
 
@@ -399,7 +397,7 @@ with st.sidebar:
                             try:
                                 state_response = requests.get(
                                     f"{API_BASE_URL}/game/state/{session['session_id']}",
-                                    timeout=5
+                                    timeout=DEFAULT_TIMEOUT
                                 )
                                 if state_response.status_code == 200:
                                     game_data = state_response.json()

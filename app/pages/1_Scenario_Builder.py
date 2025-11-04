@@ -11,9 +11,7 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from constants import PLAYER_ROLES, ORG_SIZES, COMPLEXITY_LEVELS, SCENARIO_TYPES, DIFFICULTY_LEVELS
-
-# API configuration
-API_BASE_URL = "http://127.0.0.1:8000"
+from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 st.set_page_config(
     page_title="Scenario Builder",
@@ -189,7 +187,7 @@ with col2:
         except requests.exceptions.ConnectionError:
             progress_text.empty()
             progress_bar.empty()
-            st.error("🔌 Could not connect to API. Make sure the backend is running on http://127.0.0.1:8000")
+            st.error(f"🔌 Could not connect to API. Make sure the backend is running on {API_BASE_URL}")
             st.info("Run: `uvicorn api.main:app --reload`")
         except Exception as e:
             progress_text.empty()
@@ -325,7 +323,7 @@ with st.sidebar:
 
     try:
         # List scenarios from API
-        response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=5)
+        response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             scenarios_list = response.json()
 
@@ -362,7 +360,7 @@ with st.sidebar:
                             try:
                                 delete_response = requests.delete(
                                     f"{API_BASE_URL}/scenarios/{scenario_info['filename']}",
-                                    timeout=5
+                                    timeout=DEFAULT_TIMEOUT
                                 )
                                 if delete_response.status_code == 200:
                                     st.success("✅ Scenario deleted")

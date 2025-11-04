@@ -6,7 +6,9 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from api.services import ScenarioOrchestrator
 from api.models import Organization
+from api.utils import setup_logger
 
+logger = setup_logger(__name__)
 router = APIRouter(prefix="/scenarios", tags=["Scenarios"])
 
 
@@ -57,7 +59,7 @@ async def generate_scenario(request: GenerateScenarioRequest):
 
         # Auto-save the generated scenario
         filepath = await orchestrator.save_scenario(organization)
-        print(f"Scenario saved to: {filepath}")
+        logger.info(f"Generated and saved scenario: {organization.name} -> {filepath}")
 
         return organization
 

@@ -9,9 +9,12 @@ from api.services.system_generator import SystemGenerator
 from api.services.vulnerability_generator import VulnerabilityGenerator
 from api.services.threat_actor_generator import ThreatActorGenerator
 from api.providers import LLMProviderFactory
+from api.utils import setup_logger
 import json
 import os
 from datetime import datetime
+
+logger = setup_logger(__name__)
 
 
 class ScenarioOrchestrator:
@@ -61,7 +64,7 @@ class ScenarioOrchestrator:
             4. For each system, generate vulnerabilities
             5. Generate threat actors targeting the organization
         """
-        print(f"🏢 Generating {industry} organization...")
+        logger.info(f"Generating {industry} organization (size: {size}, complexity: {complexity})")
 
         # Step 1: Generate organization
         organization = await self.org_generator.generate_organization(
@@ -72,7 +75,7 @@ class ScenarioOrchestrator:
         )
 
         # Step 2: Generate departments
-        print(f"📊 Generating {num_departments} departments...")
+        logger.info(f"Generating {num_departments} departments for {organization.name}")
         departments = await self.dept_generator.generate_departments(
             organization_name=organization.name,
             industry=industry,
@@ -82,9 +85,8 @@ class ScenarioOrchestrator:
 
         # Step 3: Generate systems for each department
         for dept in departments:
-            print(f"💻 Generating systems for {dept.name}...")
-
             num_systems = self._determine_systems_count(complexity)
+            logger.info(f"Generating {num_systems} systems for department: {dept.name}")
             systems = await self.system_generator.generate_systems(
                 organization_name=organization.name,
                 department_name=dept.name,
@@ -95,8 +97,7 @@ class ScenarioOrchestrator:
 
             # Step 4: Generate vulnerabilities for each system
             for system in systems:
-                print(f"  🔍 Generating vulnerabilities for {system.name}...")
-
+                logger.debug(f"Generating vulnerabilities for system: {system.name}")
                 vulnerabilities = await self.vuln_generator.generate_vulnerabilities(
                     system_name=system.name,
                     system_type=system.type,
@@ -113,7 +114,8 @@ class ScenarioOrchestrator:
         organization.departments = departments
 
         # Step 5: Generate threat actors
-        print(f"👤 Generating threat actors...")
+        num_threat_actors = self._determine_threat_actor_count(complexity)
+        logger.info(f"Generating {num_threat_actors} threat actors")
         threat_actors = await self.threat_generator.generate_threat_actors(
             organization_name=organization.name,
             industry=industry,
@@ -123,7 +125,7 @@ class ScenarioOrchestrator:
 
         organization.threat_actors = threat_actors
 
-        print(f"✅ Scenario generation complete!")
+        logger.info(f"Scenario generation complete: {organization.name} ({len(departments)} departments, {num_threat_actors} threat actors)")
         return organization
 
     def _determine_systems_count(self, complexity: str) -> int:
@@ -226,8 +228,8 @@ class ScenarioOrchestrator:
                         "created_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
                         "file_size": stat.st_size
                     })
-                except Exception:
-                    # Skip files that can't be read
+                except Exception as e:
+                    logger.warning(f"Failed to read scenario file {filename}: {str(e)}")
                     continue
 
         return sorted(scenarios, key=lambda x: x["created_at"], reverse=True)

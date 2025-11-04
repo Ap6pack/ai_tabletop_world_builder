@@ -6,7 +6,9 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from api.models import GameState, GameResponse
 from api.services import GameOrchestrator, ScenarioOrchestrator
+from api.utils import setup_logger
 
+logger = setup_logger(__name__)
 router = APIRouter(prefix="/game", tags=["Game"])
 
 
@@ -65,12 +67,10 @@ async def start_game(request: StartGameRequest):
         return response
 
     except FileNotFoundError as e:
+        logger.warning(f"Scenario not found: {request.scenario_filename}")
         raise HTTPException(status_code=404, detail=f"Scenario '{request.scenario_filename}' not found")
     except Exception as e:
-        # Log the full error for debugging
-        import traceback
-        print(f"ERROR starting game: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Failed to start game: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}")
 
 
@@ -235,11 +235,10 @@ async def delete_session(session_id: str):
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
     except FileNotFoundError:
+        logger.warning(f"Session not found for deletion: {session_id}")
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
     except Exception as e:
-        import traceback
-        print(f"ERROR deleting session: {str(e)}")
-        print(traceback.format_exc())
+        logger.error(f"Failed to delete session {session_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to delete session: {str(e)}")
 
 

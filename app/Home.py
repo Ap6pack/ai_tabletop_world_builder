@@ -3,6 +3,8 @@ Streamlit Home Page - Main entry point for the war gaming platform.
 """
 import streamlit as st
 from pathlib import Path
+from config import API_BASE_URL, HEALTH_CHECK_TIMEOUT, DEFAULT_TIMEOUT
+import requests
 
 # Configure page
 st.set_page_config(
@@ -104,29 +106,25 @@ st.markdown("---")
 # System status
 st.markdown("### System Status")
 
-# Check if API is running
-import requests
-
 col1, col2, col3 = st.columns(3)
 
 with col1:
     try:
-        response = requests.get("http://127.0.0.1:8000/health", timeout=2)
+        response = requests.get(f"{API_BASE_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
         if response.status_code == 200:
             st.metric("API Status", "✅ Running", delta="Ready")
         else:
             st.metric("API Status", "⚠️ Issues", delta="Check logs")
-    except:
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         st.metric("API Status", "❌ Offline", delta="Start server")
+    except Exception as e:
+        st.metric("API Status", "❌ Error", delta=str(e)[:20])
 
 with col2:
     try:
-        # Increased timeout - health checks can take 1-2 seconds
-        response = requests.get("http://127.0.0.1:8000/llm/providers", timeout=5)
+        response = requests.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             providers = response.json()
-            # API returns {"openai": true, "anthropic": false, ...}
-
             available = [p for p, is_available in providers.items() if is_available]
 
             if available:
@@ -134,29 +132,30 @@ with col2:
                 st.caption(", ".join(available))
             else:
                 st.metric("LLM Providers", "⚠️ None Configured")
-                st.caption("All providers returned false")
+                st.caption("Configure providers in Settings")
         else:
-            st.metric("LLM Providers", f"Error {response.status_code}")
+            st.metric("LLM Providers", f"❌ Error {response.status_code}")
     except requests.exceptions.Timeout:
         st.metric("LLM Providers", "⏱️ Timeout")
-        st.caption("Health check took >5s")
+        st.caption(f"Check took >{DEFAULT_TIMEOUT}s")
     except requests.exceptions.ConnectionError:
         st.metric("LLM Providers", "❌ API Offline")
     except Exception as e:
-        st.metric("LLM Providers", "Error")
+        st.metric("LLM Providers", "❌ Error")
         st.caption(str(e)[:50])
 
 with col3:
-    # Get scenarios count
     try:
-        response = requests.get("http://127.0.0.1:8000/scenarios/list", timeout=2)
+        response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=HEALTH_CHECK_TIMEOUT)
         if response.status_code == 200:
             count = len(response.json())
             st.metric("Saved Scenarios", count)
         else:
-            st.metric("Saved Scenarios", "0")
-    except:
-        st.metric("Saved Scenarios", "0")
+            st.metric("Saved Scenarios", "0", delta="API error")
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        st.metric("Saved Scenarios", "0", delta="API offline")
+    except Exception as e:
+        st.metric("Saved Scenarios", "0", delta="Error")
 
 # Sidebar
 with st.sidebar:

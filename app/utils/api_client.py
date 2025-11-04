@@ -4,16 +4,20 @@ API Client utilities for Streamlit frontend.
 import requests
 import streamlit as st
 from typing import Optional, Dict, Any
+import sys
+import os
 
-API_BASE_URL = "http://127.0.0.1:8000"
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import API_BASE_URL, HEALTH_CHECK_TIMEOUT
 
 
 def check_api_health() -> bool:
     """Check if the API is running and healthy."""
     try:
-        response = requests.get(f"{API_BASE_URL}/health", timeout=2)
+        response = requests.get(f"{API_BASE_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
         return response.status_code == 200
-    except:
+    except requests.exceptions.RequestException:
         return False
 
 
@@ -69,7 +73,7 @@ def api_call(
 
     except requests.exceptions.ConnectionError:
         if show_error:
-            st.error("🔌 Could not connect to API. Make sure the backend is running on http://127.0.0.1:8000")
+            st.error(f"🔌 Could not connect to API. Make sure the backend is running on {API_BASE_URL}")
             st.info("Run `uvicorn api.main:app --reload` to start the backend server.")
         return None
 
@@ -85,7 +89,7 @@ def format_timestamp(timestamp: str) -> str:
         from datetime import datetime
         dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
         return dt.strftime("%Y-%m-%d %H:%M:%S")
-    except:
+    except Exception:
         return timestamp
 
 
