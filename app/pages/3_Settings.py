@@ -3,6 +3,7 @@ Streamlit Settings Page - Configure platform settings.
 """
 import streamlit as st
 import requests
+from config import API_BASE_URL, DEFAULT_TIMEOUT, HEALTH_CHECK_TIMEOUT
 
 st.set_page_config(
     page_title="Settings",
@@ -73,7 +74,7 @@ if st.button("🔍 Test Connection", type="primary"):
 
             # Call API test endpoint
             response = requests.post(
-                "http://127.0.0.1:8000/llm/complete",
+                f"{API_BASE_URL}/llm/complete",
                 json=test_payload,
                 timeout=10
             )
@@ -87,7 +88,7 @@ if st.button("🔍 Test Connection", type="primary"):
         except requests.exceptions.Timeout:
             st.error("❌ Connection timeout - API took too long to respond")
         except requests.exceptions.ConnectionError:
-            st.error("❌ Cannot connect to API - make sure backend is running on http://127.0.0.1:8000")
+            st.error(f"❌ Cannot connect to API - make sure backend is running on {API_BASE_URL}")
         except Exception as e:
             st.error(f"❌ Connection failed: {str(e)}")
 
@@ -175,7 +176,7 @@ with col1:
 with col2:
     st.markdown("**Storage Statistics**")
     try:
-        stats_response = requests.get("http://127.0.0.1:8000/settings/storage/stats", timeout=2)
+        stats_response = requests.get(f"{API_BASE_URL}/settings/storage/stats", timeout=HEALTH_CHECK_TIMEOUT)
         if stats_response.status_code == 200:
             stats = stats_response.json()
             st.metric("Saved Scenarios", stats["saved_scenarios"])
@@ -183,7 +184,7 @@ with col2:
         else:
             st.metric("Saved Scenarios", "Error")
             st.metric("Disk Usage", "Error")
-    except:
+    except requests.exceptions.RequestException:
         st.metric("Saved Scenarios", "Unavailable")
         st.metric("Disk Usage", "Unavailable")
 
@@ -220,9 +221,9 @@ with col1:
 
         try:
             response = requests.post(
-                "http://127.0.0.1:8000/settings/update",
+                f"{API_BASE_URL}/settings/update",
                 json=update_payload,
-                timeout=5
+                timeout=DEFAULT_TIMEOUT
             )
 
             if response.status_code == 200:
@@ -239,7 +240,7 @@ with col1:
 with col2:
     if st.button("Reset to Defaults", use_container_width=True):
         try:
-            response = requests.post("http://127.0.0.1:8000/settings/reset/defaults", timeout=5)
+            response = requests.post(f"{API_BASE_URL}/settings/reset/defaults", timeout=DEFAULT_TIMEOUT)
             if response.status_code == 200:
                 result = response.json()
                 st.success("✅ " + result['message'])
@@ -253,7 +254,7 @@ with col2:
 with col3:
     if st.button("Export Config", use_container_width=True):
         try:
-            response = requests.post("http://127.0.0.1:8000/settings/export", timeout=5)
+            response = requests.post(f"{API_BASE_URL}/settings/export", timeout=DEFAULT_TIMEOUT)
             if response.status_code == 200:
                 config_data = response.json()
                 import json
@@ -278,18 +279,18 @@ with st.sidebar:
     # Check API status
     st.markdown("**API Status**")
     try:
-        health_response = requests.get("http://127.0.0.1:8000/health", timeout=2)
+        health_response = requests.get(f"{API_BASE_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
         if health_response.status_code == 200:
             st.success("✅ API Running")
         else:
             st.warning("⚠️ API Issues")
-    except:
+    except requests.exceptions.RequestException:
         st.error("❌ API Offline")
 
     # Check configured providers
     st.markdown("**Configured Providers**")
     try:
-        providers_response = requests.get("http://127.0.0.1:8000/llm/providers", timeout=5)
+        providers_response = requests.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
         if providers_response.status_code == 200:
             providers = providers_response.json()
             available = [p for p, is_available in providers.items() if is_available]
@@ -299,7 +300,7 @@ with st.sidebar:
                 st.warning("⚠️ No providers configured")
         else:
             st.info("Unable to check providers")
-    except:
+    except requests.exceptions.RequestException:
         st.info("Unable to check providers")
 
     st.markdown("---")
@@ -326,7 +327,7 @@ with st.sidebar:
                 st.rerun()
             else:
                 try:
-                    response = requests.delete("http://127.0.0.1:8000/settings/data/clear", timeout=10)
+                    response = requests.delete(f"{API_BASE_URL}/settings/data/clear", timeout=10)
                     if response.status_code == 200:
                         result = response.json()
                         st.success(f"✅ {result['message']}")

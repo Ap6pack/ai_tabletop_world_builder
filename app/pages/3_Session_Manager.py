@@ -4,9 +4,7 @@ Streamlit Session Manager Page - View and manage game sessions.
 import streamlit as st
 import requests
 from datetime import datetime
-
-# API configuration
-API_BASE_URL = "http://127.0.0.1:8000"
+from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 st.set_page_config(
     page_title="Session Manager",
@@ -20,7 +18,7 @@ st.markdown("---")
 
 # Fetch sessions
 try:
-    response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=10)
+    response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
 
     if response.status_code == 200:
         data = response.json()
@@ -133,7 +131,7 @@ try:
                             try:
                                 state_response = requests.get(
                                     f"{API_BASE_URL}/game/state/{session['session_id']}",
-                                    timeout=5
+                                    timeout=DEFAULT_TIMEOUT
                                 )
                                 if state_response.status_code == 200:
                                     game_data = state_response.json()
@@ -172,7 +170,7 @@ try:
                             try:
                                 delete_response = requests.delete(
                                     f"{API_BASE_URL}/game/sessions/{session['session_id']}",
-                                    timeout=5
+                                    timeout=DEFAULT_TIMEOUT
                                 )
                                 if delete_response.status_code == 200:
                                     st.success("✅ Session deleted")
@@ -192,7 +190,7 @@ try:
                         try:
                             state_response = requests.get(
                                 f"{API_BASE_URL}/game/state/{session['session_id']}",
-                                timeout=5
+                                timeout=DEFAULT_TIMEOUT
                             )
                             if state_response.status_code == 200:
                                 full_state = state_response.json()
@@ -268,7 +266,7 @@ try:
         st.error(f"Failed to fetch sessions: {response.status_code}")
 
 except requests.exceptions.ConnectionError:
-    st.error("🔌 Could not connect to API. Make sure the backend is running on http://127.0.0.1:8000")
+    st.error(f"🔌 Could not connect to API. Make sure the backend is running on {API_BASE_URL}")
 except Exception as e:
     st.error(f"❌ Error: {str(e)}")
 
@@ -289,7 +287,7 @@ with st.sidebar:
 
     st.markdown("## Quick Stats")
     try:
-        response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=5)
+        response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             sessions = response.json().get("sessions", [])
 
@@ -298,5 +296,5 @@ with st.sidebar:
 
             st.metric("Total Play Time", f"{total_time} min")
             st.metric("Total Actions", total_actions)
-    except:
+    except requests.exceptions.RequestException:
         st.info("Stats unavailable")
