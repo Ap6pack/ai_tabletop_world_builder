@@ -98,6 +98,34 @@ class LLMProviderFactory:
             raise ValueError(f"Unknown provider type: {provider_type}")
 
     @staticmethod
+    def _is_valid_api_key(key: str) -> bool:
+        """
+        Check if an API key looks valid (not empty, not placeholder).
+
+        Args:
+            key: API key string to validate
+
+        Returns:
+            True if key looks valid, False otherwise
+        """
+        if not key or not key.strip():
+            return False
+
+        # Check for common placeholder values
+        placeholders = [
+            "your_",
+            "insert_",
+            "add_your_",
+            "replace_",
+            "paste_",
+            "api_key_here",
+            "key_here"
+        ]
+
+        key_lower = key.lower()
+        return not any(placeholder in key_lower for placeholder in placeholders)
+
+    @staticmethod
     async def get_available_providers() -> dict[str, bool]:
         """
         Check which providers are available and configured.
@@ -107,9 +135,9 @@ class LLMProviderFactory:
         """
         availability = {}
 
-        # Check OpenAI
+        # Check OpenAI - validate key looks real before attempting health check
         try:
-            if settings.openai_api_key:
+            if LLMProviderFactory._is_valid_api_key(settings.openai_api_key):
                 provider = LLMProviderFactory.create_provider("openai")
                 availability["openai"] = await provider.health_check()
             else:
@@ -117,9 +145,9 @@ class LLMProviderFactory:
         except Exception:
             availability["openai"] = False
 
-        # Check Anthropic
+        # Check Anthropic - validate key looks real before attempting health check
         try:
-            if settings.anthropic_api_key:
+            if LLMProviderFactory._is_valid_api_key(settings.anthropic_api_key):
                 provider = LLMProviderFactory.create_provider("anthropic")
                 availability["anthropic"] = await provider.health_check()
             else:
@@ -127,7 +155,7 @@ class LLMProviderFactory:
         except Exception:
             availability["anthropic"] = False
 
-        # Check Ollama
+        # Check Ollama - doesn't need API key validation
         try:
             provider = LLMProviderFactory.create_provider("ollama")
             availability["ollama"] = await provider.health_check()

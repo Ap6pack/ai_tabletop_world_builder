@@ -53,10 +53,43 @@ elif provider == "Ollama (Local)":
 if st.button("🔍 Test Connection", type="primary"):
     with st.spinner("Testing connection..."):
         try:
-            # TODO: Call API health check
-            st.success("Connection successful!")
+            # Build test payload based on selected provider
+            test_payload = {
+                "prompt": "Say 'OK' if you can read this.",
+                "provider": provider.lower().replace(" (local)", ""),
+                "max_tokens": 10
+            }
+
+            # Add provider-specific config if entered
+            if provider == "OpenAI" and api_key:
+                test_payload["api_key"] = api_key
+                test_payload["model"] = model
+            elif provider == "Anthropic" and api_key:
+                test_payload["api_key"] = api_key
+                test_payload["model"] = model
+            elif provider == "Ollama (Local)":
+                test_payload["base_url"] = base_url
+                test_payload["model"] = model
+
+            # Call API test endpoint
+            response = requests.post(
+                "http://127.0.0.1:8000/llm/complete",
+                json=test_payload,
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                st.success("✅ Connection successful! Provider is working correctly.")
+            else:
+                error_detail = response.json().get('detail', 'Unknown error')
+                st.error(f"❌ Connection failed: {error_detail}")
+
+        except requests.exceptions.Timeout:
+            st.error("❌ Connection timeout - API took too long to respond")
+        except requests.exceptions.ConnectionError:
+            st.error("❌ Cannot connect to API - make sure backend is running on http://127.0.0.1:8000")
         except Exception as e:
-            st.error(f"Connection failed: {str(e)}")
+            st.error(f"❌ Connection failed: {str(e)}")
 
 st.markdown("---")
 
@@ -169,11 +202,32 @@ with col3:
 with st.sidebar:
     st.markdown("## System Information")
 
+    # Check API status
     st.markdown("**API Status**")
-    st.success("API Running")
+    try:
+        health_response = requests.get("http://127.0.0.1:8000/health", timeout=2)
+        if health_response.status_code == 200:
+            st.success("✅ API Running")
+        else:
+            st.warning("⚠️ API Issues")
+    except:
+        st.error("❌ API Offline")
 
+    # Check configured providers
     st.markdown("**Configured Providers**")
-    st.info("0 providers configured")
+    try:
+        providers_response = requests.get("http://127.0.0.1:8000/llm/providers", timeout=5)
+        if providers_response.status_code == 200:
+            providers = providers_response.json()
+            available = [p for p, is_available in providers.items() if is_available]
+            if available:
+                st.success(f"✅ {len(available)} active: {', '.join(available)}")
+            else:
+                st.warning("⚠️ No providers configured")
+        else:
+            st.info("Unable to check providers")
+    except:
+        st.info("Unable to check providers")
 
     st.markdown("---")
 
