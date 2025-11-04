@@ -147,11 +147,14 @@ else:
                         departments[idx]["description"] = dept_desc
                         departments[idx]["business_function"] = dept_function
                         departments[idx]["data_classification"] = dept_classification
+                        # Update session state
+                        st.session_state.editing_scenario["departments"] = departments
                         st.success(f"✅ Saved {dept_name}")
                         st.rerun()
 
                     if st.button("🗑️ Delete", key=f"del_dept_{idx}", use_container_width=True):
                         departments.pop(idx)
+                        st.session_state.editing_scenario["departments"] = departments
                         st.success(f"✅ Deleted department")
                         st.rerun()
 
@@ -177,6 +180,7 @@ else:
                     "systems": []
                 }
                 departments.append(new_dept)
+                st.session_state.editing_scenario["departments"] = departments
                 st.success(f"✅ Added {new_dept_name}")
                 st.rerun()
 
@@ -227,11 +231,14 @@ else:
                         systems[idx]["type"] = sys_type
                         systems[idx]["operating_system"] = sys_os
                         systems[idx]["criticality"] = sys_crit
+                        # Update session state
+                        st.session_state.editing_scenario["systems"] = systems
                         st.success(f"✅ Saved {sys_name}")
                         st.rerun()
 
                     if st.button("🗑️ Delete", key=f"del_sys_{idx}", use_container_width=True):
                         systems.pop(idx)
+                        st.session_state.editing_scenario["systems"] = systems
                         st.success(f"✅ Deleted system")
                         st.rerun()
 
@@ -263,6 +270,7 @@ else:
                     "vulnerabilities": []
                 }
                 systems.append(new_sys)
+                st.session_state.editing_scenario["systems"] = systems
                 st.success(f"✅ Added {new_sys_name}")
                 st.rerun()
 
@@ -324,11 +332,14 @@ else:
                         vulnerabilities[idx]["severity"] = vuln_severity
                         vulnerabilities[idx]["cve_id"] = vuln_cve if vuln_cve else None
                         vulnerabilities[idx]["exploitable"] = vuln_exploitable
+                        # Update session state
+                        st.session_state.editing_scenario["vulnerabilities"] = vulnerabilities
                         st.success(f"✅ Saved vulnerability")
                         st.rerun()
 
                     if st.button("🗑️ Delete", key=f"del_vuln_{idx}", use_container_width=True):
                         vulnerabilities.pop(idx)
+                        st.session_state.editing_scenario["vulnerabilities"] = vulnerabilities
                         st.success(f"✅ Deleted vulnerability")
                         st.rerun()
 
@@ -357,6 +368,7 @@ else:
                     "affected_systems": []
                 }
                 vulnerabilities.append(new_vuln)
+                st.session_state.editing_scenario["vulnerabilities"] = vulnerabilities
                 st.success(f"✅ Added vulnerability")
                 st.rerun()
 
@@ -422,11 +434,14 @@ else:
                         threat_actors[idx]["motivation"] = actor_motivation
                         threat_actors[idx]["sophistication"] = actor_soph
                         threat_actors[idx]["ttps"] = [ttp.strip() for ttp in ttps_text.split("\n") if ttp.strip()]
+                        # Update session state
+                        st.session_state.editing_scenario["threat_actors"] = threat_actors
                         st.success(f"✅ Saved {actor_name}")
                         st.rerun()
 
                     if st.button("🗑️ Delete", key=f"del_actor_{idx}", use_container_width=True):
                         threat_actors.pop(idx)
+                        st.session_state.editing_scenario["threat_actors"] = threat_actors
                         st.success(f"✅ Deleted threat actor")
                         st.rerun()
 
@@ -460,6 +475,7 @@ else:
                     "targets": []
                 }
                 threat_actors.append(new_actor)
+                st.session_state.editing_scenario["threat_actors"] = threat_actors
                 st.success(f"✅ Added {new_actor_name}")
                 st.rerun()
 
@@ -487,6 +503,7 @@ else:
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("🗑️", key=f"del_obj_{idx}"):
                     objectives.pop(idx)
+                    st.session_state.editing_scenario["objectives"] = objectives
                     st.rerun()
 
             # Update objective text
@@ -501,6 +518,7 @@ else:
             new_obj = st.text_input("New Objective")
             if st.form_submit_button("➕ Add Objective"):
                 objectives.append(new_obj)
+                st.session_state.editing_scenario["objectives"] = objectives
                 st.success("✅ Added objective")
                 st.rerun()
 
@@ -524,6 +542,7 @@ else:
                 if st.button(f"➕ {suggestion}", key=f"sugg_{i}", use_container_width=True):
                     if suggestion not in objectives:
                         objectives.append(suggestion)
+                        st.session_state.editing_scenario["objectives"] = objectives
                         st.success(f"✅ Added: {suggestion}")
                         st.rerun()
 

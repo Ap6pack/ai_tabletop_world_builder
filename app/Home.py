@@ -124,15 +124,18 @@ with col2:
         response = requests.get("http://127.0.0.1:8000/llm/providers", timeout=2)
         if response.status_code == 200:
             providers = response.json()
-            available = [p for p, status in providers.items() if status.get("available")]
+            # API returns {"openai": true, "anthropic": false, ...}
+            available = [p for p, is_available in providers.items() if is_available]
             if available:
-                st.metric("LLM Provider", f"✅ {len(available)} Available")
+                st.metric("LLM Providers", f"✅ {len(available)} Active")
+                st.caption(", ".join(available))
             else:
-                st.metric("LLM Provider", "⚠️ None Ready")
+                st.metric("LLM Providers", "⚠️ None Configured")
+                st.caption("Check .env file")
         else:
-            st.metric("LLM Provider", "Unknown")
-    except:
-        st.metric("LLM Provider", "Unknown")
+            st.metric("LLM Providers", "Unknown")
+    except Exception as e:
+        st.metric("LLM Providers", "Unable to check")
 
 with col3:
     # Get scenarios count
