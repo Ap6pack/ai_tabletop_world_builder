@@ -570,6 +570,345 @@ Check the After Action Review for detailed analysis.
 
             st.markdown("---")
 
+            # Phase 5B: Business Impact Dashboard
+            st.markdown("### 💰 Business Impact")
+            with st.expander("View Financial Impact", expanded=True):
+                business_impact = game_state.get("business_impact")
+
+                if business_impact:
+                    total_cost = business_impact.get("total_cost", 0)
+
+                    # Total cost banner
+                    if total_cost > 0:
+                        cost_color = "🔴" if total_cost > 10000000 else "🟠" if total_cost > 1000000 else "🟡"
+                        st.markdown(f"### {cost_color} ${total_cost:,.0f}")
+                        st.caption("Total estimated cost")
+                    else:
+                        st.markdown("### 🟢 $0")
+                        st.caption("No significant impact yet")
+
+                    st.markdown("---")
+
+                    # Impact breakdown
+                    downtime_cost = business_impact.get("downtime_cost", 0)
+                    data_loss_cost = business_impact.get("data_loss_cost", 0)
+                    compliance_total = sum(business_impact.get("compliance_penalties", {}).values())
+                    reputation_cost = business_impact.get("reputation_damage", 0)
+
+                    # Show breakdown only if there's cost
+                    if total_cost > 0:
+                        st.markdown("**Cost Breakdown:**")
+
+                        if downtime_cost > 0:
+                            downtime_hours = business_impact.get("downtime_hours", 0)
+                            st.markdown(f"⏱️ **Downtime:** ${downtime_cost:,.0f}")
+                            st.caption(f"{downtime_hours:.1f} hours of system downtime")
+
+                        if data_loss_cost > 0:
+                            records = business_impact.get("records_compromised", 0)
+                            st.markdown(f"🔓 **Data Loss:** ${data_loss_cost:,.0f}")
+                            st.caption(f"{records:,} records compromised")
+
+                        if compliance_total > 0:
+                            st.markdown(f"⚖️ **Compliance:** ${compliance_total:,.0f}")
+                            penalties = business_impact.get("compliance_penalties", {})
+                            for framework, amount in penalties.items():
+                                st.caption(f"  • {framework}: ${amount:,.0f}")
+
+                        if reputation_cost > 0:
+                            st.markdown(f"📉 **Reputation:** ${reputation_cost:,.0f}")
+                            st.caption("Brand and customer trust damage")
+
+                        st.markdown("---")
+
+                        # Impact summary
+                        description = business_impact.get("impact_description", "")
+                        if description:
+                            st.info(description)
+
+                        # Recent impact events
+                        impact_events = game_state.get("impact_events", [])
+                        if impact_events:
+                            with st.expander(f"Recent Events ({len(impact_events)})", expanded=False):
+                                for event in reversed(impact_events[-5:]):  # Last 5 events
+                                    event_type = event.get("event_type", "unknown")
+                                    cost = event.get("cost", 0)
+                                    severity = event.get("severity", "medium")
+
+                                    # Event icon
+                                    icon_map = {
+                                        "downtime": "⏱️",
+                                        "data_loss": "🔓",
+                                        "compliance": "⚖️",
+                                        "reputation": "📉"
+                                    }
+                                    icon = icon_map.get(event_type, "💰")
+
+                                    # Severity color
+                                    sev_color = {
+                                        "critical": "🔴",
+                                        "high": "🟠",
+                                        "medium": "🟡",
+                                        "low": "🟢"
+                                    }.get(severity, "⚪")
+
+                                    st.markdown(f"{icon} {sev_color} ${cost:,.0f}")
+                                    desc = event.get("description", "Impact event")
+                                    st.caption(desc[:100] + "..." if len(desc) > 100 else desc)
+                else:
+                    st.info("Business impact tracking will appear here during gameplay")
+
+            st.markdown("---")
+
+            # Phase 5B: Timer & Escalation Dashboard
+            st.markdown("### ⏰ Time Pressure")
+            with st.expander("View Timers & Escalations", expanded=True):
+                timers = game_state.get("timers", [])
+                escalation_rules = game_state.get("escalation_rules", [])
+
+                if timers or escalation_rules:
+                    # Active Timers
+                    if timers:
+                        active_timers = [t for t in timers if t.get("remaining_seconds", 0) > 0]
+                        expired_timers = [t for t in timers if t.get("remaining_seconds", 0) == 0]
+
+                        if active_timers:
+                            st.markdown("**⏱️ Active Timers:**")
+                            for timer in sorted(active_timers, key=lambda t: t.get("remaining_seconds", 0)):
+                                remaining = timer.get("remaining_seconds", 0)
+                                duration = timer.get("duration_seconds", 1)
+                                name = timer.get("name", "Timer")
+                                is_critical = timer.get("is_critical", False)
+
+                                # Calculate minutes and seconds
+                                mins = remaining // 60
+                                secs = remaining % 60
+                                time_str = f"{mins}:{secs:02d}"
+
+                                # Determine urgency
+                                if remaining < 300:  # < 5 minutes
+                                    urgency_color = "🔴"
+                                    urgency_label = "URGENT"
+                                elif remaining < 600:  # < 10 minutes
+                                    urgency_color = "🟡"
+                                    urgency_label = "Warning"
+                                else:
+                                    urgency_color = "🟢"
+                                    urgency_label = "Active"
+
+                                # Critical badge
+                                critical_badge = "🔥 " if is_critical else ""
+
+                                st.markdown(f"{urgency_color} {critical_badge}**{name}**: {time_str}")
+                                st.caption(f"{urgency_label} | {timer.get('description', 'Countdown timer')}")
+
+                                # Progress bar
+                                percentage = (remaining / duration) * 100 if duration > 0 else 0
+                                st.progress(percentage / 100)
+
+                            st.markdown("---")
+
+                        if expired_timers:
+                            with st.expander(f"⏱️ Expired Timers ({len(expired_timers)})", expanded=False):
+                                for timer in expired_timers:
+                                    st.markdown(f"❌ ~~{timer.get('name', 'Timer')}~~ - Expired")
+                                    st.caption(timer.get("on_expiry_event", "Time limit exceeded"))
+
+                    # Escalation Rules
+                    if escalation_rules:
+                        active_rules = [r for r in escalation_rules if not r.get("triggered", False)]
+                        triggered_rules = [r for r in escalation_rules if r.get("triggered", False)]
+
+                        if active_rules:
+                            st.markdown("**⚠️ Scheduled Escalations:**")
+
+                            # Find next escalation
+                            time_elapsed = game_state.get("time_elapsed", 0)
+                            next_rules = sorted(active_rules, key=lambda r: r.get("trigger_time_minutes", 999))[:3]
+
+                            for rule in next_rules:
+                                trigger_time = rule.get("trigger_time_minutes", 0)
+                                minutes_until = max(0, trigger_time - time_elapsed)
+                                action = rule.get("action", "unknown")
+                                description = rule.get("description", "Escalation event")
+
+                                # Action icon
+                                action_icons = {
+                                    "threat_escalate": "📈",
+                                    "system_degrade": "📉",
+                                    "spread": "🔄",
+                                    "alert": "🚨"
+                                }
+                                icon = action_icons.get(action, "⚠️")
+
+                                if minutes_until == 0:
+                                    st.markdown(f"{icon} **NOW** - {description}")
+                                elif minutes_until < 5:
+                                    st.markdown(f"{icon} **{minutes_until}m** - {description} 🔴")
+                                else:
+                                    st.markdown(f"{icon} T+{trigger_time}m - {description}")
+                                    st.caption(f"In {minutes_until} minutes")
+
+                            st.markdown("---")
+
+                        # Show triggered rules count
+                        if triggered_rules:
+                            st.caption(f"✅ {len(triggered_rules)} escalation(s) already triggered")
+                else:
+                    st.info("Timers and escalations will appear here during gameplay")
+
+            st.markdown("---")
+
+            # Phase 5B: Resource Management Dashboard
+            st.markdown("### 💰 Resource Management")
+            with st.expander("View Resources & Action Costs", expanded=True):
+                resource_pool = game_state.get("resource_pool")
+
+                if resource_pool:
+                    # Action Points
+                    st.markdown("**⚡ Action Points**")
+                    current_ap = resource_pool.get("action_points", 0)
+                    max_ap = resource_pool.get("max_action_points", 10)
+                    regen_rate = resource_pool.get("points_per_minute", 0.5)
+                    ap_percentage = (current_ap / max_ap * 100) if max_ap > 0 else 0
+
+                    # Color coding based on percentage
+                    if ap_percentage > 75:
+                        ap_color = "🟢"
+                        ap_status = "Good"
+                    elif ap_percentage > 25:
+                        ap_color = "🟡"
+                        ap_status = "Low"
+                    else:
+                        ap_color = "🔴"
+                        ap_status = "Critical"
+
+                    col1, col2, col3 = st.columns([2, 1, 1])
+                    with col1:
+                        st.progress(ap_percentage / 100)
+                    with col2:
+                        st.metric("Current", f"{current_ap}/{max_ap}")
+                    with col3:
+                        st.caption(f"{ap_color} {ap_status}")
+
+                    st.caption(f"⚡ Regeneration: {regen_rate} pts/min")
+                    st.markdown("---")
+
+                    # Budget
+                    st.markdown("**💵 Budget**")
+                    budget_remaining = resource_pool.get("budget_remaining", 0)
+                    budget_total = resource_pool.get("budget_total", 100000)
+                    budget_spent = budget_total - budget_remaining
+                    budget_percentage = (budget_remaining / budget_total * 100) if budget_total > 0 else 0
+
+                    # Color coding based on percentage
+                    if budget_percentage > 75:
+                        budget_color = "🟢"
+                        budget_status = "Good"
+                    elif budget_percentage > 25:
+                        budget_color = "🟡"
+                        budget_status = "Low"
+                    else:
+                        budget_color = "🔴"
+                        budget_status = "Critical"
+
+                    col1, col2, col3 = st.columns([2, 1, 1])
+                    with col1:
+                        st.progress(budget_percentage / 100)
+                    with col2:
+                        st.metric("Remaining", f"${budget_remaining:,.0f}")
+                    with col3:
+                        st.caption(f"{budget_color} {budget_status}")
+
+                    st.caption(f"💸 Spent: ${budget_spent:,.0f} / ${budget_total:,.0f}")
+                    st.markdown("---")
+
+                    # Staff
+                    st.markdown("**👥 Staff Availability**")
+                    staff_available = resource_pool.get("staff_available", 0)
+
+                    # Staff status
+                    if staff_available >= 5:
+                        staff_color = "🟢"
+                        staff_status = "Good"
+                    elif staff_available >= 2:
+                        staff_color = "🟡"
+                        staff_status = "Moderate"
+                    else:
+                        staff_color = "🔴"
+                        staff_status = "Limited"
+
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        st.metric("Available Staff", f"{staff_available}")
+                    with col2:
+                        st.caption(f"{staff_color} {staff_status}")
+
+                    # Cooldowns
+                    tools_on_cooldown = resource_pool.get("tools_on_cooldown", {})
+
+                    if tools_on_cooldown:
+                        st.markdown("---")
+                        st.markdown("**🔧 Tools on Cooldown**")
+
+                        # Convert cooldown timestamps to remaining time
+                        from datetime import datetime
+                        now = datetime.utcnow()
+
+                        for tool_name, cooldown_until_str in tools_on_cooldown.items():
+                            try:
+                                # Parse ISO format timestamp
+                                cooldown_until = datetime.fromisoformat(cooldown_until_str.replace('Z', '+00:00'))
+                                remaining = (cooldown_until - now).total_seconds()
+
+                                if remaining > 0:
+                                    minutes = int(remaining // 60)
+                                    seconds = int(remaining % 60)
+                                    st.markdown(f"🔧 **{tool_name.title()}**: {minutes}m {seconds}s remaining")
+                            except:
+                                st.markdown(f"🔧 **{tool_name.title()}**: On cooldown")
+
+                    # Action Cost Reference
+                    st.markdown("---")
+                    st.markdown("**📋 Action Cost Reference**")
+
+                    action_costs = {
+                        "Investigation": [
+                            ("Investigate/Analyze", "1 AP", "$0", "1 staff"),
+                            ("Check Logs/Monitor", "1 AP", "$0", "1 staff"),
+                        ],
+                        "Detection": [
+                            ("Scan Systems", "2 AP", "$500", "1 staff + 5min cooldown"),
+                        ],
+                        "Containment": [
+                            ("Block/Isolate", "2-3 AP", "$0-1K", "1-2 staff + 5-10min cooldown"),
+                            ("Quarantine", "3 AP", "$1K", "2 staff + 10min cooldown"),
+                        ],
+                        "Mitigation": [
+                            ("Patch Vulnerability", "4 AP", "$5K", "3 staff + 30min cooldown"),
+                            ("Restore Systems", "5 AP", "$10K", "3 staff + 60min cooldown"),
+                            ("Rebuild Systems", "6 AP", "$25K", "4 staff + 60min cooldown"),
+                        ],
+                        "External Help": [
+                            ("Call Vendor", "2 AP", "$50K", "1 staff"),
+                            ("Hire Consultant", "2 AP", "$75K", "No staff required"),
+                        ],
+                        "Communication": [
+                            ("Notify/Report/Escalate", "1 AP", "$0", "1 staff"),
+                        ],
+                    }
+
+                    for category, actions in action_costs.items():
+                        with st.expander(f"{category}", expanded=False):
+                            for action_name, points, budget, staff in actions:
+                                st.markdown(f"**{action_name}**")
+                                st.caption(f"Cost: {points}, {budget}, {staff}")
+
+                else:
+                    st.info("💰 Resource tracking will be available once the game starts")
+
+            st.markdown("---")
+
             # Objectives
             st.markdown("### 🎯 Objectives")
             with st.expander("View Objectives", expanded=True):

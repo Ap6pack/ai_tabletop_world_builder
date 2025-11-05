@@ -149,6 +149,266 @@ with col2:
 
 st.markdown("---")
 
+# Content Policy & Safety Configuration
+st.markdown("### Content Policy & Safety Configuration")
+st.markdown("Advanced safety features with filtering, validation, and audit logging.")
+
+# Initialize session state for safety settings
+if 'enable_action_filtering' not in st.session_state:
+    st.session_state.enable_action_filtering = True
+if 'enable_content_validation' not in st.session_state:
+    st.session_state.enable_content_validation = True
+if 'enable_audit_logging' not in st.session_state:
+    st.session_state.enable_audit_logging = True
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown("**Content Filtering**")
+    enable_action_filtering = st.checkbox(
+        "Enable Pre-Action Content Filtering",
+        value=st.session_state.enable_action_filtering,
+        help="Filter player actions before processing to detect policy violations"
+    )
+    enable_content_validation = st.checkbox(
+        "Enable Post-Generation Validation",
+        value=st.session_state.enable_content_validation,
+        help="Validate AI-generated content before delivery to players"
+    )
+
+    st.markdown("**Filter Categories**")
+    enable_credential_detection = st.checkbox("Detect Credentials (API keys, passwords)", value=True)
+    enable_pii_detection = st.checkbox("Detect PII (emails, SSNs, phone numbers)", value=True)
+    enable_exploit_detection = st.checkbox("Detect Exploit Code (SQL injection, XSS)", value=True)
+    enable_sensitive_detection = st.checkbox("Detect Sensitive Info (IPs, secrets)", value=True)
+
+    redaction_style = st.selectbox(
+        "Redaction Style",
+        options=["mask", "remove", "replace"],
+        index=0,
+        help="How to redact violations: mask=[REDACTED], remove=delete, replace=safe text"
+    )
+
+with col2:
+    st.markdown("**Audit Logging**")
+    enable_audit_logging = st.checkbox(
+        "Enable Audit Logging",
+        value=st.session_state.enable_audit_logging,
+        help="Log all policy checks, violations, and safety events for compliance"
+    )
+    audit_retention_days = st.slider(
+        "Audit Log Retention (days)",
+        min_value=7,
+        max_value=365,
+        value=90,
+        step=7,
+        help="How long to keep audit logs before automatic cleanup"
+    )
+
+    st.markdown("**Violation Handling**")
+    violation_escalation_threshold = st.slider(
+        "Escalation Threshold (violations)",
+        min_value=1,
+        max_value=5,
+        value=2,
+        help="Number of violations before escalating to admin review"
+    )
+    violation_time_window = st.slider(
+        "Violation Time Window (hours)",
+        min_value=1,
+        max_value=72,
+        value=24,
+        help="Time window for counting repeat violations"
+    )
+
+# Audit Log Viewer
+st.markdown("---")
+st.markdown("### Audit Log Viewer")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    log_event_type = st.selectbox(
+        "Event Type",
+        options=["all", "policy_check", "violation", "filter", "sanitization"],
+        index=0
+    )
+
+with col2:
+    log_severity = st.selectbox(
+        "Severity",
+        options=["all", "info", "warning", "error", "critical"],
+        index=0
+    )
+
+with col3:
+    log_limit = st.number_input("Max Logs", min_value=10, max_value=500, value=50, step=10)
+
+if st.button("Load Audit Logs", use_container_width=True):
+    try:
+        # Build query parameters
+        params = {"limit": log_limit}
+        if log_event_type != "all":
+            params["event_type"] = log_event_type
+        if log_severity != "all":
+            params["severity"] = log_severity
+
+        response = requests.get(
+            f"{API_BASE_URL}/audit/logs",
+            params=params,
+            timeout=DEFAULT_TIMEOUT
+        )
+
+        if response.status_code == 200:
+            logs = response.json()
+            if logs:
+                st.success(f"✅ Loaded {len(logs)} audit logs")
+
+                # Display logs in a table
+                import pandas as pd
+                df = pd.DataFrame(logs)
+
+                # Format timestamp for display
+                if 'timestamp' in df.columns:
+                    df['timestamp'] = pd.to_datetime(df['timestamp']).dt.strftime('%Y-%m-%d %H:%M:%S')
+
+                # Select columns to display
+                display_columns = ['timestamp', 'event_type', 'severity', 'result', 'violations']
+                available_columns = [col for col in display_columns if col in df.columns]
+
+                st.dataframe(
+                    df[available_columns],
+                    use_container_width=True,
+                    hide_index=True
+                )
+            else:
+                st.info("No audit logs found matching the filters")
+        else:
+            st.error(f"❌ Failed to load logs: {response.json().get('detail', 'Unknown error')}")
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ API request failed: {str(e)}")
+    except Exception as e:
+        st.error(f"❌ Error loading logs: {str(e)}")
+
+# Compliance Reporting
+st.markdown("---")
+st.markdown("### Compliance Reporting")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    report_start_date = st.date_input("Start Date", value=None)
+
+with col2:
+    report_end_date = st.date_input("End Date", value=None)
+
+with col3:
+    report_format = st.selectbox("Format", options=["json", "csv"], index=0)
+
+if st.button("Generate Compliance Report", use_container_width=True):
+    if not report_start_date or not report_end_date:
+        st.warning("⚠️ Please select both start and end dates")
+    elif report_start_date > report_end_date:
+        st.error("❌ Start date must be before end date")
+    else:
+        try:
+            params = {
+                "start_date": report_start_date.isoformat(),
+                "end_date": report_end_date.isoformat()
+            }
+
+            response = requests.get(
+                f"{API_BASE_URL}/audit/compliance-report",
+                params=params,
+                timeout=DEFAULT_TIMEOUT
+            )
+
+            if response.status_code == 200:
+                report = response.json()
+
+                st.success("✅ Compliance report generated")
+
+                # Display key metrics
+                col1, col2, col3, col4 = st.columns(4)
+
+                with col1:
+                    st.metric("Total Checks", report.get("total_checks", 0))
+
+                with col2:
+                    st.metric("Total Violations", report.get("total_violations", 0))
+
+                with col3:
+                    violation_rate = report.get("violation_rate", 0)
+                    st.metric("Violation Rate", f"{violation_rate}%")
+
+                with col4:
+                    # Calculate severity level based on violation rate
+                    if violation_rate < 5:
+                        severity_indicator = "🟢 Low"
+                    elif violation_rate < 15:
+                        severity_indicator = "🟡 Medium"
+                    else:
+                        severity_indicator = "🔴 High"
+                    st.metric("Risk Level", severity_indicator)
+
+                # Violations by type
+                if report.get("violations_by_type"):
+                    st.markdown("**Violations by Type**")
+                    violations_df = pd.DataFrame(
+                        list(report["violations_by_type"].items()),
+                        columns=["Type", "Count"]
+                    )
+                    st.dataframe(violations_df, use_container_width=True, hide_index=True)
+
+                # Violations by severity
+                if report.get("violations_by_severity"):
+                    st.markdown("**Violations by Severity**")
+                    severity_df = pd.DataFrame(
+                        list(report["violations_by_severity"].items()),
+                        columns=["Severity", "Count"]
+                    )
+                    st.dataframe(severity_df, use_container_width=True, hide_index=True)
+
+                # Top violation patterns
+                if report.get("top_violation_patterns"):
+                    st.markdown("**Top Violation Patterns**")
+                    patterns_df = pd.DataFrame(report["top_violation_patterns"])
+                    st.dataframe(patterns_df, use_container_width=True, hide_index=True)
+
+                # Export report
+                import json
+                if report_format == "json":
+                    report_data = json.dumps(report, indent=2)
+                    mime_type = "application/json"
+                    file_ext = "json"
+                else:  # CSV
+                    # Convert report to CSV format (simplified)
+                    csv_lines = [
+                        "Metric,Value",
+                        f"Total Checks,{report.get('total_checks', 0)}",
+                        f"Total Violations,{report.get('total_violations', 0)}",
+                        f"Violation Rate,{report.get('violation_rate', 0)}%",
+                    ]
+                    report_data = "\n".join(csv_lines)
+                    mime_type = "text/csv"
+                    file_ext = "csv"
+
+                st.download_button(
+                    label=f"📥 Download Report ({report_format.upper()})",
+                    data=report_data,
+                    file_name=f"compliance_report_{report_start_date}_{report_end_date}.{file_ext}",
+                    mime=mime_type,
+                    use_container_width=True
+                )
+            else:
+                st.error(f"❌ Failed to generate report: {response.json().get('detail', 'Unknown error')}")
+        except requests.exceptions.RequestException as e:
+            st.error(f"❌ API request failed: {str(e)}")
+        except Exception as e:
+            st.error(f"❌ Error generating report: {str(e)}")
+
+st.markdown("---")
+
 # Session Configuration
 st.markdown("### Session Settings")
 
@@ -202,7 +462,19 @@ with col1:
             "session_timeout": session_timeout * 60,  # Convert minutes to seconds
             "max_context_length": max_context,
             "scenarios_path": scenarios_path,
-            "data_path": data_path
+            "data_path": data_path,
+            # Phase 4: Safety & Policy settings
+            "enable_action_filtering": enable_action_filtering,
+            "enable_content_validation": enable_content_validation,
+            "enable_audit_logging": enable_audit_logging,
+            "enable_credential_detection": enable_credential_detection,
+            "enable_pii_detection": enable_pii_detection,
+            "enable_exploit_detection": enable_exploit_detection,
+            "enable_sensitive_detection": enable_sensitive_detection,
+            "redaction_style": redaction_style,
+            "audit_retention_days": audit_retention_days,
+            "violation_escalation_threshold": violation_escalation_threshold,
+            "violation_time_window": violation_time_window
         }
 
         # Add provider-specific settings

@@ -2,12 +2,16 @@
 Game orchestrator service that coordinates game sessions and the AI game master.
 """
 from typing import Optional
+from datetime import datetime
 from api.models import GameState, GameResponse, Organization
 from api.services.game_session_service import GameSessionService
 from api.services.game_master_service import GameMasterService
 from api.services.objective_generator import ObjectiveGenerator
 from api.services.system_state_manager import SystemStateManager
 from api.services.threat_response_engine import ThreatResponseEngine
+from api.services.business_impact_service import BusinessImpactService
+from api.services.time_pressure_service import TimePressureService
+from api.services.resource_manager import ResourceManager
 from api.providers import LLMProviderFactory
 
 
@@ -23,6 +27,9 @@ class GameOrchestrator:
         self.objective_generator = ObjectiveGenerator()
         self.system_state_manager = SystemStateManager()
         self.threat_response_engine = ThreatResponseEngine()
+        self.business_impact_service = BusinessImpactService()  # Phase 5B
+        self.time_pressure_service = TimePressureService()  # Phase 5B
+        self.resource_manager = ResourceManager()  # Phase 5B
 
     async def start_new_game(
         self,
@@ -68,7 +75,39 @@ class GameOrchestrator:
         threat_states = self.threat_response_engine.initialize_threat_states(organization)
         game_state.threat_states = threat_states
 
-        # Save session with objectives, system states, and threat states
+        # Phase 5B: Initialize business impact tracking
+        game_state.business_impact = self.business_impact_service.initialize_business_impact(organization)
+        game_state.game_started_at = datetime.utcnow()
+
+        # Phase 5B: Initialize resource pool
+        game_state.resource_pool = self.resource_manager.initialize_resource_pool(difficulty)
+
+        # Phase 5B: Create timers for objectives with time limits
+        for objective in game_state.objectives:
+            if objective.time_limit_minutes:
+                timer = self.time_pressure_service.create_objective_timer(objective)
+                game_state.timers.append(timer)
+
+        # Phase 5B: Create escalation rules based on scenario parameters
+        threat_ids = [t.id for t in organization.threat_actors]
+        system_ids = []
+        for dept in organization.departments:
+            for sys in dept.systems:
+                system_ids.append(sys.id)
+
+        # Get scenario duration from metadata (default 60 minutes)
+        scenario_duration = 60  # TODO: Get from scenario metadata
+
+        escalation_rules = self.time_pressure_service.create_scenario_escalation_rules(
+            scenario_type=scenario_type,
+            difficulty=difficulty,
+            duration_minutes=scenario_duration,
+            threat_ids=threat_ids,
+            system_ids=system_ids,
+        )
+        game_state.escalation_rules.extend(escalation_rules)
+
+        # Save session with objectives, system states, threat states, business impact, timers, and escalation rules
         self.session_service.save_session(game_state)
 
         # Generate opening narrative
@@ -115,6 +154,49 @@ class GameOrchestrator:
         if game_state.status != "in-progress":
             raise ValueError(f"Session {session_id} is not active (status: {game_state.status})")
 
+        # Phase 5B: Regenerate action points
+        resource_messages = []
+        if game_state.resource_pool:
+            game_state.resource_pool = self.resource_manager.clear_expired_cooldowns(game_state.resource_pool)
+            game_state.resource_pool, points_regen = self.resource_manager.regenerate_action_points(
+                game_state.resource_pool, game_state.time_elapsed
+            )
+            if points_regen > 0:
+                resource_messages.append(f"⚡ Regenerated {points_regen} action point(s)")
+
+        # Phase 5B: Check action cost and affordability
+        if game_state.resource_pool:
+            action_cost = self.resource_manager.get_action_cost(action)
+            can_afford, reason = self.resource_manager.can_afford_action(game_state.resource_pool, action_cost)
+
+            if not can_afford:
+                # Return early with resource constraint message
+                return GameResponse(
+                    narrative=f"❌ **Action Blocked**: {reason}\n\nYou cannot perform this action right now. Try a different approach or wait for resources to regenerate.",
+                    game_state=game_state,
+                    inventory_changes=None,
+                    new_events=[],
+                    hints=["Check your resource status", "Try less expensive actions", "Wait for action points to regenerate"]
+                )
+
+            # Spend resources for the action
+            game_state.resource_pool = self.resource_manager.spend_resources(game_state.resource_pool, action_cost)
+            resource_messages.append(f"💰 Spent: {action_cost.points} AP, ${action_cost.budget:,.0f}")
+
+        # Phase 5B: Update timers and check for expiries
+        timer_messages = []
+        if game_state.timers:
+            game_state, timer_messages = self.time_pressure_service.update_timers(
+                game_state, game_state.time_elapsed
+            )
+
+        # Phase 5B: Check escalation rules
+        escalation_messages = []
+        if game_state.escalation_rules:
+            game_state, escalation_messages = self.time_pressure_service.check_escalation_rules(
+                game_state, game_state.time_elapsed
+            )
+
         # Process action with game master
         gm_response = await self.game_master.process_action(action, game_state)
 
@@ -155,8 +237,17 @@ class GameOrchestrator:
                 reason=score_change.get("reason", "Action performed")
             )
 
+        # Phase 5B: Append resource, timer, and escalation messages to narrative
+        narrative = gm_response["narrative"]
+        if resource_messages:
+            narrative += "\n\n**💰 Resources:**\n" + "\n".join(resource_messages)
+        if timer_messages:
+            narrative += "\n\n**⏰ Time Updates:**\n" + "\n".join(timer_messages)
+        if escalation_messages:
+            narrative += "\n\n**⚠️ Escalations:**\n" + "\n".join(escalation_messages)
+
         return GameResponse(
-            narrative=gm_response["narrative"],
+            narrative=narrative,
             game_state=game_state,
             inventory_changes=inv_changes if inv_changes else None,
             new_events=gm_response.get("new_events", []),
@@ -271,3 +362,120 @@ class GameOrchestrator:
             raise ValueError(f"Session {session_id} not found")
 
         return game_state
+
+    def update_business_impact(
+        self,
+        session_id: str,
+        event_type: str,
+        system_id: Optional[str] = None,
+        hours: Optional[float] = None,
+        records: Optional[int] = None,
+        department: Optional[str] = None,
+        severity: str = "medium",
+    ) -> GameState:
+        """
+        Update business impact for a session (Phase 5B).
+
+        Args:
+            session_id: Session ID
+            event_type: Type of impact event ("downtime", "data_loss", "compliance", "reputation")
+            system_id: System ID for downtime events
+            hours: Hours of downtime
+            records: Number of records compromised
+            department: Department name for data loss
+            severity: Severity level
+
+        Returns:
+            Updated GameState
+        """
+        game_state = self.session_service.get_session(session_id)
+
+        if game_state is None:
+            raise ValueError(f"Session {session_id} not found")
+
+        # Update business impact
+        game_state = self.business_impact_service.update_impact(
+            game_state=game_state,
+            organization=game_state.organization,
+            event_type=event_type,
+            system_id=system_id,
+            hours=hours,
+            records=records,
+            department=department,
+            severity=severity,
+        )
+
+        # Save updated game state
+        self.session_service.save_session(game_state)
+
+        return game_state
+
+    def calculate_system_downtime(
+        self,
+        session_id: str,
+        system_id: str,
+    ) -> GameState:
+        """
+        Calculate and apply business impact from system downtime (Phase 5B).
+
+        This is called automatically when a system status changes to offline/compromised.
+
+        Args:
+            session_id: Session ID
+            system_id: System ID
+
+        Returns:
+            Updated GameState
+        """
+        game_state = self.session_service.get_session(session_id)
+
+        if game_state is None:
+            raise ValueError(f"Session {session_id} not found")
+
+        # Calculate system downtime impact
+        game_state = self.business_impact_service.calculate_system_downtime_impact(
+            game_state=game_state,
+            organization=game_state.organization,
+            system_id=system_id,
+        )
+
+        # Save updated game state
+        self.session_service.save_session(game_state)
+
+        return game_state
+
+    def get_timer_status(self, session_id: str) -> dict:
+        """
+        Get timer status summary for a session (Phase 5B).
+
+        Args:
+            session_id: Session ID
+
+        Returns:
+            Timer status dictionary
+        """
+        game_state = self.session_service.get_session(session_id)
+
+        if game_state is None:
+            raise ValueError(f"Session {session_id} not found")
+
+        return self.time_pressure_service.get_active_timers_summary(game_state)
+
+    def get_next_escalation(self, session_id: str) -> Optional[dict]:
+        """
+        Get next scheduled escalation for a session (Phase 5B).
+
+        Args:
+            session_id: Session ID
+
+        Returns:
+            Next escalation info or None
+        """
+        game_state = self.session_service.get_session(session_id)
+
+        if game_state is None:
+            raise ValueError(f"Session {session_id} not found")
+
+        return self.time_pressure_service.get_next_escalation(
+            game_state, game_state.time_elapsed
+        )

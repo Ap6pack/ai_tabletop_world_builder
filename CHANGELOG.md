@@ -9,11 +9,263 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 - After Action Review system (Phase 6)
-- Business impact calculations (Phase 5 Feature 4)
-- Time pressure mechanics (Phase 5 Feature 5)
-- Resource constraints (Phase 5 Feature 6)
-- Analytics and performance tracking (Phase 6)
+- Performance analytics and dashboards (Phase 6)
 - Multi-user support (Phase 7)
+- Advanced deployment features (Phase 8)
+
+## [0.7.0] - 2025-11-05
+
+### Added
+
+#### Phase 5B: Enhanced Game Mechanics - COMPLETE
+
+**Feature 1: Business Impact Calculations**
+- NEW: `BusinessImpactService` (500 lines) - Real-time financial impact tracking
+  - Industry-specific downtime rates: Financial ($500K/hr), Healthcare ($175K/hr), Technology ($120K/hr), Retail ($72K/hr)
+  - System criticality multipliers (1x-5x based on business importance)
+  - Data loss costs by classification: Restricted ($500/record), Confidential ($250/record), Internal ($100/record), Public ($50/record)
+  - Compliance penalty calculations for GDPR, HIPAA, PCI-DSS, SOX
+  - Reputation damage with customer churn modeling
+  - Impact event tracking with cumulative cost aggregation
+  - Business impact dashboard in War Game UI (110 lines)
+- Testing: 12/12 tests passing
+- Files: `api/services/business_impact_service.py`, `test_business_impact.py`
+
+**Feature 2: Time Pressure Mechanics**
+- NEW: `TimePressureService` (430 lines) - Countdown timers and automatic escalation
+  - Objective timers with expiry detection and auto-failure
+  - Time-based scoring multipliers: Fast (<50% time): 3x, Normal (50-100%): 1x, Slow (>100%): 0.3x
+  - Automatic threat escalation at difficulty-scaled intervals
+    - Beginner: 2 escalation checkpoints (50%, 75%)
+    - Intermediate: 4 checkpoints (33%, 66%)
+    - Advanced: 6 checkpoints (25%, 50%, 75%)
+    - Expert: 8 checkpoints (20%, 40%, 60%, 80%)
+  - System degradation mechanics over time
+  - Threat spreading mechanics for advanced scenarios
+  - Timer & escalation dashboard with progress bars (100 lines UI)
+- Testing: 10/10 tests passing
+- Files: `api/services/time_pressure_service.py`, `test_time_pressure.py`
+
+**Feature 3: Resource Constraints**
+- NEW: `ResourceManager` (380 lines) - Strategic resource management system
+  - Action points system scaled by difficulty:
+    - Beginner: 15 AP, $150K budget, 7 staff
+    - Intermediate: 10 AP, $100K budget, 5 staff
+    - Advanced: 7 AP, $75K budget, 4 staff
+    - Expert: 5 AP, $50K budget, 3 staff
+  - Action cost system for 15+ action types:
+    - Investigation: 1 AP, $0 (investigate, analyze, check logs)
+    - Detection: 2 AP, $500 (scan systems)
+    - Containment: 2-3 AP, $0-1K (isolate, block, quarantine)
+    - Mitigation: 4-6 AP, $5K-25K (patch, restore, rebuild)
+    - External Help: 2 AP, $50K-75K (vendor, consultant)
+  - Tool cooldown management (5-60 minutes per tool)
+  - Action point regeneration (0.25-0.75 pts/min based on difficulty)
+  - Staff availability tracking
+  - Affordability checking before every action
+  - Resource management dashboard (150 lines UI)
+- Testing: 12/12 tests passing
+- Files: `api/services/resource_manager.py`, `test_resource_manager.py`
+
+**Integration & UI**
+- Updated `GameOrchestrator` with all three Phase 5B services
+- Automatic business impact tracking on system downtime
+- Timer creation for objectives with time limits
+- Escalation rule generation based on scenario parameters
+- Resource pool initialization and per-action management
+- Three comprehensive UI dashboards in War_Game.py (360 lines total)
+- All messages aggregated into game narrative
+
+### Changed
+- `api/services/game_orchestrator.py` - Integrated all Phase 5B services into game loop
+- `app/pages/2_War_Game.py` - Added 3 new real-time dashboards (Business Impact, Timers, Resources)
+- `api/models/schemas.py` - Added BusinessImpact, Timer, EscalationRule, ResourcePool, ActionCost models
+
+### Metrics
+- **New Code**: 3,730 lines (2,240 services + 1,130 tests + 360 UI)
+- **Total Project**: ~11,500 lines of production code
+- **Services**: 12 total (+3 from Phase 5B)
+- **Real-Time Dashboards**: 6 total (+3 from Phase 5B)
+- **Test Coverage**: 81/81 tests passing (100%)
+
+## [0.6.0] - 2025-11-04
+
+### Added
+
+#### Phase 4: Enhanced Safety & Policies - COMPLETE
+
+**Feature 1: Pre-Action Content Checking**
+- NEW: `PatternMatcher` utility (230 lines) - 32 detection patterns across 4 categories
+  - Credentials (12 patterns): API keys, passwords, tokens, AWS keys, private keys
+  - PII (6 patterns): Emails, SSNs, phone numbers, credit cards
+  - Exploit Code (11 patterns): SQL injection, XSS, RCE, directory traversal
+  - Sensitive Info (3 patterns): IP addresses, internal paths, secrets
+- NEW: `ActionFilterService` (280 lines) - Two-stage filtering system
+  - Stage 1: Quick regex pattern matching (<100ms)
+  - Stage 2: Optional LLM semantic analysis (2-4 seconds)
+- Policy-aware blocking rules for 4 content policy levels
+- Suggested alternatives for blocked actions
+- Testing: 8/8 tests passing
+
+**Feature 2: Post-Generation Validation**
+- NEW: `ContentValidatorService` (380 lines) - Multi-type content validation
+  - `validate_narrative()` - Game master responses
+  - `validate_scenario()` - Complete scenarios
+  - `validate_objective()` - Training objectives
+  - `validate_hint()` - Contextual hints
+- Auto-sanitization with 3 redaction styles (mask/remove/replace)
+- Policy-aware content checking
+- ValidationResult model with safety flags and violation details
+- Testing: 8/8 tests passing
+
+**Feature 3: Audit Logging System**
+- NEW: `AuditLogService` (450 lines) - Comprehensive audit trail
+  - Daily log rotation (audit_YYYY-MM-DD.jsonl)
+  - SHA256 content hashing for privacy
+  - JSONL format for efficient storage
+  - Multi-dimensional filtering (date, type, severity, session, user)
+  - Automatic log retention management (7-365 days configurable)
+- 4 event types: policy_check, violation, filter, sanitization
+- Compliance report generation with statistics
+- Testing: 12/12 tests passing
+
+**Feature 4: Policy Violation Handler**
+- NEW: `ViolationHandlerService` (400 lines) - Automated violation responses
+  - Severity-based responses (low/medium/high/critical)
+  - Automatic escalation for repeat violations (24-hour window)
+  - Educational content generation (violation-specific)
+  - Alternative suggestions for safe approaches
+- Violation metrics tracking (total, by severity, by type)
+- ViolationResponse model with action, message, educational content
+- Testing: 12/12 tests passing
+
+**Feature 5: Compliance Tracking**
+- ComplianceReport model with comprehensive metrics
+  - Total checks and violations
+  - Violation rate calculation
+  - Violations by type and severity
+  - Policy level distribution
+  - Top violation patterns
+- Automated report generation for any date range
+- Integrated with audit logging service
+
+**Feature 6: Content Filtering** (Combined Features 1-3)
+- Unified filtering across action filter and content validator
+- 4 filter categories with 32 patterns
+- 3 redaction styles (mask/remove/replace)
+- Policy-aware filtering for all content types
+
+**Feature 7: Settings UI Integration**
+- NEW: `api/routers/audit.py` (200 lines) - Audit API endpoints
+  - `GET /audit/logs` - Retrieve logs with filters
+  - `GET /audit/compliance-report` - Generate compliance reports
+  - `POST /audit/cleanup` - Clean up old logs
+  - `GET /audit/stats` - Get audit statistics
+- Enhanced Settings UI in `app/pages/3_Settings.py` (+408 lines):
+  - Content Policy & Safety Configuration (222 lines)
+    - Content filtering toggles
+    - Filter category checkboxes
+    - Redaction style selector
+    - Audit logging settings
+    - Violation handling configuration
+  - Audit Log Viewer (68 lines)
+    - Filter by event type, severity
+    - Formatted table display
+    - Load on demand
+  - Compliance Reporting (118 lines)
+    - Date range picker
+    - Format selector (JSON/CSV)
+    - Metrics display (checks, violations, rate, risk level)
+    - Detailed breakdowns (by type, severity, patterns)
+    - Export functionality
+- Save settings integration (11 new fields persist to .env)
+- Testing: 7/7 API tests passing
+
+### Technical Details
+
+**Code Statistics**
+- Total new code: ~2,300 lines
+- Services created: 4 major services + 1 utility
+- API endpoints: 4 new endpoints
+- UI components: 3 major sections (408 lines)
+- Test files: 5 comprehensive suites
+- Test coverage: 47/47 tests passing (100%)
+
+**Models Added** (7 Pydantic models)
+- ActionCheckResult - Pre-action filtering results
+- ValidationResult - Post-generation validation results
+- AuditLog - Audit log entry
+- PolicyViolation - Violation record
+- ViolationResponse - Violation handling response
+- ComplianceReport - Compliance reporting
+- FilterConfig - Content filter configuration
+
+**Files Created** (11 new files)
+1. `api/utils/pattern_matcher.py` (230 lines)
+2. `api/services/action_filter_service.py` (280 lines)
+3. `api/services/content_validator_service.py` (380 lines)
+4. `api/services/audit_log_service.py` (450 lines)
+5. `api/services/violation_handler_service.py` (400 lines)
+6. `api/routers/audit.py` (200 lines)
+7. `test_action_filter.py` (130 lines)
+8. `test_content_validator.py` (150 lines)
+9. `test_audit_log.py` (280 lines)
+10. `test_violation_handler.py` (250 lines)
+11. `test_audit_api.py` (180 lines)
+
+**Files Modified** (5 files)
+1. `api/models/schemas.py` - Added 7 Phase 4 models, added uuid import
+2. `api/models/__init__.py` - Exported 7 new models
+3. `app/pages/3_Settings.py` - Added 408 lines for Phase 4 UI
+4. `main.py` - Registered audit router
+5. `api/routers/__init__.py` - Exported audit_router
+
+**Performance**
+- Pattern matching: <100ms (regex-based)
+- LLM semantic check: 2-4 seconds (optional)
+- Audit log write: <10ms
+- Audit log retrieval: <100ms for 1000 entries
+- Compliance report: <500ms for 10,000 logs
+
+### Documentation
+
+- NEW: `PHASE4_COMPLETE.md` - Comprehensive Phase 4 completion document
+- Updated `ROADMAP.md` - Marked Phase 4 complete, updated timeline
+- Updated `PROJECT_SUMMARY.md` - Status and metrics
+- Updated `CHANGELOG.md` - This v0.6.0 entry
+
+### Metrics
+
+- **Lines of Code**: ~7,800+ total production code (+2,300 this release)
+- **API Endpoints**: 24 total (+4 this release: 4 audit endpoints)
+- **Services**: 9 total (+4 this release: action filter, content validator, audit log, violation handler)
+- **Files Created**: 11 (Phase 4 services, utilities, tests)
+- **Files Modified**: 5 (Models, Settings UI, API registration)
+- **Test Coverage**: 47/47 tests passing (100% pass rate)
+
+### Security & Privacy
+
+- SHA256 content hashing (no plaintext storage)
+- PII redaction and credential filtering
+- JSONL audit log format (industry standard)
+- Configurable retention policies (7-365 days)
+- Compliance reports for regulatory requirements
+- Tamper-evident audit trail
+
+### Configuration
+
+**New Environment Variables** (11 settings):
+- `ENABLE_ACTION_FILTERING` - Pre-action content filtering toggle
+- `ENABLE_CONTENT_VALIDATION` - Post-generation validation toggle
+- `ENABLE_AUDIT_LOGGING` - Audit logging toggle
+- `ENABLE_CREDENTIAL_DETECTION` - Credential detection toggle
+- `ENABLE_PII_DETECTION` - PII detection toggle
+- `ENABLE_EXPLOIT_DETECTION` - Exploit code detection toggle
+- `ENABLE_SENSITIVE_DETECTION` - Sensitive info detection toggle
+- `REDACTION_STYLE` - Redaction style (mask/remove/replace)
+- `AUDIT_RETENTION_DAYS` - Log retention period (7-365)
+- `VIOLATION_ESCALATION_THRESHOLD` - Escalation threshold (1-5)
+- `VIOLATION_TIME_WINDOW` - Time window for repeat violations (1-72 hours)
 
 ## [0.5.0] - 2025-11-04
 
