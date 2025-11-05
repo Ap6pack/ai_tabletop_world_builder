@@ -3,7 +3,7 @@ Pydantic models for API requests and responses.
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Literal
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 
 
@@ -148,6 +148,114 @@ class Organization(BaseModel):
 
 
 # ============================================================================
+# Phase 5B: Enhanced Game Mechanics Models (defined early for GameState)
+# ============================================================================
+
+class ImpactEvent(BaseModel):
+    """A business impact event."""
+    timestamp: datetime
+    event_type: Literal["downtime", "data_loss", "compliance", "reputation"]
+    system_id: Optional[str] = None
+    cost: float
+    description: str
+    severity: Literal["low", "medium", "high", "critical"]
+
+
+class BusinessImpact(BaseModel):
+    """Business impact tracking for an incident."""
+    downtime_cost: float = 0.0  # Cumulative downtime cost
+    downtime_hours: float = 0.0  # Total downtime hours
+    data_loss_cost: float = 0.0  # Data breach costs
+    records_compromised: int = 0  # Number of records
+    compliance_penalties: Dict[str, float] = Field(default_factory=dict)  # Framework: penalty
+    reputation_damage: float = 0.0  # Brand/customer impact
+    total_cost: float = 0.0  # Cumulative total
+    impact_description: str = "No significant impact yet"
+    last_updated: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Timer(BaseModel):
+    """A countdown timer for an objective or event."""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str
+    duration_seconds: int
+    remaining_seconds: int
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    is_critical: bool = False
+    on_expiry_event: str  # Description of what happens
+    related_objective_id: Optional[str] = None
+
+    @property
+    def expires_at(self) -> datetime:
+        """Calculate expiration time."""
+        return self.started_at + timedelta(seconds=self.duration_seconds)
+
+    @property
+    def is_expired(self) -> bool:
+        """Check if timer has expired."""
+        return self.remaining_seconds <= 0
+
+
+class EscalationRule(BaseModel):
+    """A rule for automatic threat escalation."""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    trigger_time_minutes: int
+    action: Literal["threat_escalate", "system_degrade", "spread", "alert"]
+    target_id: Optional[str] = None  # System ID or threat ID
+    severity_increase: int = 10
+    description: str
+    triggered: bool = False
+
+
+class ResourcePool(BaseModel):
+    """Resource management for the player."""
+    action_points: int = 10
+    max_action_points: int = 10
+    points_per_minute: float = 0.5
+    budget_remaining: float = 100000.0  # Starting budget
+    budget_total: float = 100000.0
+    staff_available: int = 5
+    tools_on_cooldown: Dict[str, datetime] = Field(default_factory=dict)  # tool: available_at
+    last_regeneration: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ActionCost(BaseModel):
+    """Cost of performing an action."""
+    points: int
+    budget: float
+    cooldown_seconds: int
+    requires_staff: int = 1
+
+
+class CampaignStage(BaseModel):
+    """A stage in a multi-stage threat campaign."""
+    stage_number: int
+    name: str
+    description: str
+    duration_minutes: int
+    systems_targeted: List[str] = Field(default_factory=list)
+    ttps_used: List[str] = Field(default_factory=list)
+    detection_difficulty: Literal["easy", "medium", "hard"]
+    completed: bool = False
+    started_at: Optional[datetime] = None
+
+
+class ThreatCampaign(BaseModel):
+    """A multi-stage threat actor campaign."""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    threat_actor_id: str
+    current_stage: int = 0
+    total_stages: int
+    stages: List[CampaignStage]
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    completed: bool = False
+    success: bool = False  # Did threat achieve objective?
+    intelligence_gathered: List[str] = Field(default_factory=list)  # What player knows
+
+
+# ============================================================================
 # War Game Session Models
 # ============================================================================
 
@@ -229,6 +337,14 @@ class GameState(BaseModel):
     system_states: Dict[str, SystemState] = Field(default_factory=dict)  # system_id: state
     threat_states: Dict[str, ThreatActorState] = Field(default_factory=dict)  # threat_id: state
     status: Literal["in-progress", "completed", "failed"]
+    # Phase 5B: Enhanced Game Mechanics
+    business_impact: Optional[BusinessImpact] = None  # Business impact tracking
+    impact_events: List[ImpactEvent] = Field(default_factory=list)  # Impact event history
+    timers: List[Timer] = Field(default_factory=list)  # Active countdown timers
+    escalation_rules: List[EscalationRule] = Field(default_factory=list)  # Auto-escalation rules
+    resource_pool: Optional[ResourcePool] = None  # Resource management
+    active_campaigns: List[ThreatCampaign] = Field(default_factory=list)  # Multi-stage campaigns
+    game_started_at: Optional[datetime] = None  # When game actually started
 
 
 class PlayerAction(BaseModel):

@@ -2,9 +2,9 @@
 
 ## 📊 Project Status
 
-**Version**: 0.5.0
-**Status**: ✅ Phase 5A Core Mechanics Complete - **Advanced Dynamic War Gaming**
-**Next Phase**: 🚧 Phase 5B Polish (Business Impact, Time Pressure, Resources) or Phase 6 Analytics
+**Version**: 0.7.0
+**Status**: ✅ Phase 5B Enhanced Game Mechanics Complete - **Business Impact, Time Pressure, Resource Constraints**
+**Next Phase**: 🚧 Phase 6 Analytics & After Action Review
 **License**: Proprietary (Open source code, commercial use requires license)
 **Target**: SaaS monetization model
 
@@ -13,7 +13,9 @@
 - ✅ **Phase 2**: Scenario Generation (8 industries, hierarchical generation)
 - ✅ **Phase 3**: Interactive War Gaming (AI Game Master, session management)
 - ✅ **Phase 3.5**: UI Integration & Code Quality (End-to-end functionality, enterprise code standards)
+- ✅ **Phase 4**: Enhanced Safety & Policies (Content filtering, audit logging, compliance tracking)
 - ✅ **Phase 5A**: Core Game Mechanics (Objectives, System States, Threat Responses)
+- ✅ **Phase 5B**: Enhanced Game Mechanics (Business Impact, Time Pressure, Resource Constraints)
 
 ---
 
@@ -69,7 +71,7 @@ Total: 37+ files across 15 directories
 
 ---
 
-## ✅ What's Complete (Phases 1-3.5, 5A)
+## ✅ What's Complete (Phases 1-4, 5A)
 
 ### Phase 1: Foundation ✅
 - ✅ FastAPI application with OpenAPI docs
@@ -113,6 +115,35 @@ Total: 37+ files across 15 directories
 - ✅ **Enterprise Error Handling**: Specific exception types, no bare excepts
 - ✅ **Code Quality**: Zero debug prints, zero bare excepts, zero hardcoded values
 
+### Phase 4: Enhanced Safety & Policies ✅
+- ✅ **Pre-Action Content Checking**: ActionFilterService with 32 detection patterns
+  - Two-stage filtering (regex + optional LLM semantic analysis)
+  - Policy-aware blocking (defensive/educational/advanced/unrestricted)
+  - Suggested alternatives for blocked actions
+- ✅ **Post-Generation Validation**: ContentValidatorService for AI output validation
+  - Multi-type validation (narrative, scenario, objective, hint)
+  - Auto-sanitization with 3 redaction styles (mask/remove/replace)
+  - Policy-aware content checking
+- ✅ **Audit Logging System**: AuditLogService with comprehensive audit trail
+  - Daily log rotation (JSONL format)
+  - SHA256 content hashing for privacy
+  - Multi-dimensional filtering
+  - Automatic retention management (7-365 days)
+- ✅ **Policy Violation Handler**: ViolationHandlerService with automated responses
+  - Severity-based responses (low/medium/high/critical)
+  - Automatic escalation for repeat violations
+  - Educational content generation
+  - Violation metrics tracking
+- ✅ **Compliance Tracking**: ComplianceReport generation
+  - Total checks and violations
+  - Violation rate calculation
+  - Top violation patterns
+- ✅ **Settings UI Integration**: Enhanced Settings page
+  - Content Policy & Safety Configuration (222 lines)
+  - Audit Log Viewer with filtering (68 lines)
+  - Compliance Reporting with export (118 lines)
+  - 4 new API endpoints (/audit/*)
+
 ### Phase 5A: Core Game Mechanics ✅
 - ✅ **Automatic Objective Generation**: ObjectiveGenerator service (380 lines)
   - 6 objective types: detect, contain, mitigate, investigate, protect, report
@@ -131,27 +162,48 @@ Total: 37+ files across 15 directories
   - Automatic escalation and evasion mechanics
   - Threat status dashboard with aggression meters
 
+### Phase 5B: Enhanced Game Mechanics ✅
+- ✅ **Business Impact Calculations**: BusinessImpactService (500 lines)
+  - Industry-specific downtime costs (Financial: $500K/hr, Healthcare: $175K/hr, etc.)
+  - System criticality multipliers (1x-5x)
+  - Data loss impact by classification ($50-$500/record)
+  - Compliance penalties (GDPR, HIPAA, PCI-DSS, SOX)
+  - Reputation damage with churn costs
+  - Real-time financial impact dashboard (110 lines UI)
+- ✅ **Time Pressure Mechanics**: TimePressureService (430 lines)
+  - Countdown timers with expiry detection
+  - Automatic threat escalation over time
+  - Time-based scoring multipliers (Fast: 3x, Normal: 1x, Slow: 0.3x)
+  - System degradation mechanics
+  - Difficulty-scaled escalation checkpoints
+  - Timer & escalation dashboard (100 lines UI)
+- ✅ **Resource Constraints**: ResourceManager (380 lines)
+  - Action points system (5-15 based on difficulty)
+  - Budget tracking ($50K-$100K starting)
+  - Staff availability (3-7 staff members)
+  - Tool cooldowns (5-60 minutes)
+  - Action point regeneration (0.25-0.75 pts/min)
+  - 15+ action types with varying costs
+  - Resource management dashboard (150 lines UI)
+
 ### Current Metrics
-- **Lines of Code**: ~5,500+ production code (+1,110 from Phase 5A)
-- **API Endpoints**: 20 total (6 scenarios + 9 game + 6 settings)
+- **Lines of Code**: ~11,500+ production code (+3,730 from Phase 5B)
+- **API Endpoints**: 24 total (6 scenarios + 9 game + 6 settings + 4 audit)
+- **Services**: 12 total (3 Phase 5B + 4 Phase 4 + 3 Phase 5A + 2 previous)
 - **Supported Industries**: 8 with detailed templates
 - **Player Roles**: 4 with unique inventories
 - **Security Tools**: 15+ with access level requirements
-- **Game Mechanics Services**: 3 (objectives, systems, threats)
-- **Real-Time Dashboards**: 3 (objectives, systems, threats)
-- **Files Created**: 56+ across backend, frontend, docs
-- **Test Coverage**: Comprehensive test scripts for all features
+- **Game Mechanics Services**: 6 (objectives, systems, threats, business impact, time pressure, resources)
+- **Safety Services**: 4 (action filter, content validator, audit log, violation handler)
+- **Real-Time Dashboards**: 6 (objectives, systems, threats, business impact, timers, resources)
+- **Files Created**: 77+ across backend, frontend, docs, tests
+- **Test Coverage**: 81/81 tests passing (100%) - comprehensive test coverage
 
 ---
 
-## 🚧 What's Next (Phase 5B or Phase 6 - Choose Priority)
+## 🚧 What's Next (Phase 6 - Analytics & AAR)
 
-### Option A: Phase 5B - Enhanced Mechanics Polish
-- [ ] Business impact calculations (downtime costs, data loss, compliance violations)
-- [ ] Time pressure mechanics (countdown timers, automatic escalation)
-- [ ] Resource constraints (tool cooldowns, usage limits, budget tracking)
-
-### Option B: Analytics & After Action Review (Phase 6)
+### Phase 6: Analytics & After Action Review
 - [ ] After Action Review (AAR) generation
 - [ ] Performance dashboards and metrics
 - [ ] Decision quality analysis
@@ -159,15 +211,6 @@ Total: 37+ files across 15 directories
 - [ ] Export game logs and PDF reports
 - [ ] Training certificates
 
-### Option C: Enhanced Safety & Policies (Phase 5)
-- [ ] Pre-action content checking
-- [ ] Post-generation validation
-- [ ] Policy violation handling with audit logging
-- [ ] Content filtering (sensitive info, exploit code)
-- [ ] Compliance tracking and reports
-
-**Estimated Time**: 2-3 weeks  
-**Priority**: High
 
 ---
 
@@ -263,13 +306,14 @@ Total: 37+ files across 15 directories
 | Phase 2 | Scenario Gen | 1 day | ✅ Complete |
 | Phase 3 | War Gaming | 1 day | ✅ Complete |
 | Phase 3.5 | UI Integration | 2 days | ✅ Complete |
-| Phase 4 | Enhanced Mechanics | 1-2 weeks | 🚧 Next Option A |
-| Phase 5 | Safety/Policy | 2 weeks | 📅 Future |
+| Phase 4 | Safety & Policies | 6 features | ✅ Complete |
+| Phase 5A | Core Mechanics | 3 features | ✅ Complete |
+| Phase 5B | Polish & Advanced | 2-3 weeks | 🚧 Next Option A |
 | Phase 6 | Analytics & AAR | 2-3 weeks | 🚧 Next Option B |
 | Phase 7 | Advanced Features | 4-6 weeks | 🔮 Future |
 | Phase 8 | Deployment | 2-3 weeks | 🔮 Future |
-| **Completed** | **Phases 1-3.5** | **~2 weeks** | ✅ **Production Ready** |
-| **Remaining** | **Phases 4-8** | **3 months** | **In Progress** |
+| **Completed** | **Phases 1-4, 5A** | **~2 weeks** | ✅ **Production Ready** |
+| **Remaining** | **Phases 5B-8** | **2.5-3.5 months** | **In Progress** |
 
 ---
 
@@ -439,5 +483,5 @@ Based on **AI-Powered Text-Based Game Development** course by:
 ---
 
 **Last Updated**: 2025-11-04
-**Version**: 0.5.0
-**Status**: Phase 5A Complete → Advanced War Gaming with Dynamic Mechanics → Next: Phase 5B or Phase 6
+**Version**: 0.6.0
+**Status**: Phase 4 Complete → Enhanced Safety & Policies with Enterprise-Grade Filtering → Next: Phase 5B or Phase 6

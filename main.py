@@ -26,11 +26,12 @@ app.add_middleware(
 app.include_router(llm_router)
 app.include_router(content_policy_router)
 
-# Import scenarios, game, and settings routers
-from api.routers import scenarios_router, game_router, settings_router
+# Import scenarios, game, settings, and audit routers
+from api.routers import scenarios_router, game_router, settings_router, audit_router
 app.include_router(scenarios_router)
 app.include_router(game_router)
 app.include_router(settings_router)
+app.include_router(audit_router)
 
 
 @app.get("/")

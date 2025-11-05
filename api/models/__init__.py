@@ -28,6 +28,15 @@ from .schemas import (
     ViolationResponse,
     ComplianceReport,
     FilterConfig,
+    # Phase 5B: Enhanced Game Mechanics
+    ImpactEvent,
+    BusinessImpact,
+    Timer,
+    EscalationRule,
+    ResourcePool,
+    ActionCost,
+    CampaignStage,
+    ThreatCampaign,
 )
 
 __all__ = [
@@ -59,4 +68,13 @@ __all__ = [
     "ViolationResponse",
     "ComplianceReport",
     "FilterConfig",
+    # Phase 5B: Enhanced Game Mechanics
+    "ImpactEvent",
+    "BusinessImpact",
+    "Timer",
+    "EscalationRule",
+    "ResourcePool",
+    "ActionCost",
+    "CampaignStage",
+    "ThreatCampaign",
 ]
