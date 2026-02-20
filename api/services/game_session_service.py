@@ -347,15 +347,16 @@ class GameSessionService:
         if success:
             if objective not in game_state.objectives_completed:
                 game_state.objectives_completed.append(objective)
+                self.save_session(game_state)
                 self.update_score(session_id, 25, f"Completed objective: {objective}")
         else:
             if objective not in game_state.objectives_failed:
                 game_state.objectives_failed.append(objective)
+                self.save_session(game_state)
                 self.update_score(session_id, -10, f"Failed objective: {objective}")
 
-        self.save_session(game_state)
-
-        return game_state
+        # Reload to include score changes from update_score
+        return self.get_session(session_id)
 
     def end_session(
         self,

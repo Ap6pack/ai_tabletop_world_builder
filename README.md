@@ -9,7 +9,7 @@ This platform adapts the AI tabletop RPG framework to create **customized cybers
 ### Key Features
 
 - **Hierarchical Scenario Generation**: Create realistic organizations with complete IT infrastructure
-  - Organizations → Departments → Systems → Vulnerabilities/Threats
+  - Organizations -> Departments -> Systems -> Vulnerabilities/Threats
   - Industry-specific configurations (Finance, Healthcare, Tech, etc.)
   - Customizable complexity and scope
 
@@ -18,6 +18,18 @@ This platform adapts the AI tabletop RPG framework to create **customized cybers
   - Realistic incident timelines
   - Tool and access management
   - Decision consequence simulation
+
+- **Multi-Team Tabletop Exercises**: Coordinated team-based exercises
+  - Blue/Red/White team roles with polling-based coordination
+  - MITRE ATT&CK integration (93 techniques across 14 tactics)
+  - Crisis inject engine with 20 templates and 6 heuristics
+  - Real-time exercise orchestration
+
+- **Executive & Compliance Dashboard**: Strategic reporting
+  - Executive dashboard with Ponemon-calibrated financial metrics
+  - Compliance scoring for NIST CSF, PCI DSS, and HIPAA frameworks
+  - After Action Review (AAR) generation with PDF export
+  - Decision quality analysis and alternative path suggestions
 
 - **Flexible Content Policies**: Multiple training levels
   - **Defensive**: Security monitoring and controls only
@@ -38,23 +50,31 @@ This platform adapts the AI tabletop RPG framework to create **customized cybers
 api/
 ├── models/          # Pydantic data models
 ├── providers/       # LLM provider abstraction (OpenAI, Anthropic, Ollama)
-├── services/        # Business logic
-├── routers/         # API endpoints
+├── services/        # 37 business logic services
+├── routers/         # 12 API routers (81 routes)
+├── middleware/       # Auth middleware
 └── main.py          # FastAPI application
 ```
 
 ### Frontend (Streamlit)
 ```
 app/
-├── Home.py                      # Main dashboard with system status
-├── config.py                    # Centralized configuration
-├── constants.py                 # UI ↔ API value mappings
+├── Home.py                       # Main dashboard with full navigation
+├── config.py                     # Centralized configuration
+├── constants.py                  # UI <-> API value mappings
 └── pages/
-    ├── 1_Scenario_Builder.py   # Generate training scenarios
-    ├── 2_War_Game.py            # Interactive war gaming
-    ├── 3_Settings.py            # Platform configuration
-    ├── 4_Session_Manager.py     # Manage game sessions
-    └── 5_Scenario_Editor.py     # Customize generated scenarios
+    ├── 1_Scenario_Builder.py     # Generate training scenarios
+    ├── 2_War_Game.py             # Interactive war gaming
+    ├── 3_Settings.py             # Platform configuration
+    ├── 4_Session_Manager.py      # Manage game sessions
+    ├── 5_Scenario_Editor.py      # Customize generated scenarios
+    ├── 6_Analytics.py            # Performance analytics
+    ├── 7_After_Action_Review.py  # AAR review and PDF export
+    ├── 8_Login.py                # Authentication
+    ├── 9_Scenario_Library.py     # Scenario library browser
+    ├── 10_Exercise_Setup.py      # Multi-team exercise setup
+    ├── 11_Exercise_Play.py       # Live exercise play
+    └── 12_Executive_Dashboard.py # Executive metrics dashboard
 ```
 
 ### Data Models
@@ -78,7 +98,7 @@ Organization
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - API key for at least one LLM provider:
   - OpenAI (recommended)
   - Anthropic Claude
@@ -143,9 +163,9 @@ streamlit run Home.py
 # Web UI will open at http://localhost:8501
 ```
 
-**Option 2: Quick start script (coming soon)**
+**Option 2: Docker**
 ```bash
-./start.sh  # Starts both services
+docker-compose up
 ```
 
 ## Usage Guide
@@ -178,13 +198,21 @@ From the generated scenario:
 - Use available security tools
 - Make decisions and see consequences
 
-### 4. Review Performance
+### 4. Run Multi-Team Exercises
+
+Go to **Exercise Setup** page:
+- Configure Blue/Red/White teams
+- Set exercise parameters and MITRE ATT&CK techniques
+- Load crisis inject templates
+- Launch exercise and play through rounds
+
+### 5. Review Performance
 
 After completing the scenario:
-- View incident timeline
-- Analyze decisions made
-- Review scoring and feedback
-- Identify areas for improvement
+- View incident timeline on Analytics page
+- Generate After Action Reviews with PDF export
+- Review executive dashboard for financial impact
+- Check compliance scoring against NIST/PCI/HIPAA
 
 ## Training Scenarios
 
@@ -210,7 +238,7 @@ After completing the scenario:
 
 ## API Documentation
 
-### FastAPI Endpoints
+### FastAPI Endpoints (81 routes across 12 routers)
 
 **LLM Service:**
 - `POST /llm/complete` - Generate LLM completion
@@ -220,7 +248,7 @@ After completing the scenario:
 - `POST /content-policy/check` - Verify content safety
 - `GET /content-policy/policies` - List available policies
 
-**Scenarios:** ✅ **IMPLEMENTED**
+**Scenarios:**
 - `POST /scenarios/generate` - Generate training scenario
 - `GET /scenarios/list` - List all saved scenarios
 - `GET /scenarios/industries` - List supported industries
@@ -228,7 +256,7 @@ After completing the scenario:
 - `GET /scenarios/{filename}` - Load scenario by filename
 - `DELETE /scenarios/{filename}` - Delete saved scenario
 
-**Game:** ✅ **IMPLEMENTED**
+**Game:**
 - `POST /game/start` - Start new war gaming session
 - `POST /game/action` - Process player action
 - `GET /game/state/{session_id}` - Get current game state
@@ -238,7 +266,20 @@ After completing the scenario:
 - `DELETE /game/sessions/{session_id}` - Delete game session
 - `POST /game/objective` - Mark objective as completed/failed
 
-**Settings:** ✅ **IMPLEMENTED**
+**MITRE ATT&CK:**
+- `GET /mitre/techniques` - List techniques by tactic
+- `GET /mitre/matrix` - Full ATT&CK matrix
+
+**Exercises:**
+- `POST /exercise/create` - Create multi-team exercise
+- `POST /exercise/advance` - Advance exercise round
+- `GET /exercise/state` - Get exercise state
+
+**Analytics & Reporting:**
+- `GET /analytics/session/{session_id}` - Session analytics
+- `POST /analytics/aar` - Generate After Action Review
+
+**Settings:**
 - `GET /settings/current` - Get current configuration
 - `POST /settings/update` - Update settings and persist to .env
 - `GET /settings/storage/stats` - Real-time storage statistics
@@ -255,46 +296,33 @@ API documentation available at: `http://localhost:8000/docs`
 ```
 ai_tabletop_world_builder/
 ├── api/                    # FastAPI backend
-│   ├── models/            # Data schemas
-│   ├── providers/         # LLM provider implementations
-│   ├── services/          # Business logic
-│   └── routers/           # API endpoints
-├── app/                   # Streamlit frontend
-│   ├── Home.py           # Main page
-│   └── pages/            # Multi-page app
-├── config/               # Configuration
-├── scenarios/            # Generated scenarios
-├── data/                 # Storage
-├── utils/                # Shared utilities
-├── tests/                # Unit tests
-├── context/              # Course materials
-├── main.py               # FastAPI entry point
-├── requirements.txt      # Python dependencies
-└── README.md            # This file
+│   ├── models/             # Data schemas
+│   ├── providers/          # LLM provider implementations
+│   ├── services/           # 37 business logic services
+│   ├── routers/            # 12 API routers
+│   ├── middleware/         # Auth middleware
+│   └── utils/              # Shared utilities
+├── app/                    # Streamlit frontend
+│   ├── Home.py             # Main page
+│   └── pages/              # 12 pages
+├── config/                 # Configuration
+├── scenarios/              # Generated scenarios
+├── data/                   # Storage
+├── monitoring/             # Observability configs
+├── main.py                 # FastAPI entry point
+├── conftest.py             # Shared test fixtures
+├── test_*.py               # 24 test files (241 tests)
+├── Dockerfile              # Container build
+├── docker-compose.yml      # Multi-service orchestration
+├── requirements.txt        # Python dependencies
+└── README.md               # This file
 ```
-
-### Adding New Features
-
-**To add a new LLM provider:**
-1. Create provider class in `api/providers/`
-2. Inherit from `BaseLLMProvider`
-3. Implement `complete()` method
-4. Add to `LLMProviderFactory`
-
-**To add a new content policy:**
-1. Add policy configuration to `ContentPolicyService.POLICIES`
-2. Define allowed/blocked categories
-3. Update settings options
-
-**To add a new page:**
-1. Create file in `app/pages/`
-2. Use format: `N_Page_Name.py`
-3. Import and configure streamlit
 
 ### Running Tests
 
 ```bash
-pytest tests/
+pytest --tb=short -q
+# 240 passed, 1 skipped, 0 failed
 ```
 
 ## Content Policy Levels
@@ -311,7 +339,9 @@ pytest tests/
 - **API Keys**: Never commit API keys. Use `.env` file
 - **Content Policy**: Set appropriate policy for your team's skill level
 - **Data Privacy**: Scenarios and game data stored locally
-- **Audit Logging**: All actions logged for compliance (coming soon)
+- **Audit Logging**: All actions logged with SHA256 hashing for compliance
+- **Auth**: JWT-based authentication with Argon2id password hashing
+- **Rate Limiting**: Configurable per-endpoint rate limits
 
 ## Contributing
 
@@ -326,29 +356,16 @@ Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) fo
 
 ## License
 
-Copyright (c) 2025 [Your Name/Company]. All Rights Reserved.
+Copyright (c) 2026 Veritas Aequitas Holdings LLC. All Rights Reserved.
 
 This project is licensed under a **proprietary license** with the following key terms:
 
-- ✅ **Free for evaluation, learning, and personal development**
-- ✅ **Open source code for transparency and community contributions**
-- ❌ **Commercial use requires a separate commercial license**
-- ❌ **Cannot be used for SaaS offerings without permission**
+- Free for evaluation, learning, and personal development
+- Open source code for transparency and community contributions
+- Commercial use requires a separate commercial license
+- Cannot be used for SaaS offerings without permission
 
-**Why this license?**
-We want to:
-- Keep the code open for learning and contributions
-- Build a strong community around security training
-- Monetize as SaaS to sustain development and provide enterprise features
-- Offer commercial licenses for organizations that want to deploy internally
-
-**Commercial Licensing**: Interested in using this for your business? Contact us about:
-- Enterprise deployments
-- White-label solutions
-- Custom features and integrations
-- Priority support and SLAs
-
-See [LICENSE](LICENSE) file for full terms or contact [your-email@example.com] for commercial inquiries.
+See [LICENSE](LICENSE) file for full terms or contact contact@veritasandaequitas.com for commercial inquiries.
 
 ## Resources
 
@@ -378,27 +395,12 @@ See [LICENSE](LICENSE) file for full terms or contact [your-email@example.com] f
 For issues and questions:
 - Open an issue on GitHub
 - Check documentation
-- Review course materials in `/context`
+- Contact: contact@veritasandaequitas.com
 
 ---
 
-**Version**: 0.5.0
-**Status**: Phase 5A Core Mechanics Complete - Advanced War Gaming with Dynamic Mechanics
-**Last Updated**: 2025-11-04
-
-## Recent Updates (v0.5.0) - PHASE 5A COMPLETE! 🎉
-
-✅ **Automatic Objective Generation**: AI-powered objective creation from scenarios
-✅ **System State Tracking**: Real-time health and status monitoring (online/compromised/recovering)
-✅ **Dynamic Threat Responses**: Threats react to player actions with escalation and evasion
-✅ **3 New Services**: ~1,110 lines of intelligent game mechanics
-✅ **3 Real-Time Dashboards**: Objectives, Systems, and Threats with visual indicators
-✅ **Sophistication-Based Behavior**: Threat aggression scales with capability
-✅ **Contextual Generation**: Objectives match scenario vulnerabilities and threats
-✅ **All Core Mechanics Working**: Complete end-to-end dynamic gameplay
-
-### Previous Updates (v0.4.0)
-✅ UI Integration Complete | ✅ Scenario Editor (6 tabs) | ✅ Session Management
-✅ Settings with .env persistence | ✅ 20 API Endpoints | ✅ Enterprise code quality
+**Version**: 1.0.0
+**Status**: Phase 10 Production Readiness Complete
+**Last Updated**: 2026-02-20
 
 See [CHANGELOG.md](CHANGELOG.md) for complete details.

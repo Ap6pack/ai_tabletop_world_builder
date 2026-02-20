@@ -269,9 +269,16 @@ class InjectService:
         """
         delivered_types = {i.inject_type for i in exercise_state.injects if i.delivered}
 
-        impact = game_state.business_impact or {}
-        downtime_hours = impact.get("downtime_hours", 0) if isinstance(impact, dict) else 0
-        records = impact.get("records_compromised", 0) if isinstance(impact, dict) else 0
+        impact = game_state.business_impact
+        if impact is None:
+            downtime_hours = 0
+            records = 0
+        elif isinstance(impact, dict):
+            downtime_hours = impact.get("downtime_hours", 0)
+            records = impact.get("records_compromised", 0)
+        else:
+            downtime_hours = getattr(impact, "downtime_hours", 0)
+            records = getattr(impact, "records_compromised", 0)
 
         # Collect active ATT&CK techniques across all threat states
         active_techniques: set = set()
