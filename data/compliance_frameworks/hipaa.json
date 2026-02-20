@@ -1,0 +1,291 @@
+{
+  "framework_name": "HIPAA Security Rule",
+  "framework_version": "2025",
+  "description": "The HIPAA Security Rule establishes national standards to protect electronic personal health information (ePHI) that is created, received, used, or maintained by a covered entity.",
+  "controls": [
+    {
+      "control_id": "HIPAA-164.308-a1",
+      "name": "Security Management Process",
+      "description": "Implement policies and procedures to prevent, detect, contain, and correct security violations. Includes risk analysis, risk management, sanction policy, and information system activity review.",
+      "attack_techniques": [
+        "T1595",
+        "T1592",
+        "T1589",
+        "T1591"
+      ],
+      "observable_actions": [
+        "risk assessment",
+        "review policy",
+        "security audit",
+        "vulnerability analysis",
+        "sanction review"
+      ],
+      "weight": 3
+    },
+    {
+      "control_id": "HIPAA-164.308-a3",
+      "name": "Workforce Security",
+      "description": "Implement policies and procedures to ensure that all members of the workforce have appropriate access to ePHI and to prevent those who do not have access from obtaining access.",
+      "attack_techniques": [
+        "T1078",
+        "T1134",
+        "T1098",
+        "T1136"
+      ],
+      "observable_actions": [
+        "review access",
+        "terminate access",
+        "background check",
+        "role based access",
+        "workforce clearance"
+      ],
+      "weight": 2
+    },
+    {
+      "control_id": "HIPAA-164.308-a4",
+      "name": "Information Access Management",
+      "description": "Implement policies and procedures for authorizing access to ePHI that are consistent with the applicable requirements.",
+      "attack_techniques": [
+        "T1078",
+        "T1548",
+        "T1098",
+        "T1530"
+      ],
+      "observable_actions": [
+        "access authorization",
+        "least privilege",
+        "access review",
+        "isolate clearinghouse",
+        "access modification"
+      ],
+      "weight": 3
+    },
+    {
+      "control_id": "HIPAA-164.308-a5",
+      "name": "Security Awareness and Training",
+      "description": "Implement a security awareness and training program for all members of the workforce including management.",
+      "attack_techniques": [
+        "T1566",
+        "T1204",
+        "T1598"
+      ],
+      "observable_actions": [
+        "security training",
+        "phishing awareness",
+        "train staff",
+        "password management training",
+        "incident reporting training"
+      ],
+      "weight": 1
+    },
+    {
+      "control_id": "HIPAA-164.308-a6",
+      "name": "Security Incident Procedures",
+      "description": "Implement policies and procedures to address security incidents. Identify and respond to suspected or known security incidents; mitigate harmful effects; document incidents and outcomes.",
+      "attack_techniques": [
+        "T1486",
+        "T1490",
+        "T1489",
+        "T1529",
+        "T1070"
+      ],
+      "observable_actions": [
+        "activate ir plan",
+        "report incident",
+        "contain threat",
+        "document incident",
+        "incident response",
+        "mitigate harm"
+      ],
+      "weight": 3
+    },
+    {
+      "control_id": "HIPAA-164.308-a7",
+      "name": "Contingency Plan",
+      "description": "Establish and implement policies and procedures for responding to an emergency or other occurrence that damages systems containing ePHI.",
+      "attack_techniques": [
+        "T1486",
+        "T1490",
+        "T1561",
+        "T1485"
+      ],
+      "observable_actions": [
+        "backup data",
+        "disaster recovery",
+        "restore backup",
+        "emergency mode",
+        "recovery plan",
+        "continuity plan"
+      ],
+      "weight": 3
+    },
+    {
+      "control_id": "HIPAA-164.308-a8",
+      "name": "Evaluation",
+      "description": "Perform periodic technical and nontechnical evaluation to establish the extent to which security policies and procedures meet the requirements of the Security Rule.",
+      "attack_techniques": [
+        "T1595",
+        "T1046"
+      ],
+      "observable_actions": [
+        "security evaluation",
+        "compliance audit",
+        "gap analysis",
+        "penetration test",
+        "policy review"
+      ],
+      "weight": 2
+    },
+    {
+      "control_id": "HIPAA-164.310-a1",
+      "name": "Facility Access Controls",
+      "description": "Implement policies and procedures to limit physical access to electronic information systems and the facility in which they are housed.",
+      "attack_techniques": [
+        "T1200",
+        "T1091"
+      ],
+      "observable_actions": [
+        "physical security",
+        "facility access",
+        "badge access",
+        "visitor escort",
+        "secure facility"
+      ],
+      "weight": 1
+    },
+    {
+      "control_id": "HIPAA-164.310-b",
+      "name": "Workstation Use and Security",
+      "description": "Implement policies and procedures that specify the proper functions to be performed, the manner in which those functions are to be performed, and the physical attributes of the surroundings.",
+      "attack_techniques": [
+        "T1091",
+        "T1200",
+        "T1052"
+      ],
+      "observable_actions": [
+        "workstation policy",
+        "endpoint security",
+        "screen lock",
+        "device encryption",
+        "clean desk"
+      ],
+      "weight": 1
+    },
+    {
+      "control_id": "HIPAA-164.310-d",
+      "name": "Device and Media Controls",
+      "description": "Implement policies and procedures that govern the receipt and removal of hardware and electronic media that contain ePHI.",
+      "attack_techniques": [
+        "T1052",
+        "T1091",
+        "T1200"
+      ],
+      "observable_actions": [
+        "media disposal",
+        "device tracking",
+        "data sanitization",
+        "hardware inventory",
+        "media encryption"
+      ],
+      "weight": 2
+    },
+    {
+      "control_id": "HIPAA-164.312-a1",
+      "name": "Access Control",
+      "description": "Implement technical policies and procedures for electronic information systems that maintain ePHI to allow access only to those persons or software programs that have been granted access rights.",
+      "attack_techniques": [
+        "T1078",
+        "T1110",
+        "T1556",
+        "T1134",
+        "T1548"
+      ],
+      "observable_actions": [
+        "unique user id",
+        "emergency access",
+        "auto logoff",
+        "encrypt data",
+        "enforce mfa",
+        "disable account"
+      ],
+      "weight": 3
+    },
+    {
+      "control_id": "HIPAA-164.312-b",
+      "name": "Audit Controls",
+      "description": "Implement hardware, software, and/or procedural mechanisms that record and examine activity in information systems that contain or use ePHI.",
+      "attack_techniques": [
+        "T1070",
+        "T1562",
+        "T1036"
+      ],
+      "observable_actions": [
+        "enable logging",
+        "monitor logs",
+        "audit trail",
+        "check siem",
+        "log review",
+        "centralize logs"
+      ],
+      "weight": 3
+    },
+    {
+      "control_id": "HIPAA-164.312-c1",
+      "name": "Integrity Controls",
+      "description": "Implement policies and procedures to protect ePHI from improper alteration or destruction.",
+      "attack_techniques": [
+        "T1565",
+        "T1485",
+        "T1486",
+        "T1561"
+      ],
+      "observable_actions": [
+        "integrity check",
+        "hash verification",
+        "data validation",
+        "tamper detection",
+        "file integrity monitoring"
+      ],
+      "weight": 2
+    },
+    {
+      "control_id": "HIPAA-164.312-d",
+      "name": "Person or Entity Authentication",
+      "description": "Implement procedures to verify that a person or entity seeking access to ePHI is the one claimed.",
+      "attack_techniques": [
+        "T1110",
+        "T1556",
+        "T1528",
+        "T1539",
+        "T1550"
+      ],
+      "observable_actions": [
+        "enforce mfa",
+        "strong authentication",
+        "identity verification",
+        "biometric auth",
+        "certificate auth"
+      ],
+      "weight": 3
+    },
+    {
+      "control_id": "HIPAA-164.312-e1",
+      "name": "Transmission Security",
+      "description": "Implement technical security measures to guard against unauthorized access to ePHI that is being transmitted over an electronic communications network.",
+      "attack_techniques": [
+        "T1040",
+        "T1557",
+        "T1573",
+        "T1048"
+      ],
+      "observable_actions": [
+        "enable tls",
+        "encrypt transmission",
+        "vpn",
+        "secure channel",
+        "integrity controls"
+      ],
+      "weight": 3
+    }
+  ]
+}

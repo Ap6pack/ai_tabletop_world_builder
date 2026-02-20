@@ -1,0 +1,232 @@
+{
+  "framework_name": "PCI DSS",
+  "framework_version": "4.0.1",
+  "description": "The Payment Card Industry Data Security Standard (PCI DSS) version 4.0.1 provides a baseline of technical and operational requirements designed to protect payment account data.",
+  "requirements": [
+    {
+      "requirement_id": "PCI-1",
+      "name": "Install and Maintain Network Security Controls",
+      "description": "Network security controls (NSCs) such as firewalls and other network security technologies are points of policy enforcement that control network traffic between two or more logical or physical network segments.",
+      "attack_techniques": [
+        "T1071",
+        "T1572",
+        "T1090",
+        "T1095"
+      ],
+      "observable_actions": [
+        "configure firewall",
+        "network segmentation",
+        "review firewall rules",
+        "block traffic",
+        "update acl"
+      ],
+      "weight": 3
+    },
+    {
+      "requirement_id": "PCI-2",
+      "name": "Apply Secure Configurations to All System Components",
+      "description": "Malicious individuals use default passwords and other vendor default settings to compromise systems. These passwords and settings are well known and can be easily determined.",
+      "attack_techniques": [
+        "T1078.001",
+        "T1190",
+        "T1133",
+        "T1210"
+      ],
+      "observable_actions": [
+        "harden server",
+        "change defaults",
+        "secure configuration",
+        "disable unnecessary services",
+        "apply baseline"
+      ],
+      "weight": 2
+    },
+    {
+      "requirement_id": "PCI-3",
+      "name": "Protect Stored Account Data",
+      "description": "Protection methods such as encryption, truncation, masking, and hashing are critical components of stored account data protection.",
+      "attack_techniques": [
+        "T1530",
+        "T1005",
+        "T1039",
+        "T1565"
+      ],
+      "observable_actions": [
+        "encrypt data",
+        "mask data",
+        "tokenize",
+        "protect database",
+        "secure storage",
+        "data classification"
+      ],
+      "weight": 3
+    },
+    {
+      "requirement_id": "PCI-4",
+      "name": "Protect Cardholder Data with Strong Cryptography During Transmission",
+      "description": "Sensitive information must be encrypted during transmission over networks that are easily accessed by malicious individuals.",
+      "attack_techniques": [
+        "T1040",
+        "T1557",
+        "T1573",
+        "T1048"
+      ],
+      "observable_actions": [
+        "enable tls",
+        "encrypt transmission",
+        "secure channel",
+        "certificate management",
+        "disable weak ciphers"
+      ],
+      "weight": 3
+    },
+    {
+      "requirement_id": "PCI-5",
+      "name": "Protect All Systems and Networks from Malicious Software",
+      "description": "Malicious software (malware) is software installed without the entity knowledge or consent for the purpose of compromising the security of the entity systems and data.",
+      "attack_techniques": [
+        "T1059",
+        "T1204",
+        "T1566",
+        "T1547",
+        "T1053"
+      ],
+      "observable_actions": [
+        "deploy antivirus",
+        "update signatures",
+        "scan for malware",
+        "quarantine malware",
+        "endpoint protection"
+      ],
+      "weight": 3
+    },
+    {
+      "requirement_id": "PCI-6",
+      "name": "Develop and Maintain Secure Systems and Software",
+      "description": "Security vulnerabilities in systems and software may allow criminals to access cardholder data. Many of these vulnerabilities are eliminated by installing vendor-provided security patches.",
+      "attack_techniques": [
+        "T1190",
+        "T1068",
+        "T1195",
+        "T1203"
+      ],
+      "observable_actions": [
+        "patch system",
+        "code review",
+        "vulnerability scan",
+        "apply update",
+        "secure development"
+      ],
+      "weight": 3
+    },
+    {
+      "requirement_id": "PCI-7",
+      "name": "Restrict Access to System Components and Cardholder Data by Business Need to Know",
+      "description": "To ensure critical data can only be accessed by authorized personnel, systems and processes must be in place to limit access based on need to know and according to job responsibilities.",
+      "attack_techniques": [
+        "T1078",
+        "T1134",
+        "T1098",
+        "T1548"
+      ],
+      "observable_actions": [
+        "review access",
+        "least privilege",
+        "revoke access",
+        "role based access",
+        "access control review"
+      ],
+      "weight": 2
+    },
+    {
+      "requirement_id": "PCI-8",
+      "name": "Identify Users and Authenticate Access to System Components",
+      "description": "Two fundamental principles of identifying and authenticating users: establishing the identity of a user or process, and proving or verifying the user identity is genuine.",
+      "attack_techniques": [
+        "T1110",
+        "T1556",
+        "T1528",
+        "T1539"
+      ],
+      "observable_actions": [
+        "enforce mfa",
+        "reset password",
+        "disable account",
+        "strong authentication",
+        "identity verification"
+      ],
+      "weight": 3
+    },
+    {
+      "requirement_id": "PCI-9",
+      "name": "Restrict Physical Access to Cardholder Data",
+      "description": "Any physical access to cardholder data or systems that store, process, or transmit cardholder data provides the opportunity for individuals to access and/or remove devices, data, systems, or hardcopies.",
+      "attack_techniques": [
+        "T1200",
+        "T1091"
+      ],
+      "observable_actions": [
+        "physical security",
+        "badge access",
+        "secure facility",
+        "visitor log",
+        "device inventory"
+      ],
+      "weight": 1
+    },
+    {
+      "requirement_id": "PCI-10",
+      "name": "Log and Monitor All Access to System Components and Cardholder Data",
+      "description": "Logging mechanisms and the ability to track user activities are critical in preventing, detecting, and minimizing the impact of a data compromise.",
+      "attack_techniques": [
+        "T1070",
+        "T1562",
+        "T1036"
+      ],
+      "observable_actions": [
+        "monitor logs",
+        "check siem",
+        "review audit trail",
+        "log analysis",
+        "enable logging",
+        "centralize logs"
+      ],
+      "weight": 3
+    },
+    {
+      "requirement_id": "PCI-11",
+      "name": "Test Security of Systems and Networks Regularly",
+      "description": "Vulnerabilities are being discovered continually by malicious individuals and researchers. System components, processes, and bespoke and custom software should be tested frequently.",
+      "attack_techniques": [
+        "T1046",
+        "T1595",
+        "T1592"
+      ],
+      "observable_actions": [
+        "penetration test",
+        "vulnerability scan",
+        "security assessment",
+        "ids testing",
+        "network scan"
+      ],
+      "weight": 2
+    },
+    {
+      "requirement_id": "PCI-12",
+      "name": "Support Information Security with Organizational Policies and Programs",
+      "description": "A strong security policy sets the security tone for the whole entity and informs personnel what is expected of them.",
+      "attack_techniques": [
+        "T1199",
+        "T1195"
+      ],
+      "observable_actions": [
+        "review policy",
+        "security training",
+        "incident response plan",
+        "risk assessment",
+        "vendor management"
+      ],
+      "weight": 2
+    }
+  ]
+}

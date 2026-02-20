@@ -1,0 +1,56 @@
+[
+  {
+    "inject_type": "regulator_call",
+    "title": "SEC Filing Deadline: Material Cybersecurity Incident",
+    "content": "Legal counsel has advised that the incident meets the threshold for a material cybersecurity incident under SEC rules. An 8-K filing must be prepared and submitted within four business days. The filing must describe the nature, scope, timing, and material impact of the incident. The CFO and General Counsel need your incident timeline and impact assessment immediately.",
+    "severity": "critical",
+    "suggested_trigger_type": "condition",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "law_enforcement",
+    "title": "FBI Cyber Division Requests Cooperation",
+    "content": "The FBI Cyber Division has contacted [Organization] regarding the incident. They believe the attack is linked to a known nation-state threat actor group targeting financial institutions. They are requesting access to forensic evidence and logs, but warn that premature public disclosure could compromise their ongoing investigation into other targeted firms.",
+    "severity": "high",
+    "suggested_trigger_type": "time",
+    "attack_technique_id": "T1589",
+    "requires_response": true
+  },
+  {
+    "inject_type": "customer_complaint",
+    "title": "Institutional Investor Demands Emergency Call",
+    "content": "A top-10 institutional investor holding 8% of outstanding shares has demanded an emergency call with the CISO and CFO. They are concerned about the cybersecurity incident impact on Q4 earnings and want assurance that trading systems, customer accounts, and financial data integrity have not been compromised. Failure to provide timely assurance could trigger a sell-off.",
+    "severity": "high",
+    "suggested_trigger_type": "condition",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "technical_failure",
+    "title": "Core Banking System Integrity Alert",
+    "content": "Automated integrity checks on the core banking platform have detected unauthorized modifications to transaction processing logic. Preliminary analysis suggests attackers may have inserted code to round fractional cents into a collection account (salami slicing attack). All transaction processing has been flagged for manual review. Estimated backlog: 2.3 million pending transactions.",
+    "severity": "critical",
+    "suggested_trigger_type": "round",
+    "attack_technique_id": "T1565.001",
+    "requires_response": true
+  },
+  {
+    "inject_type": "media_inquiry",
+    "title": "Financial Times Reporter Has Inside Sources",
+    "content": "A Financial Times reporter has emailed the communications team claiming to have spoken with \"multiple sources inside [Organization]\" about the security incident. They allege that customer account data including Social Security numbers and account balances have been exfiltrated. They are giving [Organization] until 5 PM today to comment before publishing.",
+    "severity": "high",
+    "suggested_trigger_type": "time",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "vendor_alert",
+    "title": "SWIFT Network Security Notification",
+    "content": "SWIFT has issued an urgent security notification indicating that several member institutions have reported unauthorized SWIFT messages originating from compromised operator terminals. [Organization] is advised to immediately review all SWIFT operator credentials, validate recent message logs against authorized transactions, and enable enhanced monitoring. Two suspicious outbound transfers totaling $4.2 million have been flagged.",
+    "severity": "critical",
+    "suggested_trigger_type": "event",
+    "attack_technique_id": "T1071",
+    "requires_response": true
+  }
+]

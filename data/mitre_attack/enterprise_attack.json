@@ -1,0 +1,2188 @@
+[
+  {
+    "technique_id": "T1595",
+    "name": "Active Scanning",
+    "tactic": "reconnaissance",
+    "tactic_id": "TA0043",
+    "description": "Adversaries may execute active reconnaissance scans to gather information that can be used during targeting, such as scanning IP blocks and ports.",
+    "platforms": [
+      "PRE"
+    ],
+    "data_sources": [
+      "Network Traffic"
+    ],
+    "detection": "Monitor for suspicious network traffic that could be indicative of scanning, such as large quantities of requests from a single source.",
+    "mitigations": [
+      "Pre-compromise detection is difficult; monitor external-facing assets"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1595.001",
+    "name": "Scanning IP Blocks",
+    "tactic": "reconnaissance",
+    "tactic_id": "TA0043",
+    "description": "Adversaries may scan victim IP blocks to gather information for targeting, identifying active hosts and services.",
+    "platforms": [
+      "PRE"
+    ],
+    "data_sources": [
+      "Network Traffic"
+    ],
+    "detection": "Monitor for suspicious inbound network traffic from unexpected sources scanning multiple ports or hosts.",
+    "mitigations": [
+      "Rate limiting",
+      "Firewall rules"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1595"
+  },
+  {
+    "technique_id": "T1589",
+    "name": "Gather Victim Identity Information",
+    "tactic": "reconnaissance",
+    "tactic_id": "TA0043",
+    "description": "Adversaries may gather information about the victim's identity that can be used during targeting, such as employee names, email addresses, and credentials.",
+    "platforms": [
+      "PRE"
+    ],
+    "data_sources": [
+      "OSINT Sources"
+    ],
+    "detection": "Monitor for suspicious access to social media, corporate directories, or data breach databases.",
+    "mitigations": [
+      "Limit public exposure of employee information",
+      "Security awareness training"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1590",
+    "name": "Gather Victim Network Information",
+    "tactic": "reconnaissance",
+    "tactic_id": "TA0043",
+    "description": "Adversaries may gather information about the victim's networks that can be used during targeting, including network topology, DNS records, and IP ranges.",
+    "platforms": [
+      "PRE"
+    ],
+    "data_sources": [
+      "DNS Logs",
+      "WHOIS Records"
+    ],
+    "detection": "Monitor for excessive DNS queries or WHOIS lookups from suspicious sources.",
+    "mitigations": [
+      "Limit public DNS information",
+      "Use privacy protection on domain registrations"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1598",
+    "name": "Phishing for Information",
+    "tactic": "reconnaissance",
+    "tactic_id": "TA0043",
+    "description": "Adversaries may send phishing messages to elicit sensitive information that can be used during targeting, without delivering malware.",
+    "platforms": [
+      "PRE"
+    ],
+    "data_sources": [
+      "Email Gateway",
+      "Application Log"
+    ],
+    "detection": "Monitor email for suspicious messages requesting sensitive information from unknown or spoofed senders.",
+    "mitigations": [
+      "User Training",
+      "Email Filtering"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1583",
+    "name": "Acquire Infrastructure",
+    "tactic": "resource-development",
+    "tactic_id": "TA0042",
+    "description": "Adversaries may buy, lease, or rent infrastructure such as servers, domains, and third-party web services for use during targeting.",
+    "platforms": [
+      "PRE"
+    ],
+    "data_sources": [
+      "Domain Registration",
+      "DNS Logs"
+    ],
+    "detection": "Monitor for newly registered domains or infrastructure that correlates with known threat actor patterns.",
+    "mitigations": [
+      "Threat intelligence feeds",
+      "Domain monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1588",
+    "name": "Obtain Capabilities",
+    "tactic": "resource-development",
+    "tactic_id": "TA0042",
+    "description": "Adversaries may buy, steal, or download software tools, exploits, and certificates that can be used during targeting.",
+    "platforms": [
+      "PRE"
+    ],
+    "data_sources": [
+      "Malware Repository",
+      "Threat Intelligence"
+    ],
+    "detection": "Monitor dark web forums and malware repositories for tools associated with threat actors targeting your organization.",
+    "mitigations": [
+      "Threat intelligence monitoring",
+      "Vulnerability management"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1584",
+    "name": "Compromise Infrastructure",
+    "tactic": "resource-development",
+    "tactic_id": "TA0042",
+    "description": "Adversaries may compromise third-party infrastructure to use in support of targeting, such as web servers for watering hole attacks.",
+    "platforms": [
+      "PRE"
+    ],
+    "data_sources": [
+      "Domain Registration",
+      "Network Traffic"
+    ],
+    "detection": "Monitor for changes in third-party infrastructure that may indicate compromise, such as unexpected DNS changes.",
+    "mitigations": [
+      "Third-party risk assessments",
+      "Supply chain monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1587",
+    "name": "Develop Capabilities",
+    "tactic": "resource-development",
+    "tactic_id": "TA0042",
+    "description": "Adversaries may build custom capabilities such as malware, exploits, and tools for use in operations.",
+    "platforms": [
+      "PRE"
+    ],
+    "data_sources": [
+      "Malware Repository",
+      "Threat Intelligence"
+    ],
+    "detection": "Difficult to detect pre-compromise; monitor for novel malware samples matching known actor TTPs.",
+    "mitigations": [
+      "Threat intelligence sharing",
+      "Advanced malware analysis"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1566",
+    "name": "Phishing",
+    "tactic": "initial-access",
+    "tactic_id": "TA0001",
+    "description": "Adversaries may send phishing messages to gain access to victim systems. All forms of phishing are electronically delivered social engineering.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Email Gateway",
+      "Network Traffic",
+      "Application Log"
+    ],
+    "detection": "Monitor email gateways for suspicious attachments and links. Analyze email headers for spoofing indicators.",
+    "mitigations": [
+      "User Training",
+      "Email Filtering",
+      "Multi-Factor Authentication"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1566.001",
+    "name": "Spearphishing Attachment",
+    "tactic": "initial-access",
+    "tactic_id": "TA0001",
+    "description": "Adversaries may send spearphishing emails with a malicious attachment in an attempt to gain access to victim systems.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Email Gateway",
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for suspicious email attachments, especially executables, scripts, and macro-enabled documents.",
+    "mitigations": [
+      "Antivirus",
+      "Email Filtering",
+      "User Training",
+      "Disable Macros"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1566"
+  },
+  {
+    "technique_id": "T1566.002",
+    "name": "Spearphishing Link",
+    "tactic": "initial-access",
+    "tactic_id": "TA0001",
+    "description": "Adversaries may send spearphishing emails with a malicious link in an attempt to gain access to victim systems.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Email Gateway",
+      "Network Traffic",
+      "Web Proxy"
+    ],
+    "detection": "Monitor for suspicious URLs in emails and web proxy logs for connections to known malicious domains.",
+    "mitigations": [
+      "URL Filtering",
+      "User Training",
+      "Web Proxy"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1566"
+  },
+  {
+    "technique_id": "T1190",
+    "name": "Exploit Public-Facing Application",
+    "tactic": "initial-access",
+    "tactic_id": "TA0001",
+    "description": "Adversaries may attempt to take advantage of a weakness in an Internet-facing computer or program using software, data, or commands to cause unintended behavior.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Containers"
+    ],
+    "data_sources": [
+      "Application Log",
+      "Network Traffic",
+      "Web Application Firewall"
+    ],
+    "detection": "Monitor web application logs for unusual requests, error codes, and exploit signatures. Use WAF rules.",
+    "mitigations": [
+      "Patch Management",
+      "Web Application Firewall",
+      "Network Segmentation"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1078",
+    "name": "Valid Accounts",
+    "tactic": "initial-access",
+    "tactic_id": "TA0001",
+    "description": "Adversaries may obtain and abuse credentials of existing accounts as a means of gaining initial access, persistence, privilege escalation, or defense evasion.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Azure AD",
+      "SaaS"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Logon Session"
+    ],
+    "detection": "Monitor for anomalous account usage such as logins from unusual locations, times, or devices.",
+    "mitigations": [
+      "Multi-Factor Authentication",
+      "Password Policies",
+      "Account Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1133",
+    "name": "External Remote Services",
+    "tactic": "initial-access",
+    "tactic_id": "TA0001",
+    "description": "Adversaries may leverage external-facing remote services to initially access or persist within a network, such as VPNs, Citrix, and RDP.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Network Traffic"
+    ],
+    "detection": "Monitor for unusual remote access connections, especially from unexpected geographic locations or at unusual times.",
+    "mitigations": [
+      "Multi-Factor Authentication",
+      "Network Segmentation",
+      "VPN Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1195",
+    "name": "Supply Chain Compromise",
+    "tactic": "initial-access",
+    "tactic_id": "TA0001",
+    "description": "Adversaries may manipulate products or product delivery mechanisms prior to receipt by a final consumer for the purpose of data or system compromise.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Software Distribution Logs"
+    ],
+    "detection": "Verify software integrity via hashes and code signing. Monitor for unexpected software updates or changes.",
+    "mitigations": [
+      "Software Integrity Verification",
+      "Vendor Security Assessment",
+      "SBOM Analysis"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1059",
+    "name": "Command and Scripting Interpreter",
+    "tactic": "execution",
+    "tactic_id": "TA0002",
+    "description": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging",
+      "Script Execution Logs"
+    ],
+    "detection": "Monitor for suspicious command-line activity, script execution, and unusual interpreter usage.",
+    "mitigations": [
+      "Application Whitelisting",
+      "Script Logging",
+      "Constrained Language Mode"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1059.001",
+    "name": "PowerShell",
+    "tactic": "execution",
+    "tactic_id": "TA0002",
+    "description": "Adversaries may abuse PowerShell commands and scripts for execution. PowerShell is a powerful interactive command-line interface and scripting environment included in Windows.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "PowerShell Logs",
+      "Process Monitoring",
+      "Script Block Logging"
+    ],
+    "detection": "Enable PowerShell script block logging and module logging. Monitor for encoded commands and suspicious cmdlets.",
+    "mitigations": [
+      "Script Block Logging",
+      "Constrained Language Mode",
+      "Application Whitelisting"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1059"
+  },
+  {
+    "technique_id": "T1059.003",
+    "name": "Windows Command Shell",
+    "tactic": "execution",
+    "tactic_id": "TA0002",
+    "description": "Adversaries may abuse the Windows command shell (cmd.exe) for execution of commands and scripts.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for suspicious cmd.exe child processes and unusual command-line arguments.",
+    "mitigations": [
+      "Application Whitelisting",
+      "Command Line Auditing"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1059"
+  },
+  {
+    "technique_id": "T1204",
+    "name": "User Execution",
+    "tactic": "execution",
+    "tactic_id": "TA0002",
+    "description": "Adversaries may rely upon specific actions by a user in order to gain execution, such as opening a malicious file or clicking a link.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "File Monitoring"
+    ],
+    "detection": "Monitor for suspicious file opens, especially from email clients or web browsers, and subsequent process creation.",
+    "mitigations": [
+      "User Training",
+      "Application Whitelisting",
+      "Behavior Prevention"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1053",
+    "name": "Scheduled Task/Job",
+    "tactic": "execution",
+    "tactic_id": "TA0002",
+    "description": "Adversaries may abuse task scheduling functionality to facilitate initial or recurring execution of malicious code.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Scheduled Task Logs",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for creation of new scheduled tasks or cron jobs, especially those running as elevated users.",
+    "mitigations": [
+      "Privileged Account Management",
+      "Audit Scheduled Tasks"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1203",
+    "name": "Exploitation for Client Execution",
+    "tactic": "execution",
+    "tactic_id": "TA0002",
+    "description": "Adversaries may exploit software vulnerabilities in client applications to execute code, such as browser or office application exploits.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Application Log"
+    ],
+    "detection": "Monitor for unusual child processes of common applications like browsers and office suites.",
+    "mitigations": [
+      "Patch Management",
+      "Application Isolation",
+      "Exploit Protection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1098",
+    "name": "Account Manipulation",
+    "tactic": "persistence",
+    "tactic_id": "TA0003",
+    "description": "Adversaries may manipulate accounts to maintain access to victim systems, including modifying credentials or permission groups.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Azure AD"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "User Account Modifications"
+    ],
+    "detection": "Monitor for unexpected changes to user accounts, group memberships, and account properties.",
+    "mitigations": [
+      "Privileged Account Management",
+      "Multi-Factor Authentication"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1136",
+    "name": "Create Account",
+    "tactic": "persistence",
+    "tactic_id": "TA0003",
+    "description": "Adversaries may create accounts to maintain access to victim systems. Accounts may be created on the local system, domain, or cloud tenant.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Azure AD"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for new account creation events, especially accounts with elevated privileges or created outside normal processes.",
+    "mitigations": [
+      "Privileged Account Management",
+      "Account Use Policies"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1547",
+    "name": "Boot or Logon Autostart Execution",
+    "tactic": "persistence",
+    "tactic_id": "TA0003",
+    "description": "Adversaries may configure system settings to automatically execute a program during system boot or logon to maintain persistence.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Registry Monitoring",
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor registry run keys, startup folders, and init scripts for unexpected modifications.",
+    "mitigations": [
+      "Application Whitelisting",
+      "Registry Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1505",
+    "name": "Server Software Component",
+    "tactic": "persistence",
+    "tactic_id": "TA0003",
+    "description": "Adversaries may abuse legitimate extensible development features of servers to establish persistent access, such as web shells or SQL triggers.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Application Log",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor web server directories for unexpected file additions. Use file integrity monitoring on web roots.",
+    "mitigations": [
+      "File Integrity Monitoring",
+      "Least Privilege",
+      "Web Application Firewall"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1505.003",
+    "name": "Web Shell",
+    "tactic": "persistence",
+    "tactic_id": "TA0003",
+    "description": "Adversaries may backdoor web servers with web shells to establish persistent access to systems.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Network Traffic",
+      "Application Log"
+    ],
+    "detection": "Monitor web server directories for new or modified files. Analyze HTTP traffic for web shell patterns.",
+    "mitigations": [
+      "File Integrity Monitoring",
+      "Restrict File Permissions",
+      "Web Application Firewall"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1505"
+  },
+  {
+    "technique_id": "T1543",
+    "name": "Create or Modify System Process",
+    "tactic": "persistence",
+    "tactic_id": "TA0003",
+    "description": "Adversaries may create or modify system-level processes to repeatedly execute malicious payloads as part of persistence.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Service Monitoring",
+      "File Monitoring"
+    ],
+    "detection": "Monitor for new services, daemons, or systemd units. Track changes to existing system processes.",
+    "mitigations": [
+      "Privileged Account Management",
+      "Restrict Service Creation"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1068",
+    "name": "Exploitation for Privilege Escalation",
+    "tactic": "privilege-escalation",
+    "tactic_id": "TA0004",
+    "description": "Adversaries may exploit software vulnerabilities to elevate privileges. Exploitation of a software vulnerability occurs when an adversary takes advantage of a programming error in a program, service, or within the operating system itself.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Application Log"
+    ],
+    "detection": "Monitor for unusual process behavior, unexpected privilege changes, and exploitation indicators.",
+    "mitigations": [
+      "Patch Management",
+      "Exploit Protection",
+      "Least Privilege"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1548",
+    "name": "Abuse Elevation Control Mechanism",
+    "tactic": "privilege-escalation",
+    "tactic_id": "TA0004",
+    "description": "Adversaries may circumvent mechanisms designed to control elevate privileges to gain higher-level permissions, such as UAC bypass or sudo exploitation.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for UAC bypass attempts, sudo misconfigurations, and SetUID/SetGID abuse.",
+    "mitigations": [
+      "UAC Configuration",
+      "Privileged Account Management",
+      "Audit Sudo Usage"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1134",
+    "name": "Access Token Manipulation",
+    "tactic": "privilege-escalation",
+    "tactic_id": "TA0004",
+    "description": "Adversaries may modify access tokens to operate under a different user or system security context to perform actions and bypass access controls.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Authentication Logs",
+      "API Monitoring"
+    ],
+    "detection": "Monitor for token manipulation APIs (e.g., AdjustTokenPrivileges) and unexpected token impersonation.",
+    "mitigations": [
+      "Privileged Account Management",
+      "Least Privilege"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1078.002",
+    "name": "Domain Accounts",
+    "tactic": "privilege-escalation",
+    "tactic_id": "TA0004",
+    "description": "Adversaries may obtain and abuse credentials of domain accounts for privilege escalation within a domain environment.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Active Directory Logs"
+    ],
+    "detection": "Monitor for anomalous domain account activity, including unusual logon patterns and privilege changes.",
+    "mitigations": [
+      "Multi-Factor Authentication",
+      "Privileged Account Management"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1078"
+  },
+  {
+    "technique_id": "T1070",
+    "name": "Indicator Removal",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may delete or alter generated artifacts on a host system, including logs, captured data, and other evidence of activity.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Process Monitoring",
+      "Event Logs"
+    ],
+    "detection": "Monitor for log clearing events, timestamp modifications, and file deletions in sensitive directories.",
+    "mitigations": [
+      "Centralized Logging",
+      "Protected Event Logs",
+      "File Integrity Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1070.001",
+    "name": "Clear Windows Event Logs",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may clear Windows Event Logs to hide the activity of an intrusion.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Event Logs",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for Event Log clearing events (Event ID 1102). Forward logs to a centralized SIEM.",
+    "mitigations": [
+      "Centralized Logging",
+      "Restrict Log Access",
+      "Log Forwarding"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1070"
+  },
+  {
+    "technique_id": "T1036",
+    "name": "Masquerading",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may attempt to manipulate features of their artifacts to make them appear legitimate or benign to users and security tools.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for files or processes with names similar to legitimate system files but in unusual locations.",
+    "mitigations": [
+      "Code Signing Enforcement",
+      "Application Whitelisting"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1562",
+    "name": "Impair Defenses",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may maliciously modify components of a victim environment in order to hinder or disable defensive mechanisms.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Service Monitoring",
+      "Windows Registry"
+    ],
+    "detection": "Monitor for disabled security tools, modified firewall rules, or stopped security services.",
+    "mitigations": [
+      "Tamper Protection",
+      "Restrict Service Changes",
+      "Endpoint Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1562.001",
+    "name": "Disable or Modify Tools",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may modify or disable security tools to avoid detection of their malware or activity.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Service Monitoring"
+    ],
+    "detection": "Monitor for attempts to stop or modify security services like antivirus or EDR agents.",
+    "mitigations": [
+      "Tamper Protection",
+      "Restrict Service Changes"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1562"
+  },
+  {
+    "technique_id": "T1027",
+    "name": "Obfuscated Files or Information",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may attempt to make an executable or file difficult to discover or analyze by encrypting, encoding, or otherwise obfuscating its contents.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for encoded or encrypted payloads, base64 strings in command lines, and packed executables.",
+    "mitigations": [
+      "Antivirus",
+      "Behavior-Based Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1218",
+    "name": "System Binary Proxy Execution",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may bypass process or signature-based defenses by proxying execution of malicious content with signed or trusted binaries (living off the land).",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for unusual use of signed binaries like mshta.exe, rundll32.exe, or regsvr32.exe.",
+    "mitigations": [
+      "Application Whitelisting",
+      "Disable Unused Utilities"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1003",
+    "name": "OS Credential Dumping",
+    "tactic": "credential-access",
+    "tactic_id": "TA0006",
+    "description": "Adversaries may attempt to dump credentials to obtain account login and credential material, normally in the form of a hash or a clear text password.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "API Monitoring",
+      "Authentication Logs"
+    ],
+    "detection": "Monitor for access to LSASS process, SAM database, and credential store files. Watch for tools like Mimikatz.",
+    "mitigations": [
+      "Credential Guard",
+      "Privileged Account Management",
+      "LSASS Protection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1003.001",
+    "name": "LSASS Memory",
+    "tactic": "credential-access",
+    "tactic_id": "TA0006",
+    "description": "Adversaries may attempt to access credential material stored in the process memory of the Local Security Authority Subsystem Service (LSASS).",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "API Monitoring"
+    ],
+    "detection": "Monitor for processes accessing LSASS memory. Enable Credential Guard and LSASS protection.",
+    "mitigations": [
+      "Credential Guard",
+      "LSASS Protection",
+      "Privileged Account Management"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1003"
+  },
+  {
+    "technique_id": "T1110",
+    "name": "Brute Force",
+    "tactic": "credential-access",
+    "tactic_id": "TA0006",
+    "description": "Adversaries may use brute force techniques to attempt access to accounts when passwords are unknown or when password hashes are obtained.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Azure AD",
+      "SaaS"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Network Traffic"
+    ],
+    "detection": "Monitor for multiple failed authentication attempts from single sources or against single accounts.",
+    "mitigations": [
+      "Account Lockout Policies",
+      "Multi-Factor Authentication",
+      "Rate Limiting"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1558",
+    "name": "Steal or Forge Kerberos Tickets",
+    "tactic": "credential-access",
+    "tactic_id": "TA0006",
+    "description": "Adversaries may attempt to subvert Kerberos authentication by stealing or forging Kerberos tickets to enable lateral movement or privilege escalation.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Active Directory Logs"
+    ],
+    "detection": "Monitor for unusual Kerberos ticket requests, especially TGS requests for service accounts (Kerberoasting).",
+    "mitigations": [
+      "Strong Service Account Passwords",
+      "Managed Service Accounts",
+      "Kerberos Configuration"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1555",
+    "name": "Credentials from Password Stores",
+    "tactic": "credential-access",
+    "tactic_id": "TA0006",
+    "description": "Adversaries may search for common password storage locations to obtain user credentials, including browser password managers and credential vaults.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Process Monitoring",
+      "API Monitoring"
+    ],
+    "detection": "Monitor for access to browser credential stores, password manager files, and credential vault APIs.",
+    "mitigations": [
+      "Password Manager Security",
+      "Endpoint Detection",
+      "Least Privilege"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1621",
+    "name": "Multi-Factor Authentication Request Generation",
+    "tactic": "credential-access",
+    "tactic_id": "TA0006",
+    "description": "Adversaries may attempt to bypass MFA by generating repeated push notifications or challenges to wear down the user into accepting (MFA fatigue).",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Azure AD",
+      "SaaS"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "MFA Logs"
+    ],
+    "detection": "Monitor for rapid successive MFA requests to a single user. Alert on MFA denials followed by approval.",
+    "mitigations": [
+      "Number Matching MFA",
+      "Rate Limiting MFA",
+      "User Training"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1046",
+    "name": "Network Service Discovery",
+    "tactic": "discovery",
+    "tactic_id": "TA0007",
+    "description": "Adversaries may attempt to get a listing of services running on remote hosts and local network infrastructure devices, including those that may be vulnerable to remote exploitation.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for port scanning activity, especially from internal hosts to internal networks.",
+    "mitigations": [
+      "Network Segmentation",
+      "Internal Firewalls",
+      "Network Intrusion Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1082",
+    "name": "System Information Discovery",
+    "tactic": "discovery",
+    "tactic_id": "TA0007",
+    "description": "Adversaries may attempt to get detailed information about the operating system and hardware, including version, patches, and architecture.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for commands like systeminfo, uname, or hostnamectl executed in suspicious contexts.",
+    "mitigations": [
+      "Least Privilege",
+      "Endpoint Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1083",
+    "name": "File and Directory Discovery",
+    "tactic": "discovery",
+    "tactic_id": "TA0007",
+    "description": "Adversaries may enumerate files and directories or search in specific locations of a host or network share for certain information.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging",
+      "File Monitoring"
+    ],
+    "detection": "Monitor for excessive directory listing commands or file enumeration activity from compromised accounts.",
+    "mitigations": [
+      "Least Privilege",
+      "Restrict File Access"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1069",
+    "name": "Permission Groups Discovery",
+    "tactic": "discovery",
+    "tactic_id": "TA0007",
+    "description": "Adversaries may attempt to discover group and permission settings to determine which user accounts and groups are available.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Azure AD"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging",
+      "Active Directory Logs"
+    ],
+    "detection": "Monitor for commands like net group, Get-ADGroup, or ldapsearch querying group memberships.",
+    "mitigations": [
+      "Least Privilege",
+      "Restrict AD Queries"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1018",
+    "name": "Remote System Discovery",
+    "tactic": "discovery",
+    "tactic_id": "TA0007",
+    "description": "Adversaries may attempt to discover other systems on the network by querying network services or using scanning tools.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for ARP scans, ping sweeps, and net view commands from internal hosts.",
+    "mitigations": [
+      "Network Segmentation",
+      "Internal Firewalls"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1087",
+    "name": "Account Discovery",
+    "tactic": "discovery",
+    "tactic_id": "TA0007",
+    "description": "Adversaries may attempt to get a listing of accounts on a system or within an environment, including local, domain, and cloud accounts.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Azure AD"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging",
+      "Active Directory Logs"
+    ],
+    "detection": "Monitor for account enumeration commands like net user, Get-ADUser, or cloud IAM queries.",
+    "mitigations": [
+      "Least Privilege",
+      "Restrict AD Queries"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1021",
+    "name": "Remote Services",
+    "tactic": "lateral-movement",
+    "tactic_id": "TA0008",
+    "description": "Adversaries may use valid accounts to log into a service specifically designed to accept remote connections, such as RDP, SSH, or SMB.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Network Traffic",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for unusual remote service connections between internal systems, especially during off-hours.",
+    "mitigations": [
+      "Multi-Factor Authentication",
+      "Network Segmentation",
+      "Privileged Account Management"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1021.001",
+    "name": "Remote Desktop Protocol",
+    "tactic": "lateral-movement",
+    "tactic_id": "TA0008",
+    "description": "Adversaries may use Remote Desktop Protocol (RDP) to move laterally within a network by connecting to remote systems.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Network Traffic"
+    ],
+    "detection": "Monitor for unusual RDP connections, especially between workstations or from unexpected source systems.",
+    "mitigations": [
+      "Network Level Authentication",
+      "MFA for RDP",
+      "Network Segmentation"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1021"
+  },
+  {
+    "technique_id": "T1021.002",
+    "name": "SMB/Windows Admin Shares",
+    "tactic": "lateral-movement",
+    "tactic_id": "TA0008",
+    "description": "Adversaries may use Windows administrative shares (C$, ADMIN$, IPC$) for lateral movement and file copying between systems.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Network Traffic",
+      "File Monitoring"
+    ],
+    "detection": "Monitor for access to administrative shares from unexpected sources and SMB traffic between workstations.",
+    "mitigations": [
+      "Disable Admin Shares",
+      "Network Segmentation",
+      "Privileged Account Management"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1021"
+  },
+  {
+    "technique_id": "T1570",
+    "name": "Lateral Tool Transfer",
+    "tactic": "lateral-movement",
+    "tactic_id": "TA0008",
+    "description": "Adversaries may transfer tools or other files between systems in a compromised environment using internal network protocols.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "File Monitoring"
+    ],
+    "detection": "Monitor for file transfers between internal systems using SMB, SCP, or other protocols outside normal patterns.",
+    "mitigations": [
+      "Network Segmentation",
+      "Network Intrusion Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1550",
+    "name": "Use Alternate Authentication Material",
+    "tactic": "lateral-movement",
+    "tactic_id": "TA0008",
+    "description": "Adversaries may use alternate authentication material, such as password hashes, Kerberos tickets, or tokens, to move laterally within an environment.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Active Directory Logs"
+    ],
+    "detection": "Monitor for pass-the-hash, pass-the-ticket, and token impersonation attacks in authentication logs.",
+    "mitigations": [
+      "Credential Guard",
+      "Privileged Account Management",
+      "Network Segmentation"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1005",
+    "name": "Data from Local System",
+    "tactic": "collection",
+    "tactic_id": "TA0009",
+    "description": "Adversaries may search local system sources, such as file systems and databases, to find files of interest and sensitive data prior to exfiltration.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for unusual file access patterns, especially to sensitive directories and document repositories.",
+    "mitigations": [
+      "Data Loss Prevention",
+      "Encrypt Sensitive Data",
+      "Least Privilege"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1074",
+    "name": "Data Staged",
+    "tactic": "collection",
+    "tactic_id": "TA0009",
+    "description": "Adversaries may stage collected data in a central location or directory prior to exfiltration to minimize the number of connections made.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for creation of archives or large files in temporary directories or unusual staging locations.",
+    "mitigations": [
+      "Data Loss Prevention",
+      "File Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1560",
+    "name": "Archive Collected Data",
+    "tactic": "collection",
+    "tactic_id": "TA0009",
+    "description": "Adversaries may compress and/or encrypt data that is collected prior to exfiltration using utilities like zip, 7zip, or tar.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "File Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for execution of archiving tools and creation of compressed files, especially in unusual locations.",
+    "mitigations": [
+      "Data Loss Prevention",
+      "Endpoint Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1119",
+    "name": "Automated Collection",
+    "tactic": "collection",
+    "tactic_id": "TA0009",
+    "description": "Adversaries may use automated techniques for collecting data, such as scripts that search for and copy specific file types.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "File Monitoring",
+      "Script Execution Logs"
+    ],
+    "detection": "Monitor for scripts or processes systematically accessing or copying files across directories.",
+    "mitigations": [
+      "Data Loss Prevention",
+      "Endpoint Detection",
+      "Least Privilege"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1114",
+    "name": "Email Collection",
+    "tactic": "collection",
+    "tactic_id": "TA0009",
+    "description": "Adversaries may target user email to collect sensitive information, including email forwarding rules and mailbox access.",
+    "platforms": [
+      "Windows",
+      "macOS",
+      "Office 365"
+    ],
+    "data_sources": [
+      "Email Gateway",
+      "Application Log",
+      "Authentication Logs"
+    ],
+    "detection": "Monitor for new email forwarding rules, mailbox delegation changes, and unusual email access patterns.",
+    "mitigations": [
+      "MFA for Email",
+      "Audit Mailbox Access",
+      "Email Forwarding Rules Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1071",
+    "name": "Application Layer Protocol",
+    "tactic": "command-and-control",
+    "tactic_id": "TA0011",
+    "description": "Adversaries may communicate using OSI application layer protocols to avoid detection by blending in with existing traffic (HTTP, HTTPS, DNS).",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "DNS Logs",
+      "Web Proxy"
+    ],
+    "detection": "Monitor for unusual HTTP/HTTPS traffic patterns, DNS tunneling indicators, and beaconing behavior.",
+    "mitigations": [
+      "Network Intrusion Detection",
+      "SSL Inspection",
+      "DNS Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1071.001",
+    "name": "Web Protocols",
+    "tactic": "command-and-control",
+    "tactic_id": "TA0011",
+    "description": "Adversaries may communicate using HTTP/HTTPS to avoid detection by blending C2 traffic with normal web browsing.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "Web Proxy"
+    ],
+    "detection": "Monitor for beaconing patterns in HTTP/HTTPS traffic and connections to suspicious domains.",
+    "mitigations": [
+      "SSL Inspection",
+      "Web Proxy",
+      "Domain Filtering"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1071"
+  },
+  {
+    "technique_id": "T1105",
+    "name": "Ingress Tool Transfer",
+    "tactic": "command-and-control",
+    "tactic_id": "TA0011",
+    "description": "Adversaries may transfer tools or other files from an external system into a compromised environment using the command and control channel.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for file downloads from external sources, especially executables and scripts from unusual domains.",
+    "mitigations": [
+      "Network Intrusion Detection",
+      "Download Restrictions",
+      "Endpoint Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1572",
+    "name": "Protocol Tunneling",
+    "tactic": "command-and-control",
+    "tactic_id": "TA0011",
+    "description": "Adversaries may tunnel network communications to and from a victim system within a separate protocol to avoid detection and network filtering.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "DNS Logs"
+    ],
+    "detection": "Monitor for DNS tunneling, ICMP tunneling, and other protocol encapsulation techniques.",
+    "mitigations": [
+      "Network Intrusion Detection",
+      "DNS Monitoring",
+      "Protocol Filtering"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1090",
+    "name": "Proxy",
+    "tactic": "command-and-control",
+    "tactic_id": "TA0011",
+    "description": "Adversaries may use a connection proxy to direct network traffic between systems or act as an intermediary for network communications to avoid direct connections to C2 infrastructure.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for unusual proxy configurations, SOCKS proxy usage, and multi-hop connections.",
+    "mitigations": [
+      "Network Intrusion Detection",
+      "Traffic Filtering",
+      "SSL Inspection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1573",
+    "name": "Encrypted Channel",
+    "tactic": "command-and-control",
+    "tactic_id": "TA0011",
+    "description": "Adversaries may employ encryption to conceal command and control traffic, using standard or custom encryption protocols.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic"
+    ],
+    "detection": "Monitor for encrypted traffic to unusual destinations, self-signed certificates, and non-standard TLS implementations.",
+    "mitigations": [
+      "SSL Inspection",
+      "Network Intrusion Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1041",
+    "name": "Exfiltration Over C2 Channel",
+    "tactic": "exfiltration",
+    "tactic_id": "TA0010",
+    "description": "Adversaries may steal data by exfiltrating it over an existing command and control channel, encoding data within normal C2 communications.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for unusually large outbound data transfers over C2 channels and data encoding in network traffic.",
+    "mitigations": [
+      "Data Loss Prevention",
+      "Network Intrusion Detection",
+      "Egress Filtering"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1048",
+    "name": "Exfiltration Over Alternative Protocol",
+    "tactic": "exfiltration",
+    "tactic_id": "TA0010",
+    "description": "Adversaries may steal data by exfiltrating it over a different protocol than the existing command and control channel, such as DNS, FTP, or SMTP.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "DNS Logs"
+    ],
+    "detection": "Monitor for unusual outbound traffic on protocols not typically used for data transfer, such as DNS or ICMP.",
+    "mitigations": [
+      "Data Loss Prevention",
+      "Egress Filtering",
+      "DNS Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1567",
+    "name": "Exfiltration Over Web Service",
+    "tactic": "exfiltration",
+    "tactic_id": "TA0010",
+    "description": "Adversaries may use legitimate web services such as cloud storage, pastebins, or code repositories to exfiltrate data.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "Web Proxy",
+      "Cloud Service Logs"
+    ],
+    "detection": "Monitor for large uploads to cloud storage services, pastebins, and other web services outside normal business patterns.",
+    "mitigations": [
+      "Data Loss Prevention",
+      "Cloud Access Security Broker",
+      "Web Proxy"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1048.003",
+    "name": "Exfiltration Over Unencrypted Non-C2 Protocol",
+    "tactic": "exfiltration",
+    "tactic_id": "TA0010",
+    "description": "Adversaries may exfiltrate data over an unencrypted non-C2 network protocol such as FTP, HTTP, or DNS without encryption.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "DNS Logs"
+    ],
+    "detection": "Monitor for large outbound data transfers over cleartext protocols to external destinations.",
+    "mitigations": [
+      "Egress Filtering",
+      "Data Loss Prevention",
+      "Network Segmentation"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1048"
+  },
+  {
+    "technique_id": "T1486",
+    "name": "Data Encrypted for Impact",
+    "tactic": "impact",
+    "tactic_id": "TA0040",
+    "description": "Adversaries may encrypt data on target systems to interrupt availability. This is commonly associated with ransomware attacks.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for mass file encryption events, unusual file extension changes, and high file I/O activity.",
+    "mitigations": [
+      "Data Backup",
+      "Behavior-Based Detection",
+      "File Integrity Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1489",
+    "name": "Service Stop",
+    "tactic": "impact",
+    "tactic_id": "TA0040",
+    "description": "Adversaries may stop or disable services on a system to render those services unavailable to legitimate users, often as part of ransomware operations.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Service Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for unexpected stopping of critical services, especially security tools and database services.",
+    "mitigations": [
+      "Service Protection",
+      "Restrict Service Changes",
+      "Endpoint Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1490",
+    "name": "Inhibit System Recovery",
+    "tactic": "impact",
+    "tactic_id": "TA0040",
+    "description": "Adversaries may delete or remove built-in operating system data and turn off services designed to aid in the recovery of a corrupted system, such as shadow copies and backups.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging",
+      "File Monitoring"
+    ],
+    "detection": "Monitor for deletion of shadow copies (vssadmin delete shadows), backup catalog modifications, and recovery partition changes.",
+    "mitigations": [
+      "Data Backup",
+      "Restrict vssadmin",
+      "Offline Backups"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1529",
+    "name": "System Shutdown/Reboot",
+    "tactic": "impact",
+    "tactic_id": "TA0040",
+    "description": "Adversaries may shutdown or reboot systems to interrupt access to, or aid in the destruction of, those systems.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for unexpected system shutdown or reboot commands, especially outside maintenance windows.",
+    "mitigations": [
+      "Privileged Account Management",
+      "Restrict Shutdown Access"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1485",
+    "name": "Data Destruction",
+    "tactic": "impact",
+    "tactic_id": "TA0040",
+    "description": "Adversaries may destroy data and files on specific systems or in large numbers on a network to interrupt availability to systems, services, and network resources.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for mass file deletion events, disk wiping tools, and unusual file modification patterns.",
+    "mitigations": [
+      "Data Backup",
+      "File Integrity Monitoring",
+      "Least Privilege"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1498",
+    "name": "Network Denial of Service",
+    "tactic": "impact",
+    "tactic_id": "TA0040",
+    "description": "Adversaries may perform network denial of service (DoS) attacks to degrade or block the availability of targeted resources to users.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "Network Device Logs"
+    ],
+    "detection": "Monitor for unusual spikes in network traffic volume, SYN floods, and volumetric attack patterns.",
+    "mitigations": [
+      "DDoS Protection",
+      "Rate Limiting",
+      "CDN Services"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1047",
+    "name": "Windows Management Instrumentation",
+    "tactic": "execution",
+    "tactic_id": "TA0002",
+    "description": "Adversaries may abuse Windows Management Instrumentation (WMI) to execute malicious commands and payloads.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "WMI Logs"
+    ],
+    "detection": "Monitor for WMI process creation events and unusual WMI query patterns.",
+    "mitigations": [
+      "Privileged Account Management",
+      "WMI Logging",
+      "Application Whitelisting"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1053.005",
+    "name": "Scheduled Task",
+    "tactic": "persistence",
+    "tactic_id": "TA0003",
+    "description": "Adversaries may abuse the Windows Task Scheduler to perform task scheduling for initial or recurring execution of malicious code.",
+    "platforms": [
+      "Windows"
+    ],
+    "data_sources": [
+      "Scheduled Task Logs",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for creation of new scheduled tasks via schtasks.exe or Task Scheduler COM interfaces.",
+    "mitigations": [
+      "Privileged Account Management",
+      "Audit Scheduled Tasks"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1053"
+  },
+  {
+    "technique_id": "T1055",
+    "name": "Process Injection",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may inject code into processes to evade process-based defenses as well as possibly elevate privileges.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "API Monitoring"
+    ],
+    "detection": "Monitor for suspicious cross-process access, unusual memory allocations, and DLL injection indicators.",
+    "mitigations": [
+      "Endpoint Detection",
+      "Behavior-Based Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1140",
+    "name": "Deobfuscate/Decode Files or Information",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may use obfuscated files or information to hide artifacts of an intrusion from analysis, using utilities to deobfuscate at runtime.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "File Monitoring"
+    ],
+    "detection": "Monitor for execution of decoding utilities like certutil, base64, or custom deobfuscation scripts.",
+    "mitigations": [
+      "Antivirus",
+      "Behavior-Based Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1556",
+    "name": "Modify Authentication Process",
+    "tactic": "credential-access",
+    "tactic_id": "TA0006",
+    "description": "Adversaries may modify authentication mechanisms and processes to access user credentials or enable otherwise unwarranted access to accounts.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "Azure AD"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "File Monitoring",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for changes to authentication libraries, PAM modules, or SSO configurations.",
+    "mitigations": [
+      "Multi-Factor Authentication",
+      "Privileged Account Management",
+      "File Integrity Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1021.004",
+    "name": "SSH",
+    "tactic": "lateral-movement",
+    "tactic_id": "TA0008",
+    "description": "Adversaries may use Valid Accounts to log into remote machines using Secure Shell (SSH) for lateral movement.",
+    "platforms": [
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Network Traffic"
+    ],
+    "detection": "Monitor for unusual SSH connections between internal systems, key-based authentication from unexpected sources.",
+    "mitigations": [
+      "MFA for SSH",
+      "SSH Key Management",
+      "Network Segmentation"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1021"
+  },
+  {
+    "technique_id": "T1033",
+    "name": "System Owner/User Discovery",
+    "tactic": "discovery",
+    "tactic_id": "TA0007",
+    "description": "Adversaries may attempt to identify the primary user, currently logged in user, or set of users that commonly use a system.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for commands like whoami, query user, and w that enumerate user information.",
+    "mitigations": [
+      "Least Privilege"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1057",
+    "name": "Process Discovery",
+    "tactic": "discovery",
+    "tactic_id": "TA0007",
+    "description": "Adversaries may attempt to get information about running processes on a system to understand installed software and security tools.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for process listing commands like tasklist, ps, or Get-Process in suspicious contexts.",
+    "mitigations": [
+      "Endpoint Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1199",
+    "name": "Trusted Relationship",
+    "tactic": "initial-access",
+    "tactic_id": "TA0001",
+    "description": "Adversaries may breach or leverage organizations that have access to intended victims through trusted third-party relationships.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS",
+      "SaaS"
+    ],
+    "data_sources": [
+      "Authentication Logs",
+      "Network Traffic"
+    ],
+    "detection": "Monitor for unusual access from third-party connections and VPN links. Audit third-party access regularly.",
+    "mitigations": [
+      "Network Segmentation",
+      "Third-Party Access Monitoring",
+      "Zero Trust Architecture"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1071.004",
+    "name": "DNS",
+    "tactic": "command-and-control",
+    "tactic_id": "TA0011",
+    "description": "Adversaries may communicate using the Domain Name System (DNS) application layer protocol to avoid detection by blending in with DNS traffic.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "DNS Logs",
+      "Network Traffic"
+    ],
+    "detection": "Monitor for unusual DNS query patterns, high volume of DNS requests, long domain names, and TXT record queries.",
+    "mitigations": [
+      "DNS Monitoring",
+      "DNS Filtering",
+      "Network Intrusion Detection"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1071"
+  },
+  {
+    "technique_id": "T1132",
+    "name": "Data Encoding",
+    "tactic": "command-and-control",
+    "tactic_id": "TA0011",
+    "description": "Adversaries may encode data to make the content of command and control traffic more difficult to detect.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "Process Monitoring"
+    ],
+    "detection": "Monitor for base64-encoded content in network traffic and unusual data patterns in HTTP headers or payloads.",
+    "mitigations": [
+      "Network Intrusion Detection",
+      "SSL Inspection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1078.004",
+    "name": "Cloud Accounts",
+    "tactic": "initial-access",
+    "tactic_id": "TA0001",
+    "description": "Adversaries may obtain and abuse credentials of cloud accounts to gain initial access to cloud environments.",
+    "platforms": [
+      "Azure AD",
+      "AWS",
+      "GCP",
+      "SaaS"
+    ],
+    "data_sources": [
+      "Cloud Service Logs",
+      "Authentication Logs"
+    ],
+    "detection": "Monitor for cloud account logins from unusual locations, impossible travel scenarios, and privilege escalation.",
+    "mitigations": [
+      "Multi-Factor Authentication",
+      "Conditional Access Policies",
+      "Cloud Security Monitoring"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1078"
+  },
+  {
+    "technique_id": "T1537",
+    "name": "Transfer Data to Cloud Account",
+    "tactic": "exfiltration",
+    "tactic_id": "TA0010",
+    "description": "Adversaries may exfiltrate data by transferring the data to another cloud account they control within the same cloud service provider.",
+    "platforms": [
+      "Azure AD",
+      "AWS",
+      "GCP"
+    ],
+    "data_sources": [
+      "Cloud Service Logs",
+      "Network Traffic"
+    ],
+    "detection": "Monitor for data transfers to external cloud accounts or unusual cross-account access patterns.",
+    "mitigations": [
+      "Cloud Access Security Broker",
+      "Data Loss Prevention",
+      "Cloud Activity Monitoring"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1059.004",
+    "name": "Unix Shell",
+    "tactic": "execution",
+    "tactic_id": "TA0002",
+    "description": "Adversaries may abuse Unix shell commands and scripts for execution on Linux and macOS systems.",
+    "platforms": [
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for suspicious shell command execution, reverse shells, and unusual script activity.",
+    "mitigations": [
+      "Application Whitelisting",
+      "Shell Auditing"
+    ],
+    "is_subtechnique": true,
+    "parent_technique_id": "T1059"
+  },
+  {
+    "technique_id": "T1557",
+    "name": "Adversary-in-the-Middle",
+    "tactic": "credential-access",
+    "tactic_id": "TA0006",
+    "description": "Adversaries may position themselves between two or more networked devices to intercept and relay network communications (MITM attacks).",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Network Traffic",
+      "ARP Logs"
+    ],
+    "detection": "Monitor for ARP spoofing, LLMNR/NBT-NS poisoning, and unexpected network redirections.",
+    "mitigations": [
+      "Network Segmentation",
+      "Disable LLMNR/NBT-NS",
+      "Encrypt Network Traffic"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  },
+  {
+    "technique_id": "T1497",
+    "name": "Virtualization/Sandbox Evasion",
+    "tactic": "defense-evasion",
+    "tactic_id": "TA0005",
+    "description": "Adversaries may employ various means to detect and avoid virtualization and analysis environments to hinder forensic investigation.",
+    "platforms": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "data_sources": [
+      "Process Monitoring",
+      "Command Line Logging"
+    ],
+    "detection": "Monitor for processes checking for VM artifacts, sandbox detection routines, or timing-based evasion.",
+    "mitigations": [
+      "Advanced Sandboxing",
+      "Behavior-Based Detection"
+    ],
+    "is_subtechnique": false,
+    "parent_technique_id": null
+  }
+]
