@@ -1,0 +1,20 @@
+{
+  "id": "data_breach_healthcare",
+  "name": "Data Breach at Healthcare Organization",
+  "description": "Protected health information of 500,000 patients has been exposed through a misconfigured cloud database. HIPAA compliance and breach notification are critical.",
+  "industry": "Healthcare",
+  "difficulty": "intermediate",
+  "category": "compliance-drill",
+  "author": "system",
+  "rating": 4.3,
+  "rating_count": 10,
+  "tags": [
+    "data-breach",
+    "hipaa",
+    "cloud",
+    "phi",
+    "compliance"
+  ],
+  "visibility": "public",
+  "created_at": "2026-01-15T00:00:00+00:00"
+}

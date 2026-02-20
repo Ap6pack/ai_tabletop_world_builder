@@ -1,0 +1,10 @@
+{
+  "id": "2f901535-b7ee-463a-8df8-a9d85962f9c8",
+  "username": "user_a",
+  "email": "a@example.com",
+  "display_name": "user_a",
+  "hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$BejbjzFEoYM6wMMdHrUPgg$OXcjDy/1IvWaWkQaD+blmpLrqoPsMrkpJ8pQPUgoonM",
+  "created_at": "2026-02-20T04:46:59.327550+00:00",
+  "role": "user",
+  "is_active": true
+}

@@ -9,7 +9,6 @@ testpaths = ["."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-collect_ignore_glob = ["app/**", "scripts/**", "monitoring/**", "alembic/**"]
 asyncio_mode = "auto"
 
 [tool.ruff]

@@ -1,0 +1,134 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-02-20T02:51:12.240376+00:00",
+    "tools": [
+      {
+        "name": "generate_sbom.py",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "ai-tabletop-world-builder"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "fastapi",
+      "version": "0.120.4",
+      "purl": "pkg:pypi/fastapi@0.120.4"
+    },
+    {
+      "type": "library",
+      "name": "pydantic",
+      "version": "2.12.3",
+      "purl": "pkg:pypi/pydantic@2.12.3"
+    },
+    {
+      "type": "library",
+      "name": "pydantic-settings",
+      "version": "2.11.0",
+      "purl": "pkg:pypi/pydantic-settings@2.11.0"
+    },
+    {
+      "type": "library",
+      "name": "python-multipart",
+      "version": "0.0.9",
+      "purl": "pkg:pypi/python-multipart@0.0.9"
+    },
+    {
+      "type": "library",
+      "name": "streamlit",
+      "version": "1.51.0",
+      "purl": "pkg:pypi/streamlit@1.51.0"
+    },
+    {
+      "type": "library",
+      "name": "streamlit-chat",
+      "version": "0.1.1",
+      "purl": "pkg:pypi/streamlit-chat@0.1.1"
+    },
+    {
+      "type": "library",
+      "name": "openai",
+      "version": "2.6.1",
+      "purl": "pkg:pypi/openai@2.6.1"
+    },
+    {
+      "type": "library",
+      "name": "anthropic",
+      "version": "0.72.0",
+      "purl": "pkg:pypi/anthropic@0.72.0"
+    },
+    {
+      "type": "library",
+      "name": "aiofiles",
+      "version": "23.2.1",
+      "purl": "pkg:pypi/aiofiles@23.2.1"
+    },
+    {
+      "type": "library",
+      "name": "python-json-logger",
+      "version": "2.0.7",
+      "purl": "pkg:pypi/python-json-logger@2.0.7"
+    },
+    {
+      "type": "library",
+      "name": "python-dotenv",
+      "version": "1.0.0",
+      "purl": "pkg:pypi/python-dotenv@1.0.0"
+    },
+    {
+      "type": "library",
+      "name": "requests",
+      "version": "2.31.0",
+      "purl": "pkg:pypi/requests@2.31.0"
+    },
+    {
+      "type": "library",
+      "name": "httpx",
+      "version": "0.28.1",
+      "purl": "pkg:pypi/httpx@0.28.1"
+    },
+    {
+      "type": "library",
+      "name": "argon2-cffi",
+      "version": "23.1.0",
+      "purl": "pkg:pypi/argon2-cffi@23.1.0"
+    },
+    {
+      "type": "library",
+      "name": "plotly",
+      "version": "5.18.0",
+      "purl": "pkg:pypi/plotly@5.18.0"
+    },
+    {
+      "type": "library",
+      "name": "fpdf2",
+      "version": "2.7.0",
+      "purl": "pkg:pypi/fpdf2@2.7.0"
+    },
+    {
+      "type": "library",
+      "name": "kaleido",
+      "version": "0.2.1",
+      "purl": "pkg:pypi/kaleido@0.2.1"
+    },
+    {
+      "type": "library",
+      "name": "pytest",
+      "version": "7.4.4",
+      "purl": "pkg:pypi/pytest@7.4.4"
+    },
+    {
+      "type": "library",
+      "name": "pytest-asyncio",
+      "version": "0.23.3",
+      "purl": "pkg:pypi/pytest-asyncio@0.23.3"
+    }
+  ]
+}

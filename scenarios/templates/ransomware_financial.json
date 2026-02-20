@@ -1,0 +1,19 @@
+{
+  "id": "ransomware_financial",
+  "name": "Ransomware Attack on Financial Institution",
+  "description": "A sophisticated ransomware group has encrypted critical trading systems at a major bank. Time-sensitive recovery is needed to prevent massive financial losses.",
+  "industry": "Financial Services",
+  "difficulty": "advanced",
+  "category": "incident-response",
+  "author": "system",
+  "rating": 4.5,
+  "rating_count": 12,
+  "tags": [
+    "ransomware",
+    "financial",
+    "encryption",
+    "recovery"
+  ],
+  "visibility": "public",
+  "created_at": "2026-01-15T00:00:00+00:00"
+}

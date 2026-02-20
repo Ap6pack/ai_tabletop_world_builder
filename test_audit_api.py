@@ -1,14 +1,34 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Veritas Aequitas Holdings LLC. All rights reserved.
+# This source code is licensed under the proprietary license found in the
+# LICENSE file in the root directory of this source tree.
+#
+# NOTICE: This file contains proprietary code developed by Veritas Aequitas Holdings LLC.
+# Unauthorized use, reproduction, or distribution is strictly prohibited.
+# For inquiries, contact: contact@veritasandaequitas.com
 """
 Test script for audit API endpoints.
+
+Requires a running API server at localhost:8000. Automatically skipped
+during `pytest` when the server is not reachable.
 """
 import requests
 import json
+import pytest
 from datetime import datetime, timedelta
 
 API_BASE = "http://127.0.0.1:8000"
 
 
+def _api_reachable() -> bool:
+    try:
+        requests.get(f"{API_BASE}/health", timeout=2)
+        return True
+    except (requests.ConnectionError, requests.Timeout):
+        return False
+
+
+@pytest.mark.skipif(not _api_reachable(), reason="API server not running")
 def test_audit_endpoints():
     """Test all audit API endpoints."""
     print("=" * 80)
@@ -166,10 +186,13 @@ def test_audit_endpoints():
     print(f"SUMMARY: {passed} passed, {failed} failed out of {passed + failed} tests")
     print("=" * 80)
 
-    return failed == 0
+    assert failed == 0, f"{failed} test(s) failed"
 
 
 if __name__ == "__main__":
     import sys
-    success = test_audit_endpoints()
-    sys.exit(0 if success else 1)
+    try:
+        test_audit_endpoints()
+        sys.exit(0)
+    except (AssertionError, Exception):
+        sys.exit(1)

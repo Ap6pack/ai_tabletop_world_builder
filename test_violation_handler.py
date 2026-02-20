@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Veritas Aequitas Holdings LLC. All rights reserved.
+# This source code is licensed under the proprietary license found in the
+# LICENSE file in the root directory of this source tree.
+#
+# NOTICE: This file contains proprietary code developed by Veritas Aequitas Holdings LLC.
+# Unauthorized use, reproduction, or distribution is strictly prohibited.
+# For inquiries, contact: contact@veritasandaequitas.com
 """
 Test script for violation handler service.
 Tests violation handling, escalation, and user education.
@@ -269,9 +276,12 @@ def test_violation_handler():
     print(f"SUMMARY: {passed} passed, {failed} failed out of {passed + failed} tests")
     print("=" * 80)
 
-    return failed == 0
+    assert failed == 0, f"{failed} test(s) failed"
 
 
 if __name__ == "__main__":
-    success = test_violation_handler()
-    sys.exit(0 if success else 1)
+    try:
+        test_violation_handler()
+        sys.exit(0)
+    except (AssertionError, Exception):
+        sys.exit(1)

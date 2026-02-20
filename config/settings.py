@@ -1,12 +1,22 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Veritas Aequitas Holdings LLC. All rights reserved.
+# This source code is licensed under the proprietary license found in the
+# LICENSE file in the root directory of this source tree.
+#
+# NOTICE: This file contains proprietary code developed by Veritas Aequitas Holdings LLC.
+# Unauthorized use, reproduction, or distribution is strictly prohibited.
+# For inquiries, contact: contact@veritasandaequitas.com
 """
 Application configuration settings.
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
+
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
     # API Configuration
     api_host: str = "0.0.0.0"
@@ -57,9 +67,6 @@ class Settings(BaseSettings):
     scenarios_path: str = "./scenarios/generated"
     data_path: str = "./data"
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
 
 # Global settings instance
