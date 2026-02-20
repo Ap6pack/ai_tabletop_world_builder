@@ -35,8 +35,6 @@ from api.models.exercise_models import (
     InjectType,
 )
 
-collect_ignore_glob = ["app/*", "scripts/*", "monitoring/*", "alembic/*"]
-
 
 # ============================================================================
 # Core Model Fixtures
