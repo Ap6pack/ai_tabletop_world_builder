@@ -1,11 +1,11 @@
 [project]
 name = "ai-tabletop-world-builder"
-version = "0.8.0"
+version = "1.0.0"
 description = "AI-powered cybersecurity war gaming and training platform"
 requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
-testpaths = ["."]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -34,12 +34,12 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"test_*.py" = ["S101", "S105", "S106"]
+"tests/test_*.py" = ["S101", "S105", "S106"]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 
 [tool.bandit]
-exclude_dirs = ["tests", "test_*.py"]
+exclude_dirs = ["tests"]
 skips = ["B101"]

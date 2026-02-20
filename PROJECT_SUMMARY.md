@@ -65,9 +65,18 @@ ai_tabletop_world_builder/
 │   ├── data/                        # Application data (sessions, exercises)
 │   └── data/inject_templates/       # Crisis inject templates
 │
-├── Testing
+├── Testing (tests/)
 │   ├── conftest.py                  # Shared test fixtures
 │   └── test_*.py                    # 24 test files (241 tests)
+│
+├── Documentation (docs/)
+│   └── *.md                         # Phase completion & planning docs
+│
+├── Scripts (scripts/)
+│   ├── docker-entrypoint.sh         # Container entrypoint
+│   ├── generate_sbom.py             # SBOM generation
+│   ├── start_platform.sh            # Platform startup
+│   └── test_*.sh                    # API test scripts
 │
 └── Infrastructure
     ├── monitoring/                   # Observability configs

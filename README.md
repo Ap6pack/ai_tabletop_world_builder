@@ -305,13 +305,14 @@ ai_tabletop_world_builder/
 ├── app/                    # Streamlit frontend
 │   ├── Home.py             # Main page
 │   └── pages/              # 12 pages
+├── tests/                  # 24 test files (241 tests)
+├── docs/                   # Phase completion & planning docs
+├── scripts/                # Shell scripts and utilities
 ├── config/                 # Configuration
 ├── scenarios/              # Generated scenarios
 ├── data/                   # Storage
 ├── monitoring/             # Observability configs
 ├── main.py                 # FastAPI entry point
-├── conftest.py             # Shared test fixtures
-├── test_*.py               # 24 test files (241 tests)
 ├── Dockerfile              # Container build
 ├── docker-compose.yml      # Multi-service orchestration
 ├── requirements.txt        # Python dependencies
@@ -323,6 +324,7 @@ ai_tabletop_world_builder/
 ```bash
 pytest --tb=short -q
 # 240 passed, 1 skipped, 0 failed
+# Tests are in tests/ directory
 ```
 
 ## Content Policy Levels
