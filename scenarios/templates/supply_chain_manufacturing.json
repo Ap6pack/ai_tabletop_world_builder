@@ -1,0 +1,19 @@
+{
+  "id": "supply_chain_manufacturing",
+  "name": "Supply Chain Attack on Manufacturer",
+  "description": "A compromised firmware update from a trusted vendor has introduced a backdoor into industrial control systems across multiple plants.",
+  "industry": "Manufacturing",
+  "difficulty": "expert",
+  "category": "incident-response",
+  "author": "system",
+  "rating": 4.7,
+  "rating_count": 6,
+  "tags": [
+    "supply-chain",
+    "ics",
+    "firmware",
+    "backdoor"
+  ],
+  "visibility": "public",
+  "created_at": "2026-01-15T00:00:00+00:00"
+}

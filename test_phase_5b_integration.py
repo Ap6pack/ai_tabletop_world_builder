@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Veritas Aequitas Holdings LLC. All rights reserved.
+# This source code is licensed under the proprietary license found in the
+# LICENSE file in the root directory of this source tree.
+#
+# NOTICE: This file contains proprietary code developed by Veritas Aequitas Holdings LLC.
+# Unauthorized use, reproduction, or distribution is strictly prohibited.
+# For inquiries, contact: contact@veritasandaequitas.com
 """
 Phase 5B Integration Test Suite.
 
@@ -173,7 +181,7 @@ def test_phase_5b_game_start():
 
     print(f"✅ Test 1 passed: All Phase 5B features initialized correctly")
 
-    return org, business_impact, resource_pool, timers, escalation_rules, objectives
+    # Return value removed to avoid PytestReturnNotNoneWarning
 
 
 def test_resource_constrained_action():
@@ -224,7 +232,7 @@ def test_resource_constrained_action():
 
     print(f"✅ Test 2 passed: Resource constraints work correctly")
 
-    return resource_pool
+    # Return value removed to avoid PytestReturnNotNoneWarning
 
 
 def test_time_pressure_and_escalation():
