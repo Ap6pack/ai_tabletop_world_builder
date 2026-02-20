@@ -77,38 +77,99 @@ if not st.session_state.hide_tutorial:
 
 st.markdown("---")
 
-# Quick start section
+# --- Build ---
+st.markdown("### Build")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown("### Scenario Builder")
-    st.markdown("""
-    Generate custom cybersecurity
-    scenarios tailored to your
-    training needs.
-    """)
+    st.markdown("**Scenario Builder**")
+    st.caption("Generate custom cybersecurity scenarios tailored to your training needs.")
     if st.button("Create Scenario", use_container_width=True):
         st.switch_page("pages/1_Scenario_Builder.py")
 
 with col2:
-    st.markdown("### 🎮 War Game")
-    st.markdown("""
-    Start an interactive war gaming
-    session and respond to security
-    incidents.
-    """)
+    st.markdown("**Scenario Editor**")
+    st.caption("Edit and refine existing scenarios with fine-grained controls.")
+    if st.button("Edit Scenario", use_container_width=True):
+        st.switch_page("pages/5_Scenario_Editor.py")
+
+with col3:
+    st.markdown("**Scenario Library**")
+    st.caption("Browse, search, and manage your saved scenarios.")
+    if st.button("Browse Library", use_container_width=True):
+        st.switch_page("pages/9_Scenario_Library.py")
+
+st.markdown("")
+
+# --- Play ---
+st.markdown("### Play")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("**War Game**")
+    st.caption("Start an interactive war gaming session and respond to security incidents.")
     if st.button("Start War Game", use_container_width=True):
         st.switch_page("pages/2_War_Game.py")
 
+with col2:
+    st.markdown("**Exercise Setup**")
+    st.caption("Configure multi-team tabletop exercises with roles and injects.")
+    if st.button("Setup Exercise", use_container_width=True):
+        st.switch_page("pages/10_Exercise_Setup.py")
+
 with col3:
-    st.markdown("### 📊 Analytics")
-    st.markdown("""
-    View performance dashboards,
-    score trends, and training
-    recommendations.
-    """)
+    st.markdown("**Exercise Play**")
+    st.caption("Run live multi-team exercises with real-time coordination.")
+    if st.button("Play Exercise", use_container_width=True):
+        st.switch_page("pages/11_Exercise_Play.py")
+
+st.markdown("")
+
+# --- Analyze ---
+st.markdown("### Analyze")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("**Analytics**")
+    st.caption("View performance dashboards, score trends, and training recommendations.")
     if st.button("View Analytics", use_container_width=True):
         st.switch_page("pages/6_Analytics.py")
+
+with col2:
+    st.markdown("**After Action Review**")
+    st.caption("Analyze decisions and improve response strategies.")
+    if st.button("Review Sessions", use_container_width=True):
+        st.switch_page("pages/7_After_Action_Review.py")
+
+with col3:
+    st.markdown("**Executive Dashboard**")
+    st.caption("Executive-level compliance and business impact reporting.")
+    if st.button("Executive View", use_container_width=True):
+        st.switch_page("pages/12_Executive_Dashboard.py")
+
+st.markdown("")
+
+# --- Admin ---
+st.markdown("### Admin")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("**Settings**")
+    st.caption("Configure LLM providers, content policies, and platform settings.")
+    if st.button("Open Settings", use_container_width=True):
+        st.switch_page("pages/3_Settings.py")
+
+with col2:
+    st.markdown("**Session Manager**")
+    st.caption("View, resume, and manage past war gaming sessions.")
+    if st.button("Manage Sessions", use_container_width=True):
+        st.switch_page("pages/4_Session_Manager.py")
+
+with col3:
+    st.markdown("**Login**")
+    st.caption("Authenticate and manage user access.")
+    if st.button("Login", use_container_width=True):
+        st.switch_page("pages/8_Login.py")
 
 st.markdown("---")
 
@@ -187,6 +248,6 @@ with st.sidebar:
     incident response and defensive
     security operations.
 
-    Version: 0.8.0
-    Status: Phase 6 Complete
+    Version: 1.0.0
+    Status: Phase 10 Complete
     """)
