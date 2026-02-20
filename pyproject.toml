@@ -40,3 +40,7 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.bandit]
+exclude_dirs = ["tests", "test_*.py"]
+skips = ["B101"]
