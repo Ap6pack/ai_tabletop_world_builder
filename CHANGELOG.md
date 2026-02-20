@@ -13,6 +13,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-user support (Phase 7)
 - Advanced deployment features (Phase 8)
 
+## [0.7.1] - 2025-11-05
+
+### Changed
+
+#### UI/UX Improvements
+- **Reorganized scenario loading workflow** for better user experience
+  - MOVED: Scenario loading from Scenario Builder to War Game page sidebar
+  - Scenario Builder now focuses solely on creating scenarios
+  - War Game page is now the central hub for loading and using scenarios
+- **Improved UI messaging** to clarify scenarios vs. sessions
+  - Updated "No active sessions" → "💡 No game sessions yet. Click '▶️ Start Incident' to create one!"
+  - Added hint in Scenario Builder: "💡 Load scenarios from the War Game page sidebar"
+  - Better guidance on the workflow: Load Scenario → Start Incident → Play Game
+- **Enhanced Scenario Builder sidebar**
+  - Shows count of saved scenarios
+  - Displays recent 5 scenarios (read-only preview)
+  - Clearer separation of concerns (create vs. use)
+
+#### Bug Fixes
+- Fixed session loading error handling in War Game page
+  - More specific exception handling for network errors
+  - Better error messages for different failure scenarios
+- Fixed duplicate button key error in session loading
+  - Changed from truncated session_id to full session_id for uniqueness
+- Fixed game state validation logic
+  - Added robust check for valid organization data
+  - Filters out API error responses (checking for "detail" key)
+  - Clears stale session state on load failures
+- Fixed page navigation references
+  - Updated all references from pages/3_* to pages/4_* (Session Manager)
+  - Updated all references from pages/4_* to pages/5_* (Scenario Editor)
+
+#### Files Modified
+- `app/pages/2_War_Game.py` - Added scenario loading section to sidebar (~85 lines)
+- `app/pages/1_Scenario_Builder.py` - Simplified sidebar to show scenario count only
+- `app/Home.py` - Fixed page navigation reference
+
+### Documentation
+- Clarified distinction between **Scenarios** (templates/setups) and **Sessions** (active playthroughs)
+
 ## [0.7.0] - 2025-11-05
 
 ### Added

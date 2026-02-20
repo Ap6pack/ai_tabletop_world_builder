@@ -312,3 +312,75 @@ async def reset_to_defaults():
         "message": "Settings reset to defaults",
         "note": "API keys were preserved. API restart recommended."
     }
+
+
+@router.delete("/provider/{provider}/key")
+async def clear_provider_key(provider: Literal["openai", "anthropic", "ollama"]):
+    """
+    Clear API key for a specific LLM provider.
+
+    This removes the API key from the .env file and runtime configuration.
+
+    Args:
+        provider: Provider name (openai, anthropic, or ollama)
+
+    Returns:
+        Confirmation message
+    """
+    # Map provider to env var key
+    key_mapping = {
+        "openai": "OPENAI_API_KEY",
+        "anthropic": "ANTHROPIC_API_KEY",
+        "ollama": None  # Ollama doesn't use API keys
+    }
+
+    if provider == "ollama":
+        raise HTTPException(
+            status_code=400,
+            detail="Ollama does not use API keys. Clear the base URL if needed."
+        )
+
+    env_key = key_mapping[provider]
+    env_path = Path(".env")
+
+    if not env_path.exists():
+        raise HTTPException(status_code=404, detail=".env file not found")
+
+    # Read existing .env
+    env_lines = []
+    with open(env_path, "r") as f:
+        env_lines = f.readlines()
+
+    # Remove the API key line
+    new_lines = []
+    key_found = False
+
+    for line in env_lines:
+        stripped = line.strip()
+        # Keep line if it's not the API key we're removing
+        if stripped.startswith(env_key + "="):
+            key_found = True
+            continue  # Skip this line (removes it)
+        new_lines.append(line)
+
+    if not key_found:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No API key found for {provider}"
+        )
+
+    # Write updated .env
+    with open(env_path, "w") as f:
+        f.writelines(new_lines)
+
+    # Clear from runtime settings
+    if provider == "openai":
+        settings.openai_api_key = None
+    elif provider == "anthropic":
+        settings.anthropic_api_key = None
+
+    return {
+        "message": f"API key for {provider} has been removed",
+        "provider": provider,
+        "note": "The provider will no longer be available until a new API key is added."
+    }

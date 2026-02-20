@@ -2,8 +2,8 @@
 
 ## 📊 Project Status
 
-**Version**: 0.7.0
-**Status**: ✅ Phase 5B Enhanced Game Mechanics Complete - **Business Impact, Time Pressure, Resource Constraints**
+**Version**: 0.7.1
+**Status**: ✅ Phase 5B Enhanced Game Mechanics Complete + UI/UX Improvements
 **Next Phase**: 🚧 Phase 6 Analytics & After Action Review
 **License**: Proprietary (Open source code, commercial use requires license)
 **Target**: SaaS monetization model
@@ -16,6 +16,7 @@
 - ✅ **Phase 4**: Enhanced Safety & Policies (Content filtering, audit logging, compliance tracking)
 - ✅ **Phase 5A**: Core Game Mechanics (Objectives, System States, Threat Responses)
 - ✅ **Phase 5B**: Enhanced Game Mechanics (Business Impact, Time Pressure, Resource Constraints)
+- ✅ **v0.7.1**: UI/UX Improvements (Reorganized scenario loading, improved messaging, bug fixes)
 
 ---
 

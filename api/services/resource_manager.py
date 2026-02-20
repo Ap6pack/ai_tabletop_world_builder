@@ -10,6 +10,9 @@ This service manages:
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple
 from api.models import GameState, ResourcePool, ActionCost
+from api.utils.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class ResourceManager:
@@ -98,6 +101,8 @@ class ResourceManager:
         Returns:
             Initialized ResourcePool
         """
+        logger.info(f"Initializing resource pool: difficulty={difficulty}")
+
         defaults = self.DIFFICULTY_DEFAULTS.get(difficulty, self.DIFFICULTY_DEFAULTS["intermediate"])
 
         return ResourcePool(
@@ -188,6 +193,8 @@ class ResourceManager:
         Returns:
             Updated resource pool
         """
+        logger.info(f"Spending resources: AP={action_cost.points}, Budget=${action_cost.budget}, Staff={action_cost.requires_staff}")
+
         # Deduct action points
         resource_pool.action_points -= action_cost.points
 
@@ -198,6 +205,7 @@ class ResourceManager:
         if tool_name and action_cost.cooldown_seconds > 0:
             cooldown_until = datetime.utcnow() + timedelta(seconds=action_cost.cooldown_seconds)
             resource_pool.tools_on_cooldown[tool_name] = cooldown_until
+            logger.debug(f"Tool cooldown set: {tool_name} until {cooldown_until}")
 
         return resource_pool
 

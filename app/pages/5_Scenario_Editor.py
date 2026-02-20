@@ -4,7 +4,14 @@ Streamlit Scenario Editor Page - Customize generated scenarios before use.
 import streamlit as st
 import json
 import copy
+import requests
+import sys
+import os
 from datetime import datetime
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 st.set_page_config(
     page_title="Scenario Editor",
@@ -24,7 +31,63 @@ if "original_scenario" not in st.session_state:
 
 # Check if there's a scenario to edit
 if not st.session_state.get("generated_organization"):
-    st.warning("⚠️ No scenario available to edit. Please generate a scenario first.")
+    st.info("💡 No scenario loaded in memory. Load a saved scenario or generate a new one.")
+
+    # Show saved scenarios
+    st.markdown("### 📚 Saved Scenarios")
+
+    try:
+        response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
+        if response.status_code == 200:
+            scenarios = response.json()
+
+            if scenarios:
+                st.markdown(f"**{len(scenarios)} saved scenario(s) found:**")
+
+                for scenario in scenarios:
+                    col1, col2, col3 = st.columns([3, 1, 1])
+
+                    with col1:
+                        st.markdown(f"**{scenario['name']}**")
+                        st.caption(f"{scenario['industry']} • {scenario['size']} • Created: {scenario['created_at'][:10]}")
+
+                    with col2:
+                        if st.button("✏️ Edit", key=f"edit_{scenario['filename']}", use_container_width=True):
+                            # Load scenario for editing
+                            load_response = requests.get(
+                                f"{API_BASE_URL}/scenarios/{scenario['filename']}",
+                                timeout=DEFAULT_TIMEOUT
+                            )
+                            if load_response.status_code == 200:
+                                st.session_state.generated_organization = load_response.json()
+                                st.rerun()
+                            else:
+                                st.error(f"Failed to load scenario: {load_response.status_code}")
+
+                    with col3:
+                        if st.button("🗑️ Delete", key=f"delete_{scenario['filename']}", use_container_width=True):
+                            # Delete scenario
+                            delete_response = requests.delete(
+                                f"{API_BASE_URL}/scenarios/{scenario['filename']}",
+                                timeout=DEFAULT_TIMEOUT
+                            )
+                            if delete_response.status_code == 200:
+                                st.success(f"✅ Deleted {scenario['name']}")
+                                st.rerun()
+                            else:
+                                st.error(f"Failed to delete scenario: {delete_response.status_code}")
+
+                    st.markdown("---")
+            else:
+                st.info("No saved scenarios found.")
+        else:
+            st.warning(f"Failed to load scenarios (HTTP {response.status_code})")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Network error: Could not connect to API server")
+    except Exception as e:
+        st.error(f"Error loading scenarios: {str(e)}")
+
+    st.markdown("---")
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         if st.button("📋 Go to Scenario Builder", use_container_width=True, type="primary"):

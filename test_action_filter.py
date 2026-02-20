@@ -6,10 +6,12 @@ Tests pre-action content checking with various policy levels and action types.
 import asyncio
 import sys
 sys.path.insert(0, '.')
+import pytest
 
 from api.services.action_filter_service import ActionFilterService
 
 
+@pytest.mark.asyncio
 async def test_action_filter():
     """Test action filtering with various scenarios."""
 
