@@ -34,7 +34,15 @@ st.markdown("---")
 
 # Check if scenario is loaded OR if we have an active game session
 has_scenario = st.session_state.get("active_scenario") is not None
-has_game_session = st.session_state.get("game_state") is not None
+
+# Check if game_state exists AND is valid (has organization key, not just an error response)
+game_state = st.session_state.get("game_state")
+has_game_session = (
+    game_state is not None
+    and isinstance(game_state, dict)
+    and "organization" in game_state
+    and "detail" not in game_state  # Not an API error response
+)
 
 if not has_scenario and not has_game_session:
     st.warning("⚠️ No scenario or game session loaded. Please generate a scenario or load an existing session.")
@@ -44,7 +52,7 @@ if not has_scenario and not has_game_session:
             st.switch_page("pages/1_Scenario_Builder.py")
     with col3:
         if st.button("📊 Session Manager", use_container_width=True, type="primary"):
-            st.switch_page("pages/3_Session_Manager.py")
+            st.switch_page("pages/4_Session_Manager.py")
 else:
     # Get scenario from either active_scenario or game_state
     scenario = st.session_state.get("active_scenario")
@@ -1002,7 +1010,7 @@ with st.sidebar:
                         st.markdown(f"**Status:** {session['status']}")
                         st.markdown(f"**Score:** {session['score']}")
 
-                        if st.button("Load Session", key=f"load_{session['session_id'][:8]}"):
+                        if st.button("Load Session", key=f"load_{session['session_id']}"):
                             st.session_state.game_session_id = session['session_id']
                             # Load game state
                             try:
@@ -1035,12 +1043,116 @@ with st.sidebar:
 
                                     st.success("✅ Session loaded!")
                                     st.rerun()
+                                else:
+                                    # Clear any invalid game state
+                                    st.session_state.game_state = None
+                                    st.session_state.active_scenario = None
+                                    st.session_state.game_active = False
+                                    st.error(f"Failed to load session (HTTP {state_response.status_code})")
+                            except requests.exceptions.RequestException as e:
+                                # Clear any invalid game state
+                                st.session_state.game_state = None
+                                st.session_state.active_scenario = None
+                                st.session_state.game_active = False
+                                st.error(f"Network error loading session: {str(e)}")
                             except Exception as e:
+                                # Clear any invalid game state
+                                st.session_state.game_state = None
+                                st.session_state.active_scenario = None
+                                st.session_state.game_active = False
                                 st.error(f"Error loading session: {str(e)}")
             else:
-                st.info("No active sessions")
+                st.info("💡 No game sessions yet. Click '▶️ Start Incident' to create one!")
+        else:
+            st.warning(f"Failed to retrieve sessions (HTTP {response.status_code})")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Network error: Could not connect to game server")
     except Exception as e:
-        st.warning("Could not load sessions")
+        st.error(f"Error listing sessions: {str(e)}")
+
+    st.markdown("---")
+
+    st.markdown("## Load Scenario")
+
+    # List available scenarios
+    try:
+        response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
+        if response.status_code == 200:
+            scenarios_list = response.json()
+
+            if scenarios_list:
+                # Create selection dropdown
+                scenario_names = [f"{s['name']} ({s['industry']})" for s in scenarios_list]
+                selected_scenario = st.selectbox("Select a scenario:", [""] + scenario_names, key="sidebar_scenario_select")
+
+                if selected_scenario:
+                    # Find selected scenario
+                    selected_index = scenario_names.index(selected_scenario)
+                    scenario_info = scenarios_list[selected_index]
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("📂 Load", use_container_width=True, key="sidebar_load_scenario"):
+                            try:
+                                # Load scenario from API
+                                load_response = requests.get(
+                                    f"{API_BASE_URL}/scenarios/{scenario_info['filename']}",
+                                    timeout=DEFAULT_TIMEOUT
+                                )
+                                if load_response.status_code == 200:
+                                    scenario_data = load_response.json()
+                                    # Set in both places so it works across all pages
+                                    st.session_state.active_scenario = scenario_data
+                                    st.session_state.generated_organization = scenario_data
+                                    # Set default metadata for loaded scenarios
+                                    st.session_state.scenario_metadata = {
+                                        "scenario_type": "incident-response",
+                                        "difficulty": "intermediate",
+                                        "duration_minutes": 60,
+                                        "focus_areas": [],
+                                        "player_role": "soc-analyst"
+                                    }
+                                    # Clear any active game state when loading new scenario
+                                    st.session_state.game_state = None
+                                    st.session_state.game_active = False
+                                    st.session_state.chat_history = []
+
+                                    st.success(f"✅ Loaded {scenario_info['name']}")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to load scenario")
+                            except Exception as e:
+                                st.error(f"Error: {str(e)}")
+
+                    with col2:
+                        if st.button("🗑️ Delete", use_container_width=True, key="sidebar_delete_scenario"):
+                            try:
+                                delete_response = requests.delete(
+                                    f"{API_BASE_URL}/scenarios/{scenario_info['filename']}",
+                                    timeout=DEFAULT_TIMEOUT
+                                )
+                                if delete_response.status_code == 200:
+                                    st.success("✅ Scenario deleted")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to delete scenario")
+                            except Exception as e:
+                                st.error(f"Error: {str(e)}")
+
+                    # Show scenario details
+                    with st.expander("Details"):
+                        st.markdown(f"**Name:** {scenario_info['name']}")
+                        st.markdown(f"**Industry:** {scenario_info['industry']}")
+                        st.markdown(f"**Size:** {scenario_info['size']}")
+                        st.markdown(f"**Created:** {scenario_info['created_at'][:10]}")
+            else:
+                st.info("No scenarios available. Create one first!")
+        else:
+            st.warning("Could not load scenarios list")
+    except requests.exceptions.ConnectionError:
+        st.warning("API not connected")
+    except Exception as e:
+        st.warning(f"Error loading scenarios: {str(e)}")
 
     st.markdown("---")
 

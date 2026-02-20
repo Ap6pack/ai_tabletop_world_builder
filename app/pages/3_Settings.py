@@ -18,6 +18,15 @@ st.markdown("---")
 # LLM Provider Configuration
 st.markdown("### LLM Provider Configuration")
 
+# Check current provider status
+try:
+    providers_response = requests.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
+    current_providers = {}
+    if providers_response.status_code == 200:
+        current_providers = providers_response.json()
+except:
+    current_providers = {}
+
 provider = st.selectbox(
     "Select LLM Provider",
     ["OpenAI", "Anthropic", "Ollama (Local)"],
@@ -28,7 +37,33 @@ col1, col2 = st.columns(2)
 
 if provider == "OpenAI":
     with col1:
-        api_key = st.text_input("OpenAI API Key", type="password", help="Get your API key from platform.openai.com")
+        # Show current status
+        is_configured = current_providers.get("openai", False)
+        if is_configured:
+            st.success("✅ API Key Configured")
+            if st.button("🗑️ Clear API Key", key="clear_openai", help="Remove OpenAI API key"):
+                if "confirm_clear_openai" not in st.session_state:
+                    st.session_state.confirm_clear_openai = True
+                    st.warning("⚠️ Click again to confirm removal")
+                    st.rerun()
+                else:
+                    try:
+                        response = requests.delete(f"{API_BASE_URL}/settings/provider/openai/key", timeout=DEFAULT_TIMEOUT)
+                        if response.status_code == 200:
+                            st.success("✅ OpenAI API key removed")
+                            st.session_state.confirm_clear_openai = False
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Failed: {response.json().get('detail', 'Unknown error')}")
+                            st.session_state.confirm_clear_openai = False
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
+                        st.session_state.confirm_clear_openai = False
+            api_key = st.text_input("OpenAI API Key", type="password", placeholder="Currently configured", help="Get your API key from platform.openai.com")
+        else:
+            st.info("ℹ️ No API Key Configured")
+            api_key = st.text_input("OpenAI API Key", type="password", help="Get your API key from platform.openai.com")
+
         model = st.selectbox("Model", ["gpt-4-turbo-preview", "gpt-4", "gpt-3.5-turbo"])
     with col2:
         temperature = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1, help="Higher = more creative, Lower = more deterministic")
@@ -36,7 +71,33 @@ if provider == "OpenAI":
 
 elif provider == "Anthropic":
     with col1:
-        api_key = st.text_input("Anthropic API Key", type="password", help="Get your API key from console.anthropic.com")
+        # Show current status
+        is_configured = current_providers.get("anthropic", False)
+        if is_configured:
+            st.success("✅ API Key Configured")
+            if st.button("🗑️ Clear API Key", key="clear_anthropic", help="Remove Anthropic API key"):
+                if "confirm_clear_anthropic" not in st.session_state:
+                    st.session_state.confirm_clear_anthropic = True
+                    st.warning("⚠️ Click again to confirm removal")
+                    st.rerun()
+                else:
+                    try:
+                        response = requests.delete(f"{API_BASE_URL}/settings/provider/anthropic/key", timeout=DEFAULT_TIMEOUT)
+                        if response.status_code == 200:
+                            st.success("✅ Anthropic API key removed")
+                            st.session_state.confirm_clear_anthropic = False
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Failed: {response.json().get('detail', 'Unknown error')}")
+                            st.session_state.confirm_clear_anthropic = False
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
+                        st.session_state.confirm_clear_anthropic = False
+            api_key = st.text_input("Anthropic API Key", type="password", placeholder="Currently configured", help="Get your API key from console.anthropic.com")
+        else:
+            st.info("ℹ️ No API Key Configured")
+            api_key = st.text_input("Anthropic API Key", type="password", help="Get your API key from console.anthropic.com")
+
         model = st.selectbox("Model", ["claude-3-5-sonnet-20241022", "claude-3-opus-20240229", "claude-3-sonnet-20240229"])
     with col2:
         temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
@@ -565,11 +626,15 @@ with st.sidebar:
         providers_response = requests.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
         if providers_response.status_code == 200:
             providers = providers_response.json()
-            available = [p for p, is_available in providers.items() if is_available]
-            if available:
-                st.success(f"✅ {len(available)} active: {', '.join(available)}")
+            configured = [p for p, is_available in providers.items() if is_available]
+            if configured:
+                st.success(f"✅ {len(configured)} configured")
+                for provider in configured:
+                    st.caption(f"• {provider.capitalize()}")
+                st.info("💡 To remove: Go to Settings → Clear API Key")
             else:
                 st.warning("⚠️ No providers configured")
+                st.caption("Add API keys in Settings to enable providers")
         else:
             st.info("Unable to check providers")
     except requests.exceptions.RequestException:

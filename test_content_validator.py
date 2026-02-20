@@ -6,11 +6,13 @@ Tests post-generation validation with various content types.
 import asyncio
 import sys
 sys.path.insert(0, '.')
+import pytest
 
 from api.services.content_validator_service import ContentValidatorService
 from api.models import Organization, Department, System, Vulnerability, ThreatActor
 
 
+@pytest.mark.asyncio
 async def test_content_validator():
     """Test content validation with various scenarios."""
 

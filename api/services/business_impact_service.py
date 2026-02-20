@@ -17,6 +17,9 @@ from api.models import (
     System,
     SystemState,
 )
+from api.utils.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class BusinessImpactService:
@@ -105,6 +108,8 @@ class BusinessImpactService:
         Returns:
             Initialized BusinessImpact object
         """
+        logger.info(f"Initializing business impact for {organization.name} ({organization.industry})")
+
         return BusinessImpact(
             downtime_cost=0.0,
             downtime_hours=0.0,
@@ -136,6 +141,8 @@ class BusinessImpactService:
         Returns:
             Tuple of (cost, description)
         """
+        logger.debug(f"Calculating downtime cost: system={system.name}, hours={hours:.2f}, industry={organization.industry}")
+
         # Get industry-specific rate
         industry = organization.industry.lower()
         base_rate = self.INDUSTRY_DOWNTIME_RATES.get(
@@ -163,6 +170,8 @@ class BusinessImpactService:
             f"Industry: {organization.industry} (${base_rate:,.0f}/hr × {industry_multiplier}x multiplier). "
             f"Cost: ${cost:,.2f}"
         )
+
+        logger.info(f"Downtime cost calculated: ${cost:,.2f} for {system.name}")
 
         return cost, description
 
@@ -332,6 +341,8 @@ class BusinessImpactService:
         Returns:
             Updated game state
         """
+        logger.info(f"Updating business impact: event_type={event_type}, severity={severity}")
+
         # Initialize business impact if needed
         if game_state.business_impact is None:
             game_state.business_impact = self.initialize_business_impact(organization)
@@ -398,6 +409,31 @@ class BusinessImpactService:
         game_state.business_impact.last_updated = datetime.utcnow()
 
         return game_state
+
+    def generate_impact_report(self, business_impact: BusinessImpact) -> Dict:
+        """
+        Generate a structured impact report from the current business impact state.
+
+        Args:
+            business_impact: BusinessImpact object
+
+        Returns:
+            Dictionary with categorized costs and summary
+        """
+        compliance_total = sum(business_impact.compliance_penalties.values())
+
+        return {
+            "by_category": {
+                "downtime": business_impact.downtime_cost,
+                "data_loss": business_impact.data_loss_cost,
+                "compliance": compliance_total,
+                "reputation": business_impact.reputation_damage,
+            },
+            "total_cost": business_impact.total_cost,
+            "records_compromised": business_impact.records_compromised,
+            "downtime_hours": business_impact.downtime_hours,
+            "impact_description": business_impact.impact_description,
+        }
 
     def get_impact_summary(self, business_impact: BusinessImpact) -> str:
         """

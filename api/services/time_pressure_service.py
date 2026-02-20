@@ -9,6 +9,8 @@ This service manages:
 """
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
+import uuid
+
 from api.models import (
     GameState,
     Timer,
@@ -17,7 +19,9 @@ from api.models import (
     ThreatActorState,
     SystemState,
 )
-import uuid
+from api.utils.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class TimePressureService:
@@ -71,6 +75,8 @@ class TimePressureService:
         Returns:
             New Timer object
         """
+        logger.info(f"Creating timer: {name} ({duration_minutes}min, critical={is_critical})")
+
         duration_seconds = duration_minutes * 60
         return Timer(
             id=str(uuid.uuid4()),
@@ -183,6 +189,7 @@ class TimePressureService:
 
             # Check if it's time to trigger
             if time_elapsed_minutes >= rule.trigger_time_minutes:
+                logger.info(f"Triggering escalation rule: {rule.action} at {time_elapsed_minutes}min")
                 rule.triggered = True
 
                 # Execute the escalation action

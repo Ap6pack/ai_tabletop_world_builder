@@ -158,8 +158,9 @@ with col2:
 
                 st.success("✅ Scenario generated successfully!")
 
-                # Store full organization data
+                # Store full organization data in both session state keys for compatibility
                 st.session_state.generated_organization = organization_data
+                st.session_state.active_scenario = organization_data  # For War Game page
                 st.session_state.scenario_metadata = {
                     "scenario_type": SCENARIO_TYPES.get(scenario_type, "incident-response"),
                     "difficulty": DIFFICULTY_LEVELS.get(difficulty, "intermediate"),
@@ -302,7 +303,7 @@ if st.session_state.generated_organization:
         if st.button("✏️ Customize Scenario", use_container_width=True):
             st.session_state.active_scenario = org
             st.session_state.scenario_metadata = metadata
-            st.switch_page("pages/4_Scenario_Editor.py")
+            st.switch_page("pages/5_Scenario_Editor.py")
 
     with col3:
         if st.button("🎮 Start War Game", use_container_width=True, type="primary"):
@@ -319,7 +320,6 @@ if st.session_state.generated_organization:
 # Sidebar
 with st.sidebar:
     st.markdown("## Saved Scenarios")
-    st.markdown("Load a previously generated scenario:")
 
     try:
         # List scenarios from API
@@ -328,55 +328,16 @@ with st.sidebar:
             scenarios_list = response.json()
 
             if scenarios_list:
-                # Create selection dropdown
-                scenario_names = [f"{s['name']} ({s['industry']})" for s in scenarios_list]
-                selected_scenario = st.selectbox("Select a scenario:", [""] + scenario_names)
+                st.metric("Total Scenarios", len(scenarios_list))
 
-                if selected_scenario:
-                    # Find selected scenario
-                    selected_index = scenario_names.index(selected_scenario)
-                    scenario_info = scenarios_list[selected_index]
+                st.markdown("**Recent scenarios:**")
+                for scenario in scenarios_list[:5]:  # Show first 5
+                    st.markdown(f"- {scenario['name']} ({scenario['industry']})")
 
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button("📂 Load", use_container_width=True):
-                            try:
-                                # Load scenario from API
-                                load_response = requests.get(
-                                    f"{API_BASE_URL}/scenarios/{scenario_info['filename']}",
-                                    timeout=10
-                                )
-                                if load_response.status_code == 200:
-                                    st.session_state.generated_organization = load_response.json()
-                                    st.success(f"✅ Loaded {scenario_info['name']}")
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to load scenario")
-                            except Exception as e:
-                                st.error(f"Error: {str(e)}")
+                if len(scenarios_list) > 5:
+                    st.caption(f"+ {len(scenarios_list) - 5} more...")
 
-                    with col2:
-                        if st.button("🗑️ Delete", use_container_width=True):
-                            try:
-                                delete_response = requests.delete(
-                                    f"{API_BASE_URL}/scenarios/{scenario_info['filename']}",
-                                    timeout=DEFAULT_TIMEOUT
-                                )
-                                if delete_response.status_code == 200:
-                                    st.success("✅ Scenario deleted")
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to delete scenario")
-                            except Exception as e:
-                                st.error(f"Error: {str(e)}")
-
-                    # Show scenario details
-                    with st.expander("Details"):
-                        st.markdown(f"**Name:** {scenario_info['name']}")
-                        st.markdown(f"**Industry:** {scenario_info['industry']}")
-                        st.markdown(f"**Size:** {scenario_info['size']}")
-                        st.markdown(f"**Created:** {scenario_info['created_at'][:10]}")
-                        st.markdown(f"**File Size:** {scenario_info['file_size'] / 1024:.1f} KB")
+                st.info("💡 Load scenarios from the War Game page sidebar")
             else:
                 st.info("No saved scenarios yet. Generate one to get started!")
         else:
@@ -393,6 +354,6 @@ with st.sidebar:
         1. **Configure** your scenario parameters
         2. **Generate** a custom organization and threat landscape
         3. **Review** the generated scenario details
-        4. **Start War Game** to begin training
-        5. **Load** previous scenarios from the sidebar
+        4. **Customize** the scenario (optional)
+        5. **Start War Game** to begin training
         """)

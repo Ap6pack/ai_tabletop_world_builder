@@ -29,8 +29,6 @@ def create_test_organization():
         description="Primary web application server",
         type="server",
         criticality="high",
-        data_classification="internal",
-        dependencies=[]
     )
 
     database = System(
@@ -39,8 +37,6 @@ def create_test_organization():
         description="Production database with customer data",
         type="database",
         criticality="critical",
-        data_classification="restricted",
-        dependencies=["sys-001"]
     )
 
     # Create department
@@ -51,8 +47,6 @@ def create_test_organization():
         business_function="Technology and Infrastructure",
         data_classification="restricted",
         systems=[web_server, database],
-        staff_count=25,
-        budget_dollars=500000
     )
 
     # Create vulnerability
@@ -60,29 +54,35 @@ def create_test_organization():
         id="vuln-001",
         cve_id="CVE-2024-1234",
         name="SQL Injection",
+        description="SQL injection vulnerability in database query handling",
         severity="high",
-        affected_systems=["sys-002"]
+        affected_systems=["sys-002"],
+        exploitation_complexity="moderate",
+        remediation="Apply parameterized queries and input validation",
     )
 
     # Create threat actor
     threat = ThreatActor(
         id="threat-001",
         name="APT29",
+        description="Nation-state threat actor targeting financial institutions",
+        motivation="espionage",
         sophistication="nation-state",
-        motivations=["espionage"],
         ttps=["phishing", "lateral-movement"],
-        targets=["sys-001", "sys-002"]
+        targets=["sys-001", "sys-002"],
     )
 
     # Create organization
     org = Organization(
+        id="org-001",
         name="Acme Corp",
+        description="Mid-size financial services company",
         industry="Financial Services",
         size="medium",
         departments=[it_dept],
-        critical_assets=["sys-002"],
-        vulnerabilities=[vuln],
-        threat_actors=[threat]
+        threat_actors=[threat],
+        security_posture="developing",
+        compliance_frameworks=["PCI-DSS", "SOX"],
     )
 
     return org
@@ -102,8 +102,8 @@ def test_phase_5b_game_start():
     # Initialize business impact
     business_impact = business_impact_service.initialize_business_impact(org)
     print(f"✅ Business impact initialized")
-    print(f"   Industry: {business_impact.industry}")
-    print(f"   Systems tracked: {len(business_impact.system_downtime_costs)}")
+    print(f"   Industry: {org.industry}")
+    print(f"   Total cost: ${business_impact.total_cost:,.2f}")
 
     # Initialize resource pool
     resource_pool = resource_manager.initialize_resource_pool("intermediate")
@@ -236,13 +236,14 @@ def test_time_pressure_and_escalation():
 
     # Create a game state with timers and escalation rules
     from api.models.schemas import GameState as GameStateSchema
+    from api.models import Inventory
 
     game_state = GameStateSchema(
         session_id="test-session",
         organization=org,
-        scenario_type="incident-response",
+        current_scenario="incident-response",
         player_role="soc-analyst",
-        difficulty="intermediate",
+        inventory=Inventory(),
         status="in-progress",
         objectives=[],
         incident_timeline=[],
@@ -275,13 +276,14 @@ def test_time_pressure_and_escalation():
     # Initialize threat states
     game_state.threat_states = {
         "threat-001": ThreatActorState(
-            threat_id="threat-001",
+            threat_actor_id="threat-001",
             status="active",
             current_tactics=["reconnaissance"],
             systems_compromised=["sys-001"],
             detection_level=20,
             aggression_level=50,
             last_action="Initial access via phishing",
+            last_update=datetime.utcnow(),
             notes="Lateral movement suspected"
         )
     }
@@ -292,19 +294,14 @@ def test_time_pressure_and_escalation():
             system_id="sys-001",
             status="compromised",
             health=80,
-            compromised=True,
-            threat_actors=["threat-001"],
-            security_controls=["firewall", "ids"],
-            last_update=datetime.utcnow()
+            last_update=datetime.utcnow(),
+            notes="Compromised by threat-001 via phishing"
         ),
         "sys-002": SystemState(
             system_id="sys-002",
             status="online",
             health=100,
-            compromised=False,
-            threat_actors=[],
-            security_controls=["firewall", "ids", "encryption"],
-            last_update=datetime.utcnow()
+            last_update=datetime.utcnow(),
         )
     }
 
@@ -350,13 +347,14 @@ def test_business_impact_tracking():
 
     # Initialize business impact
     from api.models.schemas import GameState as GameStateSchema
+    from api.models import Inventory
 
     game_state = GameStateSchema(
         session_id="test-session",
         organization=org,
-        scenario_type="incident-response",
+        current_scenario="incident-response",
         player_role="soc-analyst",
-        difficulty="intermediate",
+        inventory=Inventory(),
         status="in-progress",
         objectives=[],
         incident_timeline=[],
@@ -382,7 +380,7 @@ def test_business_impact_tracking():
     downtime_cost = game_state.business_impact.total_cost
     print(f"\nAfter 2 hours database downtime:")
     print(f"   Total cost: ${downtime_cost:,.2f}")
-    print(f"   Events: {len(game_state.business_impact.impact_events)}")
+    print(f"   Events: {len(game_state.impact_events)}")
 
     assert downtime_cost > 0
 
@@ -403,18 +401,19 @@ def test_business_impact_tracking():
 
     assert data_loss_cost > downtime_cost
 
-    # Compliance violation
+    # Compliance violation (records must be passed for penalty calculation)
     game_state = business_impact_service.update_impact(
         game_state=game_state,
         organization=org,
         event_type="compliance",
+        records=10000,
         severity="critical"
     )
 
     compliance_cost = game_state.business_impact.total_cost
     print(f"\nAfter compliance violation:")
     print(f"   Total cost: ${compliance_cost:,.2f}")
-    print(f"   Total events: {len(game_state.business_impact.impact_events)}")
+    print(f"   Total events: {len(game_state.impact_events)}")
 
     # Generate report
     report = business_impact_service.generate_impact_report(game_state.business_impact)
@@ -425,7 +424,7 @@ def test_business_impact_tracking():
             print(f"      {category}: ${cost:,.2f}")
 
     assert compliance_cost > data_loss_cost
-    assert len(game_state.business_impact.impact_events) == 3
+    assert len(game_state.impact_events) == 3
 
     print(f"✅ Test 4 passed: Business impact tracking works correctly")
 
@@ -443,13 +442,14 @@ def test_integrated_game_flow():
 
     # Create game state
     from api.models.schemas import GameState as GameStateSchema
+    from api.models import Inventory
 
     game_state = GameStateSchema(
         session_id="integration-test",
         organization=org,
-        scenario_type="incident-response",
+        current_scenario="incident-response",
         player_role="soc-analyst",
-        difficulty="intermediate",
+        inventory=Inventory(),
         status="in-progress",
         objectives=[],
         incident_timeline=[],
@@ -569,6 +569,15 @@ def test_integrated_game_flow():
         )
         print(f"   Regenerated: {points_added} AP")
         print(f"   Now have: {game_state.resource_pool.action_points} AP")
+
+        # Re-check affordability after regeneration
+        can_afford, reason = resource_manager.can_afford_action(game_state.resource_pool, action_cost)
+
+    if can_afford:
+        game_state.resource_pool = resource_manager.spend_resources(game_state.resource_pool, action_cost)
+        print(f"   Action: {action}")
+        print(f"   Cost: {action_cost.points} AP, ${action_cost.budget:,.0f}")
+        print(f"   Remaining: {game_state.resource_pool.action_points} AP, ${game_state.resource_pool.budget_remaining:,.0f}")
 
     # Final state
     print(f"\n📊 Final Game State:")

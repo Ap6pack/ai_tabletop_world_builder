@@ -99,7 +99,7 @@ with col3:
     sessions, scores, and history.
     """)
     if st.button("View Sessions", use_container_width=True):
-        st.switch_page("pages/3_Session_Manager.py")
+        st.switch_page("pages/4_Session_Manager.py")
 
 st.markdown("---")
 
@@ -125,14 +125,14 @@ with col2:
         response = requests.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             providers = response.json()
-            available = [p for p, is_available in providers.items() if is_available]
+            configured = [p for p, is_available in providers.items() if is_available]
 
-            if available:
-                st.metric("LLM Providers", f"✅ {len(available)} Active")
-                st.caption(", ".join(available))
+            if configured:
+                st.metric("LLM Providers", f"✅ {len(configured)} Configured")
+                st.caption(", ".join(configured))
             else:
                 st.metric("LLM Providers", "⚠️ None Configured")
-                st.caption("Configure providers in Settings")
+                st.caption("Add API keys in Settings")
         else:
             st.metric("LLM Providers", f"❌ Error {response.status_code}")
     except requests.exceptions.Timeout:
@@ -178,6 +178,6 @@ with st.sidebar:
     incident response and defensive
     security operations.
 
-    Version: 0.3.0
-    Status: Phase 2 & 3 Complete
+    Version: 0.7.1
+    Status: Phase 5B Complete
     """)
