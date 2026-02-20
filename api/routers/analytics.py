@@ -1,10 +1,14 @@
 """
 Analytics and After Action Review API endpoints.
 """
+import io
+
 from fastapi import APIRouter, HTTPException, Query
+from starlette.responses import StreamingResponse
 from typing import Optional, List
 from api.services.aar_service import AARService
 from api.services.game_session_service import GameSessionService
+from api.services.report_generator import ReportGenerator
 from api.models import AARReport, PerformanceDashboard, AARRequest, GameState
 from api.utils.logger import setup_logger
 
@@ -14,6 +18,7 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 # Initialize services
 aar_service = AARService()
 session_service = GameSessionService()
+report_generator = ReportGenerator()
 
 
 @router.post("/aar/{session_id}", response_model=AARReport)
@@ -253,6 +258,54 @@ async def export_session_json(session_id: str):
     except Exception as e:
         logger.error(f"Failed to export session {session_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to export: {str(e)}")
+
+
+@router.get("/export/pdf/{session_id}")
+async def export_session_pdf(session_id: str):
+    """
+    Export AAR as PDF.
+
+    Args:
+        session_id: The game session ID
+
+    Returns:
+        PDF file as a streaming response
+    """
+    try:
+        game_state = session_service.get_session(session_id)
+        if not game_state:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+        if game_state.status == "in-progress":
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot export PDF for an in-progress session. End the game first."
+            )
+
+        report = aar_service.generate_aar(game_state=game_state)
+        report_dict = report.model_dump(mode="json")
+        game_state_dict = game_state.model_dump(mode="json")
+
+        pdf_bytes = report_generator.generate_pdf(report_dict, game_state_dict)
+
+        logger.info(
+            f"PDF exported for session {session_id}: {len(pdf_bytes)} bytes",
+            extra={"session_id": session_id}
+        )
+
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="aar_{session_id}.pdf"'
+            },
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to export PDF for session {session_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export PDF: {str(e)}")
 
 
 @router.get("/export/csv/{session_id}")

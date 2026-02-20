@@ -93,13 +93,14 @@ with col2:
         st.switch_page("pages/2_War_Game.py")
 
 with col3:
-    st.markdown("### 📊 Session Manager")
+    st.markdown("### 📊 Analytics")
     st.markdown("""
-    View and manage your war gaming
-    sessions, scores, and history.
+    View performance dashboards,
+    score trends, and training
+    recommendations.
     """)
-    if st.button("View Sessions", use_container_width=True):
-        st.switch_page("pages/4_Session_Manager.py")
+    if st.button("View Analytics", use_container_width=True):
+        st.switch_page("pages/6_Analytics.py")
 
 st.markdown("---")
 
@@ -178,6 +179,6 @@ with st.sidebar:
     incident response and defensive
     security operations.
 
-    Version: 0.7.1
-    Status: Phase 5B Complete
+    Version: 0.8.0
+    Status: Phase 6 Complete
     """)
