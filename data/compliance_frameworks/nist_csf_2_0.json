@@ -1,0 +1,433 @@
+{
+  "framework_name": "NIST Cybersecurity Framework",
+  "framework_version": "2.0",
+  "description": "The NIST Cybersecurity Framework 2.0 provides a taxonomy of high-level cybersecurity outcomes that can be used by any organization to better understand, assess, prioritize, and communicate its cybersecurity efforts.",
+  "functions": [
+    {
+      "function_id": "GV",
+      "name": "Govern",
+      "description": "Establish and monitor the organization cybersecurity risk management strategy, expectations, and policy.",
+      "categories": [
+        {
+          "category_id": "GV.OC",
+          "name": "Organizational Context",
+          "description": "The circumstances surrounding the organization cybersecurity risk management decisions are understood.",
+          "attack_techniques": [
+            "T1591",
+            "T1589",
+            "T1590"
+          ],
+          "observable_actions": [
+            "review policy",
+            "assess risk",
+            "identify stakeholders",
+            "document requirements",
+            "review compliance"
+          ],
+          "weight": 2
+        },
+        {
+          "category_id": "GV.RM",
+          "name": "Risk Management Strategy",
+          "description": "The organization priorities, constraints, risk tolerance and appetite statements, and assumptions are established, communicated, and used to support operational risk decisions.",
+          "attack_techniques": [
+            "T1595",
+            "T1592"
+          ],
+          "observable_actions": [
+            "prioritize risk",
+            "risk assessment",
+            "risk tolerance",
+            "communicate risk",
+            "update strategy"
+          ],
+          "weight": 3
+        },
+        {
+          "category_id": "GV.RR",
+          "name": "Roles Responsibilities and Authorities",
+          "description": "Cybersecurity roles, responsibilities, and authorities to foster accountability, performance assessment, and continuous improvement are established and communicated.",
+          "attack_techniques": [
+            "T1078",
+            "T1136"
+          ],
+          "observable_actions": [
+            "assign role",
+            "delegate authority",
+            "escalate to management",
+            "notify team",
+            "brief leadership"
+          ],
+          "weight": 2
+        },
+        {
+          "category_id": "GV.PO",
+          "name": "Policy",
+          "description": "Organizational cybersecurity policy is established, communicated, and enforced.",
+          "attack_techniques": [
+            "T1078",
+            "T1556"
+          ],
+          "observable_actions": [
+            "enforce policy",
+            "update policy",
+            "review policy",
+            "communicate policy",
+            "policy compliance"
+          ],
+          "weight": 2
+        },
+        {
+          "category_id": "GV.SC",
+          "name": "Cybersecurity Supply Chain Risk Management",
+          "description": "Cyber supply chain risk management processes are identified, established, managed, monitored, and improved by organizational stakeholders.",
+          "attack_techniques": [
+            "T1195",
+            "T1199"
+          ],
+          "observable_actions": [
+            "vendor assessment",
+            "supply chain review",
+            "third party audit",
+            "vendor risk",
+            "software bill of materials"
+          ],
+          "weight": 3
+        }
+      ]
+    },
+    {
+      "function_id": "ID",
+      "name": "Identify",
+      "description": "Help determine the current cybersecurity risk to the organization.",
+      "categories": [
+        {
+          "category_id": "ID.AM",
+          "name": "Asset Management",
+          "description": "Assets that enable the organization to achieve business purposes are identified and managed consistent with their relative importance to organizational objectives and the organization risk strategy.",
+          "attack_techniques": [
+            "T1018",
+            "T1046",
+            "T1135"
+          ],
+          "observable_actions": [
+            "inventory assets",
+            "scan network",
+            "identify systems",
+            "classify assets",
+            "map dependencies"
+          ],
+          "weight": 2
+        },
+        {
+          "category_id": "ID.RA",
+          "name": "Risk Assessment",
+          "description": "The cybersecurity risk to the organization, assets, and individuals is understood by the organization.",
+          "attack_techniques": [
+            "T1595",
+            "T1592",
+            "T1589"
+          ],
+          "observable_actions": [
+            "assess risk",
+            "vulnerability scan",
+            "threat assessment",
+            "risk analysis",
+            "evaluate threat"
+          ],
+          "weight": 3
+        },
+        {
+          "category_id": "ID.IM",
+          "name": "Improvement",
+          "description": "Improvements to organizational cybersecurity risk management processes, procedures, and activities are identified across all CSF Functions.",
+          "attack_techniques": [
+            "T1190",
+            "T1133"
+          ],
+          "observable_actions": [
+            "lessons learned",
+            "after action review",
+            "process improvement",
+            "update procedures",
+            "gap analysis"
+          ],
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "function_id": "PR",
+      "name": "Protect",
+      "description": "Use safeguards to manage the organization cybersecurity risks.",
+      "categories": [
+        {
+          "category_id": "PR.AA",
+          "name": "Identity Management Authentication and Access Control",
+          "description": "Access to physical and logical assets is limited to authorized users, services, and hardware and managed commensurate with the assessed risk of unauthorized access.",
+          "attack_techniques": [
+            "T1078",
+            "T1110",
+            "T1556",
+            "T1134",
+            "T1098"
+          ],
+          "observable_actions": [
+            "reset password",
+            "disable account",
+            "enforce mfa",
+            "review access",
+            "revoke credentials",
+            "block access"
+          ],
+          "weight": 3
+        },
+        {
+          "category_id": "PR.AT",
+          "name": "Awareness and Training",
+          "description": "The organization personnel are provided cybersecurity awareness and training so that they can perform their cybersecurity-related tasks.",
+          "attack_techniques": [
+            "T1566",
+            "T1204",
+            "T1598"
+          ],
+          "observable_actions": [
+            "train staff",
+            "security awareness",
+            "phishing training",
+            "brief team",
+            "educate users"
+          ],
+          "weight": 1
+        },
+        {
+          "category_id": "PR.DS",
+          "name": "Data Security",
+          "description": "Data are managed consistent with the organization risk strategy to protect the confidentiality, integrity, and availability of information.",
+          "attack_techniques": [
+            "T1530",
+            "T1565",
+            "T1486",
+            "T1485"
+          ],
+          "observable_actions": [
+            "encrypt data",
+            "backup data",
+            "classify data",
+            "protect database",
+            "data integrity check"
+          ],
+          "weight": 3
+        },
+        {
+          "category_id": "PR.PS",
+          "name": "Platform Security",
+          "description": "The hardware, software, and services of physical and virtual platforms are managed consistent with the organization risk strategy to protect their confidentiality, integrity, and availability.",
+          "attack_techniques": [
+            "T1190",
+            "T1133",
+            "T1210",
+            "T1068"
+          ],
+          "observable_actions": [
+            "patch system",
+            "harden server",
+            "update firmware",
+            "configure firewall",
+            "apply update",
+            "isolate system"
+          ],
+          "weight": 3
+        },
+        {
+          "category_id": "PR.IR",
+          "name": "Technology Infrastructure Resilience",
+          "description": "Security architectures are managed with the organization risk strategy to protect asset confidentiality, integrity, and availability, and organizational resilience.",
+          "attack_techniques": [
+            "T1498",
+            "T1499",
+            "T1489"
+          ],
+          "observable_actions": [
+            "failover",
+            "redundancy check",
+            "disaster recovery",
+            "restore backup",
+            "activate standby"
+          ],
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "function_id": "DE",
+      "name": "Detect",
+      "description": "Find and analyze possible cybersecurity attacks and compromises.",
+      "categories": [
+        {
+          "category_id": "DE.CM",
+          "name": "Continuous Monitoring",
+          "description": "Assets are monitored to find anomalies, indicators of compromise, and other potentially adverse events.",
+          "attack_techniques": [
+            "T1071",
+            "T1041",
+            "T1048",
+            "T1572",
+            "T1573"
+          ],
+          "observable_actions": [
+            "monitor logs",
+            "check siem",
+            "review alerts",
+            "network monitoring",
+            "check ids",
+            "analyze traffic"
+          ],
+          "weight": 3
+        },
+        {
+          "category_id": "DE.AE",
+          "name": "Adverse Event Analysis",
+          "description": "Anomalies, indicators of compromise, and other potentially adverse events are analyzed to characterize the events and detect cybersecurity incidents.",
+          "attack_techniques": [
+            "T1059",
+            "T1053",
+            "T1547",
+            "T1543"
+          ],
+          "observable_actions": [
+            "analyze alert",
+            "investigate event",
+            "correlate events",
+            "triage incident",
+            "examine logs"
+          ],
+          "weight": 3
+        }
+      ]
+    },
+    {
+      "function_id": "RS",
+      "name": "Respond",
+      "description": "Take action regarding a detected cybersecurity incident.",
+      "categories": [
+        {
+          "category_id": "RS.MA",
+          "name": "Incident Management",
+          "description": "Responses to detected cybersecurity incidents are managed.",
+          "attack_techniques": [
+            "T1486",
+            "T1490",
+            "T1489",
+            "T1529"
+          ],
+          "observable_actions": [
+            "activate ir plan",
+            "declare incident",
+            "coordinate response",
+            "manage incident",
+            "incident command"
+          ],
+          "weight": 3
+        },
+        {
+          "category_id": "RS.AN",
+          "name": "Incident Analysis",
+          "description": "Investigations are conducted to ensure effective response and support forensics and recovery activities.",
+          "attack_techniques": [
+            "T1003",
+            "T1005",
+            "T1039",
+            "T1074"
+          ],
+          "observable_actions": [
+            "forensic analysis",
+            "collect evidence",
+            "analyze malware",
+            "investigate breach",
+            "root cause analysis"
+          ],
+          "weight": 3
+        },
+        {
+          "category_id": "RS.CO",
+          "name": "Incident Response Reporting and Communication",
+          "description": "Response activities are coordinated with internal and external stakeholders as required by laws, regulations, or policies.",
+          "attack_techniques": [
+            "T1070",
+            "T1562"
+          ],
+          "observable_actions": [
+            "notify management",
+            "report incident",
+            "contact law enforcement",
+            "public disclosure",
+            "stakeholder communication"
+          ],
+          "weight": 2
+        },
+        {
+          "category_id": "RS.MI",
+          "name": "Incident Mitigation",
+          "description": "Activities are performed to prevent expansion of an event and mitigate its effects.",
+          "attack_techniques": [
+            "T1021",
+            "T1570",
+            "T1080",
+            "T1550"
+          ],
+          "observable_actions": [
+            "contain threat",
+            "isolate system",
+            "block ip",
+            "quarantine malware",
+            "disable service",
+            "network segmentation"
+          ],
+          "weight": 3
+        }
+      ]
+    },
+    {
+      "function_id": "RC",
+      "name": "Recover",
+      "description": "Restore assets and operations that were impacted by a cybersecurity incident.",
+      "categories": [
+        {
+          "category_id": "RC.RP",
+          "name": "Incident Recovery Plan Execution",
+          "description": "Restoration activities are performed to ensure operational availability of systems and services affected by cybersecurity incidents.",
+          "attack_techniques": [
+            "T1486",
+            "T1490",
+            "T1561"
+          ],
+          "observable_actions": [
+            "restore backup",
+            "rebuild system",
+            "recover data",
+            "restore service",
+            "execute recovery plan"
+          ],
+          "weight": 3
+        },
+        {
+          "category_id": "RC.CO",
+          "name": "Incident Recovery Communication",
+          "description": "Restoration activities are coordinated with internal and external parties.",
+          "attack_techniques": [
+            "T1491"
+          ],
+          "observable_actions": [
+            "status update",
+            "recovery communication",
+            "notify stakeholders",
+            "post-incident report",
+            "update timeline"
+          ],
+          "weight": 2
+        }
+      ]
+    }
+  ]
+}

@@ -107,6 +107,7 @@ class ThreatActor(BaseModel):
     motivation: str
     sophistication: Literal["nation-state", "organized-crime", "hacktivist", "script-kiddie"]
     ttps: List[str] = Field(default_factory=list)  # Tactics, Techniques, Procedures
+    attack_techniques: List[str] = Field(default_factory=list)  # MITRE ATT&CK technique IDs
     targets: List[str] = Field(default_factory=list)
 
 
@@ -161,6 +162,18 @@ class ImpactEvent(BaseModel):
     severity: Literal["low", "medium", "high", "critical"]
 
 
+class ExecutiveMetrics(BaseModel):
+    """Executive-level business impact metrics."""
+    stock_price_impact_pct: float = 0.0
+    customer_churn_rate: float = 0.0
+    regulatory_risk_level: Literal["low", "medium", "high", "critical"] = "low"
+    media_exposure_level: Literal["none", "local", "national", "international"] = "none"
+    estimated_recovery_time_days: int = 0
+    board_notification_required: bool = False
+    sec_disclosure_required: bool = False
+    notification_obligations: List[str] = Field(default_factory=list)
+
+
 class BusinessImpact(BaseModel):
     """Business impact tracking for an incident."""
     downtime_cost: float = 0.0  # Cumulative downtime cost
@@ -172,6 +185,7 @@ class BusinessImpact(BaseModel):
     total_cost: float = 0.0  # Cumulative total
     impact_description: str = "No significant impact yet"
     last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    executive_metrics: Optional[ExecutiveMetrics] = None
 
 
 class Timer(BaseModel):
@@ -313,6 +327,9 @@ class ThreatActorState(BaseModel):
     threat_actor_id: str
     status: Literal["active", "contained", "eliminated", "dormant"]
     current_tactics: List[str] = Field(default_factory=list)  # Currently employed TTPs
+    active_techniques: List[str] = Field(default_factory=list)  # Active MITRE ATT&CK IDs
+    detected_techniques: List[str] = Field(default_factory=list)  # ATT&CK IDs player detected
+    mitigated_techniques: List[str] = Field(default_factory=list)  # ATT&CK IDs player mitigated
     systems_compromised: List[str] = Field(default_factory=list)  # Compromised system IDs
     detection_level: int = Field(0, ge=0, le=100)  # How aware they are of being detected
     aggression_level: int = Field(50, ge=0, le=100)  # How aggressively they're acting
