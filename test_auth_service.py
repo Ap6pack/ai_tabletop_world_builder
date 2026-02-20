@@ -16,8 +16,10 @@ def cleanup_test_dir():
     os.makedirs(TEST_USERS_DIR, exist_ok=True)
 
 
-def make_service():
+def make_service(clean=True):
     """Create an AuthService instance pointed at the test directory."""
+    if clean:
+        cleanup_test_dir()
     from api.services.auth_service import AuthService
 
     service = AuthService()
