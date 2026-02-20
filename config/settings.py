@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     session_timeout: int = 3600
     max_context_length: int = 4000
 
+    # Authentication
+    require_auth: bool = False
+    jwt_secret_key: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30
+    jwt_refresh_token_expire_days: int = 7
+
     # Storage Paths
     scenarios_path: str = "./scenarios/generated"
     data_path: str = "./data"
