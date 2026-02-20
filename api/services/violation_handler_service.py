@@ -3,7 +3,7 @@ Violation handler service for managing policy violations.
 Provides automated responses, escalation, and user education.
 """
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from api.models import PolicyViolation, ViolationResponse
 from api.services.audit_log_service import AuditLogService
@@ -292,7 +292,7 @@ class ViolationHandlerService:
         if user_id not in self.violation_history:
             return []
 
-        cutoff_time = datetime.utcnow() - timedelta(hours=time_window_hours)
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=time_window_hours)
         recent_violations = [
             v for v in self.violation_history[user_id]
             if v.timestamp > cutoff_time

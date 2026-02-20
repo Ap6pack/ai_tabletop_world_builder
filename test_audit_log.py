@@ -7,7 +7,7 @@ import asyncio
 import sys
 import shutil
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 sys.path.insert(0, '.')
 
 from api.services.audit_log_service import AuditLogService
@@ -172,7 +172,7 @@ def test_audit_log():
 
         # Test 9: Generate compliance report
         print("Test 9: Generate compliance report")
-        end_date = datetime.utcnow()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=1)
         report = service.generate_compliance_report(start_date, end_date)
 

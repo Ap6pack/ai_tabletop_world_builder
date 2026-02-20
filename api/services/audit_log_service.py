@@ -6,7 +6,7 @@ import json
 import hashlib
 from pathlib import Path
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from api.models import AuditLog, ComplianceReport
 from api.utils.logger import setup_logger
 
@@ -34,7 +34,7 @@ class AuditLogService:
         Returns:
             Path to current log file
         """
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         return self.log_dir / f"audit_{today}.jsonl"
 
     def _hash_content(self, content: str) -> str:
@@ -375,9 +375,9 @@ class AuditLogService:
 
         # Generate list of dates in range
         if not start_date:
-            start_date = datetime.utcnow() - timedelta(days=30)  # Default: last 30 days
+            start_date = datetime.now(timezone.utc) - timedelta(days=30)  # Default: last 30 days
         if not end_date:
-            end_date = datetime.utcnow()
+            end_date = datetime.now(timezone.utc)
 
         log_files = []
         current_date = start_date.date()
@@ -484,14 +484,14 @@ class AuditLogService:
         Returns:
             Number of log files deleted
         """
-        cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
         deleted_count = 0
 
         for log_file in self.log_dir.glob("audit_*.jsonl"):
             try:
                 # Parse date from filename
                 date_str = log_file.stem.replace("audit_", "")
-                file_date = datetime.fromisoformat(date_str)
+                file_date = datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
 
                 if file_date < cutoff_date:
                     log_file.unlink()

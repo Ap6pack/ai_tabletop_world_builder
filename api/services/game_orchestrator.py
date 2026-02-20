@@ -2,7 +2,7 @@
 Game orchestrator service that coordinates game sessions and the AI game master.
 """
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from api.models import GameState, GameResponse, Organization
 from api.services.game_session_service import GameSessionService
 from api.services.game_master_service import GameMasterService
@@ -77,7 +77,7 @@ class GameOrchestrator:
 
         # Phase 5B: Initialize business impact tracking
         game_state.business_impact = self.business_impact_service.initialize_business_impact(organization)
-        game_state.game_started_at = datetime.utcnow()
+        game_state.game_started_at = datetime.now(timezone.utc)
 
         # Phase 5B: Initialize resource pool
         game_state.resource_pool = self.resource_manager.initialize_resource_pool(difficulty)

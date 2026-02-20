@@ -4,7 +4,7 @@ Test suite for Time Pressure Service.
 Tests timer creation, escalation rules, and time-based mechanics.
 """
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from api.services.time_pressure_service import TimePressureService
 from api.models import (
     GameState,
@@ -39,7 +39,7 @@ def create_test_game_state() -> GameState:
         score=0,
         time_elapsed=0,
         status="in-progress",
-        game_started_at=datetime.utcnow(),
+        game_started_at=datetime.now(timezone.utc),
     )
 
 
@@ -182,7 +182,7 @@ def test_threat_escalation():
         status="active",
         aggression_level=50,
         detection_level=20,
-        last_update=datetime.utcnow(),
+        last_update=datetime.now(timezone.utc),
     )
     game_state.threat_states["threat-001"] = threat_state
 
@@ -230,7 +230,7 @@ def test_system_degradation():
         system_id="sys-001",
         status="compromised",
         health=100,
-        last_update=datetime.utcnow(),
+        last_update=datetime.now(timezone.utc),
     )
     game_state.system_states["sys-001"] = system_state
 

@@ -7,7 +7,7 @@ This service manages:
 - Time-based scoring multipliers
 - Deadline tracking and expiry events
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional, Tuple
 import uuid
 
@@ -84,7 +84,7 @@ class TimePressureService:
             description=description,
             duration_seconds=duration_seconds,
             remaining_seconds=duration_seconds,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
             is_critical=is_critical,
             on_expiry_event=on_expiry_event,
             related_objective_id=related_objective_id,
@@ -199,7 +199,7 @@ class TimePressureService:
                         threat_state = game_state.threat_states[rule.target_id]
                         old_aggression = threat_state.aggression_level
                         threat_state.aggression_level = min(100, old_aggression + rule.severity_increase)
-                        threat_state.last_update = datetime.utcnow()
+                        threat_state.last_update = datetime.now(timezone.utc)
 
                         escalation_messages.append(
                             f"⚠️ **Threat Escalation:** {rule.description} "
@@ -212,7 +212,7 @@ class TimePressureService:
                         system_state = game_state.system_states[rule.target_id]
                         old_health = system_state.health
                         system_state.health = max(0, old_health - rule.severity_increase)
-                        system_state.last_update = datetime.utcnow()
+                        system_state.last_update = datetime.now(timezone.utc)
 
                         escalation_messages.append(
                             f"⚠️ **System Degradation:** {rule.description} "

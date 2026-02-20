@@ -7,7 +7,7 @@ This service calculates:
 - Compliance penalties (framework-specific fines)
 - Reputation damage (customer churn + brand recovery costs)
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 from api.models import (
     GameState,
@@ -119,7 +119,7 @@ class BusinessImpactService:
             reputation_damage=0.0,
             total_cost=0.0,
             impact_description="Incident in progress. No significant business impact yet.",
-            last_updated=datetime.utcnow(),
+            last_updated=datetime.now(timezone.utc),
         )
 
     def calculate_downtime_cost(
@@ -385,7 +385,7 @@ class BusinessImpactService:
 
         # Create impact event
         impact_event = ImpactEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             event_type=event_type,
             system_id=system_id,
             cost=cost,
@@ -406,7 +406,7 @@ class BusinessImpactService:
         game_state.business_impact.impact_description = self.get_impact_summary(
             game_state.business_impact
         )
-        game_state.business_impact.last_updated = datetime.utcnow()
+        game_state.business_impact.last_updated = datetime.now(timezone.utc)
 
         return game_state
 

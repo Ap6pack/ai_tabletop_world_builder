@@ -3,7 +3,7 @@ Pydantic models for API requests and responses.
 """
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any, Literal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import uuid
 
 
@@ -171,7 +171,7 @@ class BusinessImpact(BaseModel):
     reputation_damage: float = 0.0  # Brand/customer impact
     total_cost: float = 0.0  # Cumulative total
     impact_description: str = "No significant impact yet"
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class Timer(BaseModel):
@@ -181,7 +181,7 @@ class Timer(BaseModel):
     description: str
     duration_seconds: int
     remaining_seconds: int
-    started_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_critical: bool = False
     on_expiry_event: str  # Description of what happens
     related_objective_id: Optional[str] = None
@@ -217,7 +217,7 @@ class ResourcePool(BaseModel):
     budget_total: float = 100000.0
     staff_available: int = 5
     tools_on_cooldown: Dict[str, datetime] = Field(default_factory=dict)  # tool: available_at
-    last_regeneration: datetime = Field(default_factory=datetime.utcnow)
+    last_regeneration: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ActionCost(BaseModel):
@@ -249,7 +249,7 @@ class ThreatCampaign(BaseModel):
     current_stage: int = 0
     total_stages: int
     stages: List[CampaignStage]
-    started_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed: bool = False
     success: bool = False  # Did threat achieve objective?
     intelligence_gathered: List[str] = Field(default_factory=list)  # What player knows
@@ -410,7 +410,7 @@ class ValidationResult(BaseModel):
 class AuditLog(BaseModel):
     """Audit log entry for policy checks and violations."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     event_type: Literal["policy_check", "violation", "filter", "sanitization"]
     severity: Literal["info", "warning", "error", "critical"]
     policy_level: str
@@ -426,7 +426,7 @@ class AuditLog(BaseModel):
 class PolicyViolation(BaseModel):
     """Policy violation record."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     severity: Literal["low", "medium", "high", "critical"]
     violation_type: str
     content_hash: str
