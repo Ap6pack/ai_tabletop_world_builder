@@ -1,0 +1,46 @@
+[project]
+name = "ai-tabletop-world-builder"
+version = "0.8.0"
+description = "AI-powered cybersecurity war gaming and training platform"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+collect_ignore_glob = ["app/**", "scripts/**", "monitoring/**", "alembic/**"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "S",   # flake8-bandit
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "S101",  # assert used (fine in tests)
+    "S105",  # hardcoded password (false positives in test files)
+    "S106",  # hardcoded password argument
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"test_*.py" = ["S101", "S105", "S106"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.bandit]
+exclude_dirs = ["tests", "test_*.py"]
+skips = ["B101"]
