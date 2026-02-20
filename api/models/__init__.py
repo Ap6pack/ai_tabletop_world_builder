@@ -31,6 +31,7 @@ from .schemas import (
     # Phase 5B: Enhanced Game Mechanics
     ImpactEvent,
     BusinessImpact,
+    ExecutiveMetrics,
     Timer,
     EscalationRule,
     ResourcePool,
@@ -78,6 +79,7 @@ __all__ = [
     # Phase 5B: Enhanced Game Mechanics
     "ImpactEvent",
     "BusinessImpact",
+    "ExecutiveMetrics",
     "Timer",
     "EscalationRule",
     "ResourcePool",
