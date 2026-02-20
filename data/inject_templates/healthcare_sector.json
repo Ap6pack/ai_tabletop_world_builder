@@ -1,0 +1,56 @@
+[
+  {
+    "inject_type": "regulator_call",
+    "title": "HHS Office for Civil Rights Breach Notification Required",
+    "content": "Legal counsel has determined that the incident constitutes a breach of unsecured Protected Health Information (PHI) under HIPAA. If more than 500 individuals are affected, [Organization] must notify the HHS Secretary, affected individuals, and prominent media outlets within 60 days. Current estimates suggest over 12,000 patient records may be compromised. The Privacy Officer needs the breach assessment report to begin notification procedures.",
+    "severity": "critical",
+    "suggested_trigger_type": "condition",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "technical_failure",
+    "title": "Electronic Health Records System Offline",
+    "content": "The primary EHR system has been taken offline as a containment measure following detection of ransomware on connected servers. Clinical staff are reverting to paper-based processes. Emergency department throughput has dropped 40%. Surgeries scheduled for the next 24 hours are being evaluated for postponement. Patient safety incidents have been reported as medication records are temporarily inaccessible.",
+    "severity": "critical",
+    "suggested_trigger_type": "round",
+    "attack_technique_id": "T1486",
+    "requires_response": true
+  },
+  {
+    "inject_type": "media_inquiry",
+    "title": "Local News Station Reports Patient Data on Dark Web",
+    "content": "A local television news station is running a story tonight claiming that patient records from [Organization] have been found for sale on a dark web marketplace. They have screenshots showing sample records including patient names, diagnoses, Social Security numbers, and insurance information. Their reporter is in the lobby requesting an on-camera interview with hospital leadership.",
+    "severity": "high",
+    "suggested_trigger_type": "time",
+    "attack_technique_id": "T1567",
+    "requires_response": true
+  },
+  {
+    "inject_type": "customer_complaint",
+    "title": "Patient Family Threatens Lawsuit Over Delayed Care",
+    "content": "The family of a critical care patient has contacted hospital administration and local media. They allege that the cybersecurity incident directly caused a 4-hour delay in their family member receiving a critical medication dose due to inaccessible electronic records. Their attorney has sent a preservation of evidence letter and is preparing an emergency filing. Two additional patient families have made similar complaints.",
+    "severity": "high",
+    "suggested_trigger_type": "condition",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "ceo_demand",
+    "title": "Chief Medical Officer Demands Clinical Systems Priority",
+    "content": "The Chief Medical Officer is in an emergency meeting with the incident response team. They are demanding that clinical systems be restored within 4 hours regardless of forensic investigation needs. They cite three patient safety near-misses in the last hour due to inaccessible medication allergy records. The CMO is threatening to escalate to the Board of Directors and state health department if clinical systems are not prioritized over the security investigation.",
+    "severity": "critical",
+    "suggested_trigger_type": "round",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "insider_threat",
+    "title": "Departing Physician Accessed Unauthorized Patient Records",
+    "content": "Access log analysis has revealed that a physician who submitted their resignation last week has accessed over 3,000 patient records outside their normal care scope in the past 10 days. Many of these records belong to high-profile patients including local politicians and celebrities. The physician is scheduled to start at a competing healthcare system next month. The compliance team suspects the physician may be building a patient list to solicit for their new practice.",
+    "severity": "high",
+    "suggested_trigger_type": "event",
+    "attack_technique_id": "T1530",
+    "requires_response": true
+  }
+]

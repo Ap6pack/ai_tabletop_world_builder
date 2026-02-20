@@ -40,6 +40,7 @@ app.include_router(content_policy_router)
 from api.routers import (
     scenarios_router, game_router, settings_router, audit_router,
     analytics_router, auth_router, library_router, integrations_router,
+    mitre_router, exercise_router,
 )
 app.include_router(scenarios_router)
 app.include_router(game_router)
@@ -49,6 +50,8 @@ app.include_router(analytics_router)
 app.include_router(auth_router)
 app.include_router(library_router)
 app.include_router(integrations_router)
+app.include_router(mitre_router)
+app.include_router(exercise_router)
 
 
 @app.get("/")

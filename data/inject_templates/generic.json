@@ -1,0 +1,74 @@
+[
+  {
+    "inject_type": "news_article",
+    "title": "Breaking: Major Data Breach Reported at [Organization]",
+    "content": "Multiple news outlets are reporting that [Organization] has suffered a significant data breach. Sources close to the investigation say customer records may have been exposed. The story is trending on social media and reporters are requesting comment.",
+    "severity": "high",
+    "suggested_trigger_type": "condition",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "social_media",
+    "title": "Viral Social Media Post Alleging Security Failures",
+    "content": "A post from an anonymous account claiming to be a former employee is going viral on X (Twitter). The post alleges that [Organization] has been ignoring critical security vulnerabilities for months. The post has been shared over 5,000 times in the last hour and is gaining mainstream media attention.",
+    "severity": "medium",
+    "suggested_trigger_type": "time",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "regulator_call",
+    "title": "Regulatory Authority Requests Incident Details",
+    "content": "The relevant regulatory authority has contacted [Organization] requesting a detailed incident report within 72 hours. They are asking for: scope of the breach, number of affected individuals, timeline of events, and remediation steps taken. Failure to respond may result in enforcement action.",
+    "severity": "critical",
+    "suggested_trigger_type": "condition",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "ceo_demand",
+    "title": "CEO Demands Immediate Status Briefing",
+    "content": "The CEO has seen the news coverage and is demanding an immediate briefing on the incident. They want to know: What happened? How bad is it? What are we doing about it? When will it be fixed? They have a board call in 2 hours and need talking points.",
+    "severity": "high",
+    "suggested_trigger_type": "round",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "vendor_alert",
+    "title": "Critical Vulnerability Disclosed by Key Vendor",
+    "content": "A critical zero-day vulnerability (CVSS 9.8) has been disclosed in software used by [Organization]. The vendor has released an emergency patch but warns that exploitation in the wild has been observed. Your systems running this software may already be compromised.",
+    "severity": "critical",
+    "suggested_trigger_type": "time",
+    "attack_technique_id": "T1190",
+    "requires_response": true
+  },
+  {
+    "inject_type": "customer_complaint",
+    "title": "Major Client Threatens Contract Termination",
+    "content": "Your largest enterprise client has contacted the account management team. They are aware of the security incident and are threatening to terminate their contract unless they receive a detailed security assessment and remediation plan within 48 hours. This client represents 15% of annual revenue.",
+    "severity": "high",
+    "suggested_trigger_type": "condition",
+    "attack_technique_id": null,
+    "requires_response": true
+  },
+  {
+    "inject_type": "insider_threat",
+    "title": "Suspicious Employee Activity Detected",
+    "content": "The security monitoring team has flagged unusual after-hours access patterns from a senior database administrator account. Large data exports to an external cloud storage service have been detected over the past 48 hours. The employee in question recently received a negative performance review and has been interviewing at competitors.",
+    "severity": "high",
+    "suggested_trigger_type": "event",
+    "attack_technique_id": "T1567",
+    "requires_response": true
+  },
+  {
+    "inject_type": "technical_failure",
+    "title": "Primary Backup System Failure During Incident",
+    "content": "The primary backup and recovery system has reported a critical failure. Automated backups from the last 72 hours appear corrupted and cannot be restored. The backup vendor has been contacted but estimates 24-48 hours before a support engineer can be on-site. Recovery point objectives (RPO) may not be achievable.",
+    "severity": "critical",
+    "suggested_trigger_type": "round",
+    "attack_technique_id": "T1490",
+    "requires_response": false
+  }
+]
