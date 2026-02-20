@@ -9,7 +9,7 @@ Tests all three Phase 5B features working together:
 This test simulates a complete game flow with all Phase 5B mechanics.
 """
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from api.models import (
     Organization, Department, System, Vulnerability, ThreatActor,
     GameState, Objective, ResourcePool, SystemState, ThreatActorState,
@@ -283,7 +283,7 @@ def test_time_pressure_and_escalation():
             detection_level=20,
             aggression_level=50,
             last_action="Initial access via phishing",
-            last_update=datetime.utcnow(),
+            last_update=datetime.now(timezone.utc),
             notes="Lateral movement suspected"
         )
     }
@@ -294,14 +294,14 @@ def test_time_pressure_and_escalation():
             system_id="sys-001",
             status="compromised",
             health=80,
-            last_update=datetime.utcnow(),
+            last_update=datetime.now(timezone.utc),
             notes="Compromised by threat-001 via phishing"
         ),
         "sys-002": SystemState(
             system_id="sys-002",
             status="online",
             health=100,
-            last_update=datetime.utcnow(),
+            last_update=datetime.now(timezone.utc),
         )
     }
 

@@ -4,7 +4,7 @@ Test suite for Resource Manager Service.
 Tests resource management, action costs, and cooldowns.
 """
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from api.services.resource_manager import ResourceManager
 from api.models import ResourcePool, ActionCost
 
@@ -148,7 +148,7 @@ def test_cooldown_management():
     assert "cooldown" in reason.lower()
 
     # Manually set cooldown to expired
-    pool.tools_on_cooldown["scanner"] = datetime.utcnow() - timedelta(seconds=1)
+    pool.tools_on_cooldown["scanner"] = datetime.now(timezone.utc) - timedelta(seconds=1)
 
     # Clear expired cooldowns
     pool = manager.clear_expired_cooldowns(pool)
@@ -170,7 +170,7 @@ def test_regenerate_action_points():
     print(f"   Initial points: {initial_points}")
 
     # Simulate time passing (manually set last regeneration to 10 minutes ago)
-    pool.last_regeneration = datetime.utcnow() - timedelta(minutes=10)
+    pool.last_regeneration = datetime.now(timezone.utc) - timedelta(minutes=10)
 
     # Regenerate (at 0.5 pts/min, 10 minutes = 5 points)
     pool, points_added = manager.regenerate_action_points(pool, 10)
@@ -267,7 +267,7 @@ def test_get_affordable_actions():
         budget_total=100000,
         staff_available=2,
         tools_on_cooldown={},
-        last_regeneration=datetime.utcnow(),
+        last_regeneration=datetime.now(timezone.utc),
     )
 
     affordable = manager.get_affordable_actions(pool)

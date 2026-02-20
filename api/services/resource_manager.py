@@ -7,7 +7,7 @@ This service manages:
 - Tool cooldowns (preventing spam)
 - Staff availability (concurrent action limits)
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Tuple
 from api.models import GameState, ResourcePool, ActionCost
 from api.utils.logger import setup_logger
@@ -113,7 +113,7 @@ class ResourceManager:
             budget_total=defaults["budget_total"],
             staff_available=defaults["staff_available"],
             tools_on_cooldown={},
-            last_regeneration=datetime.utcnow(),
+            last_regeneration=datetime.now(timezone.utc),
         )
 
     def get_action_cost(self, action_description: str) -> ActionCost:
@@ -168,8 +168,8 @@ class ResourceManager:
         # Check tool cooldown
         if tool_name and tool_name in resource_pool.tools_on_cooldown:
             cooldown_until = resource_pool.tools_on_cooldown[tool_name]
-            if datetime.utcnow() < cooldown_until:
-                remaining = (cooldown_until - datetime.utcnow()).total_seconds()
+            if datetime.now(timezone.utc) < cooldown_until:
+                remaining = (cooldown_until - datetime.now(timezone.utc)).total_seconds()
                 minutes = int(remaining // 60)
                 seconds = int(remaining % 60)
                 return False, f"Tool on cooldown ({minutes}m {seconds}s remaining)"
@@ -203,7 +203,7 @@ class ResourceManager:
 
         # Set tool cooldown if applicable
         if tool_name and action_cost.cooldown_seconds > 0:
-            cooldown_until = datetime.utcnow() + timedelta(seconds=action_cost.cooldown_seconds)
+            cooldown_until = datetime.now(timezone.utc) + timedelta(seconds=action_cost.cooldown_seconds)
             resource_pool.tools_on_cooldown[tool_name] = cooldown_until
             logger.debug(f"Tool cooldown set: {tool_name} until {cooldown_until}")
 
@@ -225,7 +225,7 @@ class ResourceManager:
             Tuple of (updated resource pool, points regenerated)
         """
         # Calculate time since last regeneration
-        time_since_last = (datetime.utcnow() - resource_pool.last_regeneration).total_seconds() / 60.0
+        time_since_last = (datetime.now(timezone.utc) - resource_pool.last_regeneration).total_seconds() / 60.0
 
         # Calculate points to regenerate
         points_to_add = int(time_since_last * resource_pool.points_per_minute)
@@ -236,7 +236,7 @@ class ResourceManager:
                 resource_pool.max_action_points,
                 resource_pool.action_points + points_to_add
             )
-            resource_pool.last_regeneration = datetime.utcnow()
+            resource_pool.last_regeneration = datetime.now(timezone.utc)
             points_added = resource_pool.action_points - old_points
             return resource_pool, points_added
 
@@ -252,7 +252,7 @@ class ResourceManager:
         Returns:
             Updated resource pool
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         expired_tools = [
             tool for tool, cooldown_until in resource_pool.tools_on_cooldown.items()
             if now >= cooldown_until

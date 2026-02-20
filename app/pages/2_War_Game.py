@@ -860,8 +860,8 @@ Check the After Action Review for detailed analysis.
                         st.markdown("**🔧 Tools on Cooldown**")
 
                         # Convert cooldown timestamps to remaining time
-                        from datetime import datetime
-                        now = datetime.utcnow()
+                        from datetime import datetime, timezone
+                        now = datetime.now(timezone.utc)
 
                         for tool_name, cooldown_until_str in tools_on_cooldown.items():
                             try:
