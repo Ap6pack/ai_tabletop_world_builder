@@ -4,6 +4,10 @@ FastAPI main application entry point.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routers import llm_router, content_policy_router
+from api.middleware.cors import get_cors_origins
+from api.middleware.security import SecurityHeadersMiddleware
+from api.middleware.request_logging import RequestLoggingMiddleware
+from api.middleware.telemetry import TelemetryMiddleware
 from config import settings
 
 # Create FastAPI app
@@ -16,11 +20,17 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Security, logging, and telemetry middleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(TelemetryMiddleware)
+TelemetryMiddleware.setup_telemetry(app)
 
 # Include routers
 app.include_router(llm_router)
