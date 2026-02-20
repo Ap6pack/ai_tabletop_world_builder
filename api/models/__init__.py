@@ -37,6 +37,13 @@ from .schemas import (
     ActionCost,
     CampaignStage,
     ThreatCampaign,
+    # Phase 6: Analytics & AAR
+    DecisionEvaluation,
+    AlternativePath,
+    PerformanceMetric,
+    AARReport,
+    PerformanceDashboard,
+    AARRequest,
 )
 
 __all__ = [
@@ -77,4 +84,11 @@ __all__ = [
     "ActionCost",
     "CampaignStage",
     "ThreatCampaign",
+    # Phase 6: Analytics & AAR
+    "DecisionEvaluation",
+    "AlternativePath",
+    "PerformanceMetric",
+    "AARReport",
+    "PerformanceDashboard",
+    "AARRequest",
 ]

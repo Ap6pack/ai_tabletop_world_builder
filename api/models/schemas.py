@@ -468,3 +468,75 @@ class FilterConfig(BaseModel):
     redaction_style: Literal["remove", "mask", "replace"] = "mask"
     custom_patterns: Dict[str, List[str]] = Field(default_factory=dict)
     allowlist: List[str] = Field(default_factory=list)
+
+
+# ============================================================================
+# Phase 6: Analytics & After Action Review Models
+# ============================================================================
+
+class DecisionEvaluation(BaseModel):
+    """Evaluation of a single player decision during a game session."""
+    action: str
+    timestamp: datetime
+    context: str = ""
+    quality_score: int = Field(50, ge=0, le=100)
+    impact: Literal["positive", "neutral", "negative"] = "neutral"
+    reasoning: str = ""
+    better_alternative: Optional[str] = None
+    category: Literal[
+        "detection", "containment", "mitigation",
+        "communication", "investigation", "other"
+    ] = "other"
+
+
+class AlternativePath(BaseModel):
+    """A suggested alternative action path at a key decision point."""
+    decision_point: str
+    original_action: str
+    suggested_action: str
+    expected_outcome: str
+    difficulty: Literal["easy", "medium", "hard"] = "medium"
+
+
+class PerformanceMetric(BaseModel):
+    """A single measurable performance metric."""
+    metric_type: str
+    value: float
+    unit: str = ""
+    benchmark: Optional[float] = None
+    percentile: Optional[int] = None
+
+
+class AARReport(BaseModel):
+    """After Action Review report for a completed game session."""
+    session_id: str
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    summary: str = ""
+    timeline_analysis: List[DecisionEvaluation] = Field(default_factory=list)
+    alternative_paths: List[AlternativePath] = Field(default_factory=list)
+    strengths: List[str] = Field(default_factory=list)
+    weaknesses: List[str] = Field(default_factory=list)
+    recommendations: List[str] = Field(default_factory=list)
+    overall_grade: str = "C"
+    score_breakdown: Dict[str, int] = Field(default_factory=dict)
+    metrics: Dict[str, Any] = Field(default_factory=dict)
+    ai_feedback: str = ""
+
+
+class PerformanceDashboard(BaseModel):
+    """Aggregated performance data across sessions."""
+    sessions_completed: int = 0
+    average_score: float = 0.0
+    best_score: int = 0
+    total_play_time_minutes: int = 0
+    metrics: List[PerformanceMetric] = Field(default_factory=list)
+    trends: Dict[str, List[float]] = Field(default_factory=dict)
+    skill_gaps: List[str] = Field(default_factory=list)
+    recommendations: List[str] = Field(default_factory=list)
+
+
+class AARRequest(BaseModel):
+    """Request to generate an After Action Review."""
+    session_id: str
+    include_alternatives: bool = True
+    include_ai_feedback: bool = True
