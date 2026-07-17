@@ -9,15 +9,16 @@
 """
 Analytics and After Action Review API endpoints.
 """
+
 import io
 
 from fastapi import APIRouter, HTTPException, Query
 from starlette.responses import StreamingResponse
-from typing import Optional, List
+
+from api.models import AARReport, PerformanceDashboard
 from api.services.aar_service import AARService
 from api.services.game_session_service import GameSessionService
 from api.services.report_generator import ReportGenerator
-from api.models import AARReport, PerformanceDashboard, AARRequest, GameState
 from api.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -48,18 +49,14 @@ async def generate_aar(session_id: str, include_alternatives: bool = True):
 
         if game_state.status == "in-progress":
             raise HTTPException(
-                status_code=400,
-                detail="Cannot generate AAR for an in-progress session. End the game first."
+                status_code=400, detail="Cannot generate AAR for an in-progress session. End the game first."
             )
 
-        report = aar_service.generate_aar(
-            game_state=game_state,
-            include_alternatives=include_alternatives
-        )
+        report = aar_service.generate_aar(game_state=game_state, include_alternatives=include_alternatives)
 
         logger.info(
             f"AAR generated for session {session_id}: grade={report.overall_grade}",
-            extra={"session_id": session_id, "grade": report.overall_grade}
+            extra={"session_id": session_id, "grade": report.overall_grade},
         )
 
         return report
@@ -68,7 +65,7 @@ async def generate_aar(session_id: str, include_alternatives: bool = True):
         raise
     except Exception as e:
         logger.error(f"Failed to generate AAR for session {session_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate AAR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate AAR: {str(e)}") from e
 
 
 @router.get("/aar/{session_id}", response_model=AARReport)
@@ -89,10 +86,7 @@ async def get_aar(session_id: str):
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
         if game_state.status == "in-progress":
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot retrieve AAR for an in-progress session."
-            )
+            raise HTTPException(status_code=400, detail="Cannot retrieve AAR for an in-progress session.")
 
         report = aar_service.generate_aar(game_state=game_state)
         return report
@@ -101,7 +95,7 @@ async def get_aar(session_id: str):
         raise
     except Exception as e:
         logger.error(f"Failed to get AAR for session {session_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to get AAR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get AAR: {str(e)}") from e
 
 
 @router.get("/metrics/{session_id}")
@@ -124,7 +118,7 @@ async def get_session_metrics(session_id: str):
 
         logger.info(
             f"Metrics calculated for session {session_id}",
-            extra={"session_id": session_id, "metric_count": len(metrics)}
+            extra={"session_id": session_id, "metric_count": len(metrics)},
         )
 
         return {
@@ -132,18 +126,18 @@ async def get_session_metrics(session_id: str):
             "score": game_state.score,
             "time_elapsed": game_state.time_elapsed,
             "status": game_state.status,
-            "metrics": {k: v.model_dump() for k, v in metrics.items()}
+            "metrics": {k: v.model_dump() for k, v in metrics.items()},
         }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to get metrics for session {session_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to get metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get metrics: {str(e)}") from e
 
 
 @router.get("/dashboard", response_model=PerformanceDashboard)
-async def get_dashboard(status: Optional[str] = Query("completed", description="Session status filter")):
+async def get_dashboard(status: str | None = Query("completed", description="Session status filter")):
     """
     Get aggregated performance dashboard across all completed sessions.
 
@@ -166,22 +160,19 @@ async def get_dashboard(status: Optional[str] = Query("completed", description="
 
         dashboard = aar_service.build_dashboard(game_states)
 
-        logger.info(
-            f"Dashboard built from {len(game_states)} sessions",
-            extra={"session_count": len(game_states)}
-        )
+        logger.info(f"Dashboard built from {len(game_states)} sessions", extra={"session_count": len(game_states)})
 
         return dashboard
 
     except Exception as e:
         logger.error(f"Failed to build dashboard: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to build dashboard: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to build dashboard: {str(e)}") from e
 
 
 @router.get("/trends")
 async def get_trends(
     metric: str = Query("score", description="Metric to trend (score, time_elapsed, objectives_completed)"),
-    limit: int = Query(20, ge=1, le=100, description="Number of recent sessions to include")
+    limit: int = Query(20, ge=1, le=100, description="Number of recent sessions to include"),
 ):
     """
     Get trend data for a specific metric across recent sessions.
@@ -197,11 +188,7 @@ async def get_trends(
         sessions_metadata = session_service.list_sessions(status_filter="completed")
 
         # Sort by most recent and limit
-        sessions_metadata = sorted(
-            sessions_metadata,
-            key=lambda s: s.get("created_at", ""),
-            reverse=True
-        )[:limit]
+        sessions_metadata = sorted(sessions_metadata, key=lambda s: s.get("created_at", ""), reverse=True)[:limit]
 
         data_points = []
         for meta in sessions_metadata:
@@ -232,15 +219,11 @@ async def get_trends(
         # Reverse so oldest is first (for charting)
         data_points.reverse()
 
-        return {
-            "metric": metric,
-            "data_points": data_points,
-            "count": len(data_points)
-        }
+        return {"metric": metric, "data_points": data_points, "count": len(data_points)}
 
     except Exception as e:
         logger.error(f"Failed to get trends: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to get trends: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get trends: {str(e)}") from e
 
 
 @router.get("/export/json/{session_id}")
@@ -265,7 +248,7 @@ async def export_session_json(session_id: str):
         raise
     except Exception as e:
         logger.error(f"Failed to export session {session_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to export: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export: {str(e)}") from e
 
 
 @router.get("/export/pdf/{session_id}")
@@ -286,8 +269,7 @@ async def export_session_pdf(session_id: str):
 
         if game_state.status == "in-progress":
             raise HTTPException(
-                status_code=400,
-                detail="Cannot export PDF for an in-progress session. End the game first."
+                status_code=400, detail="Cannot export PDF for an in-progress session. End the game first."
             )
 
         report = aar_service.generate_aar(game_state=game_state)
@@ -296,24 +278,19 @@ async def export_session_pdf(session_id: str):
 
         pdf_bytes = report_generator.generate_pdf(report_dict, game_state_dict)
 
-        logger.info(
-            f"PDF exported for session {session_id}: {len(pdf_bytes)} bytes",
-            extra={"session_id": session_id}
-        )
+        logger.info(f"PDF exported for session {session_id}: {len(pdf_bytes)} bytes", extra={"session_id": session_id})
 
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",
-            headers={
-                "Content-Disposition": f'attachment; filename="aar_{session_id}.pdf"'
-            },
+            headers={"Content-Disposition": f'attachment; filename="aar_{session_id}.pdf"'},
         )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to export PDF for session {session_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to export PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export PDF: {str(e)}") from e
 
 
 @router.get("/export/csv/{session_id}")
@@ -335,23 +312,25 @@ async def export_session_csv(session_id: str):
         # Build CSV rows from timeline
         rows = []
         for event in game_state.incident_timeline:
-            rows.append({
-                "timestamp": event.timestamp.isoformat(),
-                "event_type": event.event_type,
-                "description": event.description,
-                "severity": event.severity,
-                "actor": event.actor
-            })
+            rows.append(
+                {
+                    "timestamp": event.timestamp.isoformat(),
+                    "event_type": event.event_type,
+                    "description": event.description,
+                    "severity": event.severity,
+                    "actor": event.actor,
+                }
+            )
 
         return {
             "session_id": session_id,
             "columns": ["timestamp", "event_type", "description", "severity", "actor"],
             "rows": rows,
-            "total_events": len(rows)
+            "total_events": len(rows),
         }
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to export CSV for session {session_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to export CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export CSV: {str(e)}") from e

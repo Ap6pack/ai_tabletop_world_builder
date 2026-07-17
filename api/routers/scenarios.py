@@ -9,11 +9,12 @@
 """
 Scenarios API router for generating and managing cybersecurity training scenarios.
 """
+
 from fastapi import APIRouter, HTTPException
-from typing import List, Optional
 from pydantic import BaseModel, Field
-from api.services import ScenarioOrchestrator
+
 from api.models import Organization
+from api.services import ScenarioOrchestrator
 from api.utils import setup_logger
 
 logger = setup_logger(__name__)
@@ -23,15 +24,17 @@ router = APIRouter(prefix="/scenarios", tags=["Scenarios"])
 # Request/Response models
 class GenerateScenarioRequest(BaseModel):
     """Request model for scenario generation."""
+
     industry: str = Field(..., description="Industry sector", examples=["Financial Services"])
     size: str = Field("medium", description="Organization size", examples=["medium"])
     complexity: str = Field("moderate", description="Scenario complexity", examples=["moderate"])
-    focus_areas: Optional[List[str]] = Field(None, description="Focus areas", examples=[["ransomware", "phishing"]])
+    focus_areas: list[str] | None = Field(None, description="Focus areas", examples=[["ransomware", "phishing"]])
     num_departments: int = Field(3, ge=1, le=10, description="Number of departments to generate")
 
 
 class ScenarioListItem(BaseModel):
     """Metadata for a saved scenario."""
+
     filename: str
     name: str
     industry: str
@@ -62,7 +65,7 @@ async def generate_scenario(request: GenerateScenarioRequest):
             size=request.size,
             complexity=request.complexity,
             focus_areas=request.focus_areas,
-            num_departments=request.num_departments
+            num_departments=request.num_departments,
         )
 
         # Auto-save the generated scenario
@@ -72,12 +75,12 @@ async def generate_scenario(request: GenerateScenarioRequest):
         return organization
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Scenario generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Scenario generation failed: {str(e)}") from e
 
 
-@router.get("/industries", response_model=List[str])
+@router.get("/industries", response_model=list[str])
 async def list_industries():
     """
     Get list of supported industries for scenario generation.
@@ -107,13 +110,13 @@ async def get_industry_info(industry: str):
     if info is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Industry '{industry}' not found. Use /scenarios/industries to see available industries."
+            detail=f"Industry '{industry}' not found. Use /scenarios/industries to see available industries.",
         )
 
     return info
 
 
-@router.get("/list", response_model=List[ScenarioListItem])
+@router.get("/list", response_model=list[ScenarioListItem])
 async def list_scenarios():
     """
     List all saved scenarios.
@@ -125,7 +128,7 @@ async def list_scenarios():
         orchestrator = ScenarioOrchestrator()
         return orchestrator.list_scenarios()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list scenarios: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list scenarios: {str(e)}") from e
 
 
 @router.get("/{filename}", response_model=Organization)
@@ -147,9 +150,9 @@ async def get_scenario(filename: str):
         organization = await orchestrator.load_scenario(filename)
         return organization
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Scenario '{filename}' not found")
+        raise HTTPException(status_code=404, detail=f"Scenario '{filename}' not found") from None
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load scenario: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load scenario: {str(e)}") from e
 
 
 @router.delete("/{filename}")
@@ -181,4 +184,4 @@ async def delete_scenario(filename: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete scenario: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete scenario: {str(e)}") from e

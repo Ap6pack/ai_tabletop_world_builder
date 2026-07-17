@@ -10,14 +10,15 @@
 Pattern matcher utility for content filtering.
 Provides regex patterns and matching functions for detecting sensitive content.
 """
+
 import re
-from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 
 
 @dataclass
 class PatternMatch:
     """Represents a pattern match in content."""
+
     category: str
     pattern_name: str
     matched_text: str
@@ -79,11 +80,7 @@ class PatternMatcher:
     }
 
     @classmethod
-    def find_matches(
-        cls,
-        content: str,
-        categories: Optional[List[str]] = None
-    ) -> List[PatternMatch]:
+    def find_matches(cls, content: str, categories: list[str] | None = None) -> list[PatternMatch]:
         """
         Find all pattern matches in content.
 
@@ -112,24 +109,21 @@ class PatternMatcher:
         for category, patterns in pattern_sets.items():
             for pattern_name, (pattern, severity) in patterns.items():
                 for match in re.finditer(pattern, content, re.IGNORECASE):
-                    matches.append(PatternMatch(
-                        category=category,
-                        pattern_name=pattern_name,
-                        matched_text=match.group(),
-                        start_pos=match.start(),
-                        end_pos=match.end(),
-                        severity=severity
-                    ))
+                    matches.append(
+                        PatternMatch(
+                            category=category,
+                            pattern_name=pattern_name,
+                            matched_text=match.group(),
+                            start_pos=match.start(),
+                            end_pos=match.end(),
+                            severity=severity,
+                        )
+                    )
 
         return matches
 
     @classmethod
-    def has_matches(
-        cls,
-        content: str,
-        categories: Optional[List[str]] = None,
-        min_severity: str = "low"
-    ) -> bool:
+    def has_matches(cls, content: str, categories: list[str] | None = None, min_severity: str = "low") -> bool:
         """
         Check if content has any matches.
 
@@ -145,18 +139,10 @@ class PatternMatcher:
         min_level = severity_levels.get(min_severity, 0)
 
         matches = cls.find_matches(content, categories)
-        return any(
-            severity_levels.get(match.severity, 0) >= min_level
-            for match in matches
-        )
+        return any(severity_levels.get(match.severity, 0) >= min_level for match in matches)
 
     @classmethod
-    def redact_content(
-        cls,
-        content: str,
-        matches: List[PatternMatch],
-        redaction_style: str = "mask"
-    ) -> str:
+    def redact_content(cls, content: str, matches: list[PatternMatch], redaction_style: str = "mask") -> str:
         """
         Redact matched content.
 
@@ -183,16 +169,12 @@ class PatternMatcher:
             else:  # replace
                 replacement = "*" * (match.end_pos - match.start_pos)
 
-            redacted = (
-                redacted[:match.start_pos] +
-                replacement +
-                redacted[match.end_pos:]
-            )
+            redacted = redacted[: match.start_pos] + replacement + redacted[match.end_pos :]
 
         return redacted
 
     @classmethod
-    def get_match_summary(cls, matches: List[PatternMatch]) -> Dict[str, any]:
+    def get_match_summary(cls, matches: list[PatternMatch]) -> dict[str, any]:
         """
         Get summary statistics of matches.
 
@@ -202,26 +184,17 @@ class PatternMatcher:
         Returns:
             Summary dict with counts by category and severity
         """
-        summary = {
-            "total": len(matches),
-            "by_category": {},
-            "by_severity": {},
-            "highest_severity": "low"
-        }
+        summary = {"total": len(matches), "by_category": {}, "by_severity": {}, "highest_severity": "low"}
 
         severity_levels = {"low": 0, "medium": 1, "high": 2, "critical": 3}
         max_severity = 0
 
         for match in matches:
             # Count by category
-            summary["by_category"][match.category] = (
-                summary["by_category"].get(match.category, 0) + 1
-            )
+            summary["by_category"][match.category] = summary["by_category"].get(match.category, 0) + 1
 
             # Count by severity
-            summary["by_severity"][match.severity] = (
-                summary["by_severity"].get(match.severity, 0) + 1
-            )
+            summary["by_severity"][match.severity] = summary["by_severity"].get(match.severity, 0) + 1
 
             # Track highest severity
             severity_level = severity_levels.get(match.severity, 0)

@@ -9,23 +9,20 @@
 """
 Streamlit Scenario Builder Page - Generate cybersecurity training scenarios.
 """
-import streamlit as st
-import json
-import requests
-from datetime import datetime
-import sys
+
 import os
+import sys
+
+import requests
+import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from constants import PLAYER_ROLES, ORG_SIZES, COMPLEXITY_LEVELS, SCENARIO_TYPES, DIFFICULTY_LEVELS
+from constants import COMPLEXITY_LEVELS, DIFFICULTY_LEVELS, ORG_SIZES, PLAYER_ROLES, SCENARIO_TYPES
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
-st.set_page_config(
-    page_title="Scenario Builder",
-    page_icon="",
-    layout="wide"
-)
+st.set_page_config(page_title="Scenario Builder", page_icon="", layout="wide")
 
 st.title("Scenario Builder")
 st.markdown("Generate custom cybersecurity training scenarios")
@@ -51,44 +48,24 @@ with col1:
             "Manufacturing",
             "Government",
             "Education",
-            "Energy/Utilities"
-        ]
+            "Energy/Utilities",
+        ],
     )
 
     organization_size = st.selectbox(
-        "Organization Size",
-        ["Small (< 100 employees)", "Medium (100-1000)", "Large (1000-5000)", "Enterprise (5000+)"]
+        "Organization Size", ["Small (< 100 employees)", "Medium (100-1000)", "Large (1000-5000)", "Enterprise (5000+)"]
     )
 
-    complexity = st.select_slider(
-        "Scenario Complexity",
-        options=["Basic", "Moderate", "Complex"],
-        value="Moderate"
-    )
+    complexity = st.select_slider("Scenario Complexity", options=["Basic", "Moderate", "Complex"], value="Moderate")
 
 with col2:
     scenario_type = st.selectbox(
-        "Scenario Type",
-        [
-            "Incident Response",
-            "Threat Hunting",
-            "Vulnerability Management",
-            "Compliance Audit"
-        ]
+        "Scenario Type", ["Incident Response", "Threat Hunting", "Vulnerability Management", "Compliance Audit"]
     )
 
-    difficulty = st.selectbox(
-        "Difficulty Level",
-        ["Beginner", "Intermediate", "Advanced", "Expert"]
-    )
+    difficulty = st.selectbox("Difficulty Level", ["Beginner", "Intermediate", "Advanced", "Expert"])
 
-    duration = st.slider(
-        "Expected Duration (minutes)",
-        min_value=15,
-        max_value=240,
-        value=60,
-        step=15
-    )
+    duration = st.slider("Expected Duration (minutes)", min_value=15, max_value=240, value=60, step=15)
 
 # Focus areas
 st.markdown("### Focus Areas")
@@ -104,23 +81,20 @@ focus_areas = st.multiselect(
         "Network Intrusion",
         "Cloud Security",
         "Zero-Day Vulnerabilities",
-        "Supply Chain Attacks"
-    ]
+        "Supply Chain Attacks",
+    ],
 )
 
 # Player role
 st.markdown("### Player Role")
-player_role = st.radio(
-    "What role will trainees assume?",
-    list(PLAYER_ROLES.keys())
-)
+player_role = st.radio("What role will trainees assume?", list(PLAYER_ROLES.keys()))
 
 # Learning objectives
 st.markdown("### Learning Objectives")
 learning_objectives = st.text_area(
     "Specific skills or knowledge to develop (optional):",
     placeholder="e.g., Practice log analysis, improve threat detection, understand attack chains",
-    height=100
+    height=100,
 )
 
 st.markdown("---")
@@ -143,7 +117,7 @@ with col2:
                 "size": ORG_SIZES.get(organization_size, "medium"),
                 "complexity": COMPLEXITY_LEVELS.get(complexity, "moderate"),
                 "focus_areas": focus_areas if focus_areas else None,
-                "num_departments": 3
+                "num_departments": 3,
             }
 
             progress_text.text("🏢 Generating organization profile...")
@@ -153,7 +127,7 @@ with col2:
             response = requests.post(
                 f"{API_BASE_URL}/scenarios/generate",
                 json=payload,
-                timeout=180  # Increased to 3 minutes
+                timeout=180,  # Increased to 3 minutes
             )
 
             progress_bar.progress(90)
@@ -174,7 +148,7 @@ with col2:
                     "difficulty": DIFFICULTY_LEVELS.get(difficulty, "intermediate"),
                     "duration_minutes": duration,
                     "focus_areas": focus_areas,
-                    "player_role": PLAYER_ROLES.get(player_role, "soc-analyst")
+                    "player_role": PLAYER_ROLES.get(player_role, "soc-analyst"),
                 }
             else:
                 progress_text.empty()
@@ -225,7 +199,7 @@ if st.session_state.generated_organization:
 
     # Organization details
     with st.expander("Organization Details", expanded=True):
-        st.markdown(f"**Organization Profile:**")
+        st.markdown("**Organization Profile:**")
         st.markdown(f"- **Name:** {org.get('name', 'N/A')}")
         st.markdown(f"- **Industry:** {org.get('industry', 'N/A')}")
         st.markdown(f"- **Size:** {org.get('size', 'N/A').capitalize()}")
@@ -251,7 +225,9 @@ if st.session_state.generated_organization:
                 st.markdown(f"**Data Classification:** {dept.get('data_classification', 'N/A').capitalize()}")
 
                 # Show systems in this department
-                dept_systems = [s for s in org.get("systems", []) if any(s['id'] in sys_id for sys_id in dept.get('systems', []))]
+                dept_systems = [
+                    s for s in org.get("systems", []) if any(s["id"] in sys_id for sys_id in dept.get("systems", []))
+                ]
                 if dept_systems:
                     st.markdown(f"**Systems ({len(dept_systems)}):**")
                     for sys in dept_systems[:3]:  # Show first 3
@@ -276,7 +252,7 @@ if st.session_state.generated_organization:
                 severity_emoji = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢"}
                 st.markdown(f"{severity_emoji.get(vuln.get('severity'), '⚪')} **{vuln.get('name', 'Unknown')}**")
                 st.markdown(f"  - Severity: {vuln.get('severity', 'unknown').upper()}")
-                if vuln.get('cve_id'):
+                if vuln.get("cve_id"):
                     st.markdown(f"  - CVE: {vuln['cve_id']}")
                 st.markdown(f"  - {vuln.get('description', '')[:200]}...")
                 st.markdown("")
@@ -291,7 +267,7 @@ if st.session_state.generated_organization:
                 st.markdown(f"**Sophistication:** {actor.get('sophistication', 'unknown').replace('-', ' ').title()}")
 
                 if actor.get("ttps"):
-                    st.markdown(f"**TTPs:**")
+                    st.markdown("**TTPs:**")
                     for ttp in actor["ttps"][:5]:
                         st.markdown(f"  - {ttp}")
 

@@ -9,13 +9,15 @@
 """
 Streamlit Analytics Dashboard Page - Performance metrics and training insights.
 """
-import streamlit as st
-import requests
+
+import os
+import sys
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import sys
-import os
+import requests
+import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -47,9 +49,7 @@ def fetch_score_trends(limit=20):
     """Fetch score trend data from the analytics API."""
     try:
         response = requests.get(
-            f"{API_BASE_URL}/analytics/trends",
-            params={"metric": "score", "limit": limit},
-            timeout=DEFAULT_TIMEOUT
+            f"{API_BASE_URL}/analytics/trends", params={"metric": "score", "limit": limit}, timeout=DEFAULT_TIMEOUT
         )
         if response.status_code == 200:
             return response.json(), None
@@ -123,9 +123,10 @@ if score_trend_points:
     # Handle list-of-dicts or list-of-numbers
     if isinstance(score_trend_points[0], (int, float)):
         fig_trend = px.line(
-            y=score_trend_points, markers=True,
+            y=score_trend_points,
+            markers=True,
             title="Score Over Recent Sessions",
-            labels={"index": "Session", "value": "Score"}
+            labels={"index": "Session", "value": "Score"},
         )
         fig_trend.update_layout(xaxis_title="Session", yaxis_title="Score")
     else:
@@ -134,12 +135,16 @@ if score_trend_points:
         y_col = next((c for c in ["score", "value"] if c in trend_df.columns), None)
         if x_col and y_col:
             fig_trend = px.line(
-                trend_df, x=x_col, y=y_col, markers=True,
+                trend_df,
+                x=x_col,
+                y=y_col,
+                markers=True,
                 title="Score Over Recent Sessions",
-                labels={x_col: x_col.replace("_", " ").title(), y_col: "Score"}
+                labels={x_col: x_col.replace("_", " ").title(), y_col: "Score"},
             )
-            fig_trend.update_layout(xaxis_title=x_col.replace("_", " ").title(),
-                                    yaxis_title="Score", hovermode="x unified")
+            fig_trend.update_layout(
+                xaxis_title=x_col.replace("_", " ").title(), yaxis_title="Score", hovermode="x unified"
+            )
         else:
             fig_trend = None
     if fig_trend:
@@ -154,12 +159,20 @@ st.markdown("### Performance Radar")
 
 metrics_data = dashboard.get("metrics", [])
 radar_categories = [
-    "response_time", "containment_speed", "objectives_completed_pct",
-    "detection_rate", "resource_efficiency", "financial_efficiency"
+    "response_time",
+    "containment_speed",
+    "objectives_completed_pct",
+    "detection_rate",
+    "resource_efficiency",
+    "financial_efficiency",
 ]
 radar_labels = [
-    "Response Time", "Containment Speed", "Objectives Completed",
-    "Detection Rate", "Resource Efficiency", "Financial Efficiency"
+    "Response Time",
+    "Containment Speed",
+    "Objectives Completed",
+    "Detection Rate",
+    "Resource Efficiency",
+    "Financial Efficiency",
 ]
 
 radar_values = []
@@ -178,14 +191,19 @@ elif isinstance(metrics_data, list) and metrics_data:
 
 if radar_values and any(v > 0 for v in radar_values):
     fig_radar = go.Figure()
-    fig_radar.add_trace(go.Scatterpolar(
-        r=radar_values + [radar_values[0]],
-        theta=radar_labels + [radar_labels[0]],
-        fill="toself", name="Performance", line=dict(color="#636EFA")
-    ))
+    fig_radar.add_trace(
+        go.Scatterpolar(
+            r=radar_values + [radar_values[0]],
+            theta=radar_labels + [radar_labels[0]],
+            fill="toself",
+            name="Performance",
+            line=dict(color="#636EFA"),
+        )
+    )
     fig_radar.update_layout(
         polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-        showlegend=False, title="Skill Performance Across Categories"
+        showlegend=False,
+        title="Skill Performance Across Categories",
     )
     st.plotly_chart(fig_radar, use_container_width=True)
 else:
@@ -206,14 +224,16 @@ elif sessions_response:
     if sessions_list:
         table_rows = []
         for session in sessions_list:
-            table_rows.append({
-                "Session ID": str(session.get("session_id", ""))[:12] + "...",
-                "Organization": session.get("organization", "N/A"),
-                "Score": session.get("score", 0),
-                "Time (min)": session.get("time_elapsed", 0),
-                "Status": session.get("status", "unknown").replace("_", " ").title(),
-                "Role": session.get("player_role", "N/A").replace("-", " ").title()
-            })
+            table_rows.append(
+                {
+                    "Session ID": str(session.get("session_id", ""))[:12] + "...",
+                    "Organization": session.get("organization", "N/A"),
+                    "Score": session.get("score", 0),
+                    "Time (min)": session.get("time_elapsed", 0),
+                    "Status": session.get("status", "unknown").replace("_", " ").title(),
+                    "Role": session.get("player_role", "N/A").replace("-", " ").title(),
+                }
+            )
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
     else:
         st.info("No sessions found. Start a war game to see session data here.")

@@ -9,23 +9,19 @@
 """
 Streamlit Scenario Editor Page - Customize generated scenarios before use.
 """
-import streamlit as st
-import json
+
 import copy
-import requests
-import sys
 import os
-from datetime import datetime
+import sys
+
+import requests
+import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
-st.set_page_config(
-    page_title="Scenario Editor",
-    page_icon="✏️",
-    layout="wide"
-)
+st.set_page_config(page_title="Scenario Editor", page_icon="✏️", layout="wide")
 
 st.title("✏️ Scenario Editor")
 st.markdown("Customize your scenario before starting the war game")
@@ -57,14 +53,15 @@ if not st.session_state.get("generated_organization"):
 
                     with col1:
                         st.markdown(f"**{scenario['name']}**")
-                        st.caption(f"{scenario['industry']} • {scenario['size']} • Created: {scenario['created_at'][:10]}")
+                        st.caption(
+                            f"{scenario['industry']} • {scenario['size']} • Created: {scenario['created_at'][:10]}"
+                        )
 
                     with col2:
                         if st.button("✏️ Edit", key=f"edit_{scenario['filename']}", use_container_width=True):
                             # Load scenario for editing
                             load_response = requests.get(
-                                f"{API_BASE_URL}/scenarios/{scenario['filename']}",
-                                timeout=DEFAULT_TIMEOUT
+                                f"{API_BASE_URL}/scenarios/{scenario['filename']}", timeout=DEFAULT_TIMEOUT
                             )
                             if load_response.status_code == 200:
                                 st.session_state.generated_organization = load_response.json()
@@ -76,8 +73,7 @@ if not st.session_state.get("generated_organization"):
                         if st.button("🗑️ Delete", key=f"delete_{scenario['filename']}", use_container_width=True):
                             # Delete scenario
                             delete_response = requests.delete(
-                                f"{API_BASE_URL}/scenarios/{scenario['filename']}",
-                                timeout=DEFAULT_TIMEOUT
+                                f"{API_BASE_URL}/scenarios/{scenario['filename']}", timeout=DEFAULT_TIMEOUT
                             )
                             if delete_response.status_code == 200:
                                 st.success(f"✅ Deleted {scenario['name']}")
@@ -90,8 +86,8 @@ if not st.session_state.get("generated_organization"):
                 st.info("No saved scenarios found.")
         else:
             st.warning(f"Failed to load scenarios (HTTP {response.status_code})")
-    except requests.exceptions.RequestException as e:
-        st.error(f"Network error: Could not connect to API server")
+    except requests.exceptions.RequestException:
+        st.error("Network error: Could not connect to API server")
     except Exception as e:
         st.error(f"Error loading scenarios: {str(e)}")
 
@@ -112,14 +108,16 @@ else:
     st.info(f"📝 Editing: **{scenario.get('name', 'Unnamed Organization')}**")
 
     # Tabs for different editing sections
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "🏢 Organization",
-        "🏬 Departments",
-        "💻 Systems",
-        "🔓 Vulnerabilities",
-        "👤 Threat Actors",
-        "🎯 Game Objectives"
-    ])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+        [
+            "🏢 Organization",
+            "🏬 Departments",
+            "💻 Systems",
+            "🔓 Vulnerabilities",
+            "👤 Threat Actors",
+            "🎯 Game Objectives",
+        ]
+    )
 
     # ===== TAB 1: Organization Details =====
     with tab1:
@@ -128,38 +126,49 @@ else:
         col1, col2 = st.columns(2)
 
         with col1:
-            new_name = st.text_input(
-                "Organization Name",
-                value=scenario.get("name", ""),
-                key="edit_org_name"
-            )
+            new_name = st.text_input("Organization Name", value=scenario.get("name", ""), key="edit_org_name")
 
             new_industry = st.selectbox(
                 "Industry",
-                ["Financial Services", "Healthcare", "Technology", "Manufacturing",
-                 "Retail", "Government", "Education", "Energy/Utilities"],
-                index=["Financial Services", "Healthcare", "Technology", "Manufacturing",
-                       "Retail", "Government", "Education", "Energy/Utilities"].index(scenario.get("industry", "Technology"))
+                [
+                    "Financial Services",
+                    "Healthcare",
+                    "Technology",
+                    "Manufacturing",
+                    "Retail",
+                    "Government",
+                    "Education",
+                    "Energy/Utilities",
+                ],
+                index=[
+                    "Financial Services",
+                    "Healthcare",
+                    "Technology",
+                    "Manufacturing",
+                    "Retail",
+                    "Government",
+                    "Education",
+                    "Energy/Utilities",
+                ].index(scenario.get("industry", "Technology")),
             )
 
             new_size = st.selectbox(
                 "Size",
                 ["small", "medium", "large", "enterprise"],
-                index=["small", "medium", "large", "enterprise"].index(scenario.get("size", "medium"))
+                index=["small", "medium", "large", "enterprise"].index(scenario.get("size", "medium")),
             )
 
         with col2:
             new_security_posture = st.selectbox(
                 "Security Posture",
                 ["weak", "developing", "mature", "advanced"],
-                index=["weak", "developing", "mature", "advanced"].index(scenario.get("security_posture", "developing"))
+                index=["weak", "developing", "mature", "advanced"].index(
+                    scenario.get("security_posture", "developing")
+                ),
             )
 
             new_description = st.text_area(
-                "Description",
-                value=scenario.get("description", ""),
-                height=150,
-                key="edit_org_desc"
+                "Description", value=scenario.get("description", ""), height=150, key="edit_org_desc"
             )
 
         if st.button("💾 Save Organization Changes", type="primary"):
@@ -183,23 +192,14 @@ else:
                 col1, col2 = st.columns([3, 1])
 
                 with col1:
-                    dept_name = st.text_input(
-                        "Department Name",
-                        value=dept.get("name", ""),
-                        key=f"dept_name_{idx}"
-                    )
+                    dept_name = st.text_input("Department Name", value=dept.get("name", ""), key=f"dept_name_{idx}")
 
                     dept_desc = st.text_area(
-                        "Description",
-                        value=dept.get("description", ""),
-                        key=f"dept_desc_{idx}",
-                        height=80
+                        "Description", value=dept.get("description", ""), key=f"dept_desc_{idx}", height=80
                     )
 
                     dept_function = st.text_input(
-                        "Business Function",
-                        value=dept.get("business_function", ""),
-                        key=f"dept_func_{idx}"
+                        "Business Function", value=dept.get("business_function", ""), key=f"dept_func_{idx}"
                     )
 
                     dept_classification = st.selectbox(
@@ -208,7 +208,7 @@ else:
                         index=["public", "internal", "confidential", "restricted"].index(
                             dept.get("data_classification", "internal")
                         ),
-                        key=f"dept_class_{idx}"
+                        key=f"dept_class_{idx}",
                     )
 
                 with col2:
@@ -226,7 +226,7 @@ else:
                     if st.button("🗑️ Delete", key=f"del_dept_{idx}", use_container_width=True):
                         departments.pop(idx)
                         st.session_state.editing_scenario["departments"] = departments
-                        st.success(f"✅ Deleted department")
+                        st.success("✅ Deleted department")
                         st.rerun()
 
         # Add new department
@@ -236,10 +236,7 @@ else:
             new_dept_name = st.text_input("Department Name")
             new_dept_desc = st.text_area("Description")
             new_dept_func = st.text_input("Business Function")
-            new_dept_class = st.selectbox(
-                "Data Classification",
-                ["public", "internal", "confidential", "restricted"]
-            )
+            new_dept_class = st.selectbox("Data Classification", ["public", "internal", "confidential", "restricted"])
 
             if st.form_submit_button("Add Department"):
                 new_dept = {
@@ -248,7 +245,7 @@ else:
                     "description": new_dept_desc,
                     "business_function": new_dept_func,
                     "data_classification": new_dept_class,
-                    "systems": []
+                    "systems": [],
                 }
                 departments.append(new_dept)
                 st.session_state.editing_scenario["departments"] = departments
@@ -267,32 +264,34 @@ else:
                 col1, col2 = st.columns([3, 1])
 
                 with col1:
-                    sys_name = st.text_input(
-                        "System Name",
-                        value=sys.get("name", ""),
-                        key=f"sys_name_{idx}"
-                    )
+                    sys_name = st.text_input("System Name", value=sys.get("name", ""), key=f"sys_name_{idx}")
 
                     sys_type = st.selectbox(
                         "Type",
                         ["server", "workstation", "database", "web-application", "cloud-service", "network-device"],
-                        index=["server", "workstation", "database", "web-application", "cloud-service", "network-device"].index(
-                            sys.get("type", "server")
-                        ) if sys.get("type") in ["server", "workstation", "database", "web-application", "cloud-service", "network-device"] else 0,
-                        key=f"sys_type_{idx}"
+                        index=[
+                            "server",
+                            "workstation",
+                            "database",
+                            "web-application",
+                            "cloud-service",
+                            "network-device",
+                        ].index(sys.get("type", "server"))
+                        if sys.get("type")
+                        in ["server", "workstation", "database", "web-application", "cloud-service", "network-device"]
+                        else 0,
+                        key=f"sys_type_{idx}",
                     )
 
                     sys_os = st.text_input(
-                        "Operating System",
-                        value=sys.get("operating_system", ""),
-                        key=f"sys_os_{idx}"
+                        "Operating System", value=sys.get("operating_system", ""), key=f"sys_os_{idx}"
                     )
 
                     sys_crit = st.selectbox(
                         "Criticality",
                         ["low", "medium", "high", "critical"],
                         index=["low", "medium", "high", "critical"].index(sys.get("criticality", "medium")),
-                        key=f"sys_crit_{idx}"
+                        key=f"sys_crit_{idx}",
                     )
 
                 with col2:
@@ -310,7 +309,7 @@ else:
                     if st.button("🗑️ Delete", key=f"del_sys_{idx}", use_container_width=True):
                         systems.pop(idx)
                         st.session_state.editing_scenario["systems"] = systems
-                        st.success(f"✅ Deleted system")
+                        st.success("✅ Deleted system")
                         st.rerun()
 
         # Add new system
@@ -321,15 +320,11 @@ else:
             with col1:
                 new_sys_name = st.text_input("System Name")
                 new_sys_type = st.selectbox(
-                    "Type",
-                    ["server", "workstation", "database", "web-application", "cloud-service", "network-device"]
+                    "Type", ["server", "workstation", "database", "web-application", "cloud-service", "network-device"]
                 )
             with col2:
                 new_sys_os = st.text_input("Operating System")
-                new_sys_crit = st.selectbox(
-                    "Criticality",
-                    ["low", "medium", "high", "critical"]
-                )
+                new_sys_crit = st.selectbox("Criticality", ["low", "medium", "high", "critical"])
 
             if st.form_submit_button("Add System"):
                 new_sys = {
@@ -338,7 +333,7 @@ else:
                     "type": new_sys_type,
                     "operating_system": new_sys_os,
                     "criticality": new_sys_crit,
-                    "vulnerabilities": []
+                    "vulnerabilities": [],
                 }
                 systems.append(new_sys)
                 st.session_state.editing_scenario["systems"] = systems
@@ -356,22 +351,15 @@ else:
             severity_emoji = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢"}
             with st.expander(
                 f"{severity_emoji.get(vuln.get('severity'), '⚪')} {vuln.get('name', 'Unnamed Vulnerability')}",
-                expanded=False
+                expanded=False,
             ):
                 col1, col2 = st.columns([3, 1])
 
                 with col1:
-                    vuln_name = st.text_input(
-                        "Vulnerability Name",
-                        value=vuln.get("name", ""),
-                        key=f"vuln_name_{idx}"
-                    )
+                    vuln_name = st.text_input("Vulnerability Name", value=vuln.get("name", ""), key=f"vuln_name_{idx}")
 
                     vuln_desc = st.text_area(
-                        "Description",
-                        value=vuln.get("description", ""),
-                        key=f"vuln_desc_{idx}",
-                        height=80
+                        "Description", value=vuln.get("description", ""), key=f"vuln_desc_{idx}", height=80
                     )
 
                     col_a, col_b, col_c = st.columns(3)
@@ -380,19 +368,15 @@ else:
                             "Severity",
                             ["low", "medium", "high", "critical"],
                             index=["low", "medium", "high", "critical"].index(vuln.get("severity", "medium")),
-                            key=f"vuln_sev_{idx}"
+                            key=f"vuln_sev_{idx}",
                         )
                     with col_b:
                         vuln_cve = st.text_input(
-                            "CVE ID (optional)",
-                            value=vuln.get("cve_id", ""),
-                            key=f"vuln_cve_{idx}"
+                            "CVE ID (optional)", value=vuln.get("cve_id", ""), key=f"vuln_cve_{idx}"
                         )
                     with col_c:
                         vuln_exploitable = st.checkbox(
-                            "Exploitable",
-                            value=vuln.get("exploitable", True),
-                            key=f"vuln_exp_{idx}"
+                            "Exploitable", value=vuln.get("exploitable", True), key=f"vuln_exp_{idx}"
                         )
 
                 with col2:
@@ -405,13 +389,13 @@ else:
                         vulnerabilities[idx]["exploitable"] = vuln_exploitable
                         # Update session state
                         st.session_state.editing_scenario["vulnerabilities"] = vulnerabilities
-                        st.success(f"✅ Saved vulnerability")
+                        st.success("✅ Saved vulnerability")
                         st.rerun()
 
                     if st.button("🗑️ Delete", key=f"del_vuln_{idx}", use_container_width=True):
                         vulnerabilities.pop(idx)
                         st.session_state.editing_scenario["vulnerabilities"] = vulnerabilities
-                        st.success(f"✅ Deleted vulnerability")
+                        st.success("✅ Deleted vulnerability")
                         st.rerun()
 
         # Add new vulnerability
@@ -436,11 +420,11 @@ else:
                     "severity": new_vuln_sev,
                     "cve_id": new_vuln_cve if new_vuln_cve else None,
                     "exploitable": new_vuln_exp,
-                    "affected_systems": []
+                    "affected_systems": [],
                 }
                 vulnerabilities.append(new_vuln)
                 st.session_state.editing_scenario["vulnerabilities"] = vulnerabilities
-                st.success(f"✅ Added vulnerability")
+                st.success("✅ Added vulnerability")
                 st.rerun()
 
     # ===== TAB 5: Threat Actors =====
@@ -456,16 +440,11 @@ else:
 
                 with col1:
                     actor_name = st.text_input(
-                        "Threat Actor Name",
-                        value=actor.get("name", ""),
-                        key=f"actor_name_{idx}"
+                        "Threat Actor Name", value=actor.get("name", ""), key=f"actor_name_{idx}"
                     )
 
                     actor_desc = st.text_area(
-                        "Description",
-                        value=actor.get("description", ""),
-                        key=f"actor_desc_{idx}",
-                        height=80
+                        "Description", value=actor.get("description", ""), key=f"actor_desc_{idx}", height=80
                     )
 
                     col_a, col_b = st.columns(2)
@@ -475,8 +454,11 @@ else:
                             ["financial", "espionage", "hacktivism", "nation-state", "insider"],
                             index=["financial", "espionage", "hacktivism", "nation-state", "insider"].index(
                                 actor.get("motivation", "financial")
-                            ) if actor.get("motivation") in ["financial", "espionage", "hacktivism", "nation-state", "insider"] else 0,
-                            key=f"actor_mot_{idx}"
+                            )
+                            if actor.get("motivation")
+                            in ["financial", "espionage", "hacktivism", "nation-state", "insider"]
+                            else 0,
+                            key=f"actor_mot_{idx}",
                         )
                     with col_b:
                         actor_soph = st.selectbox(
@@ -484,17 +466,17 @@ else:
                             ["low", "medium-low", "medium", "medium-high", "high", "nation-state"],
                             index=["low", "medium-low", "medium", "medium-high", "high", "nation-state"].index(
                                 actor.get("sophistication", "medium")
-                            ) if actor.get("sophistication") in ["low", "medium-low", "medium", "medium-high", "high", "nation-state"] else 2,
-                            key=f"actor_soph_{idx}"
+                            )
+                            if actor.get("sophistication")
+                            in ["low", "medium-low", "medium", "medium-high", "high", "nation-state"]
+                            else 2,
+                            key=f"actor_soph_{idx}",
                         )
 
                     # TTPs editing
                     st.markdown("**TTPs (Tactics, Techniques, Procedures):**")
                     ttps_text = st.text_area(
-                        "One per line",
-                        value="\n".join(actor.get("ttps", [])),
-                        key=f"actor_ttps_{idx}",
-                        height=100
+                        "One per line", value="\n".join(actor.get("ttps", [])), key=f"actor_ttps_{idx}", height=100
                     )
 
                 with col2:
@@ -513,7 +495,7 @@ else:
                     if st.button("🗑️ Delete", key=f"del_actor_{idx}", use_container_width=True):
                         threat_actors.pop(idx)
                         st.session_state.editing_scenario["threat_actors"] = threat_actors
-                        st.success(f"✅ Deleted threat actor")
+                        st.success("✅ Deleted threat actor")
                         st.rerun()
 
         # Add new threat actor
@@ -525,13 +507,11 @@ else:
             col1, col2 = st.columns(2)
             with col1:
                 new_actor_mot = st.selectbox(
-                    "Motivation",
-                    ["financial", "espionage", "hacktivism", "nation-state", "insider"]
+                    "Motivation", ["financial", "espionage", "hacktivism", "nation-state", "insider"]
                 )
             with col2:
                 new_actor_soph = st.selectbox(
-                    "Sophistication",
-                    ["low", "medium-low", "medium", "medium-high", "high", "nation-state"]
+                    "Sophistication", ["low", "medium-low", "medium", "medium-high", "high", "nation-state"]
                 )
             new_actor_ttps = st.text_area("TTPs (one per line)")
 
@@ -543,7 +523,7 @@ else:
                     "motivation": new_actor_mot,
                     "sophistication": new_actor_soph,
                     "ttps": [ttp.strip() for ttp in new_actor_ttps.split("\n") if ttp.strip()],
-                    "targets": []
+                    "targets": [],
                 }
                 threat_actors.append(new_actor)
                 st.session_state.editing_scenario["threat_actors"] = threat_actors
@@ -568,7 +548,7 @@ else:
                 obj_text = st.text_input(
                     f"Objective {idx + 1}",
                     value=obj if isinstance(obj, str) else obj.get("description", ""),
-                    key=f"obj_{idx}"
+                    key=f"obj_{idx}",
                 )
             with col2:
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -604,18 +584,20 @@ else:
             "Notify relevant stakeholders",
             "Implement remediation measures",
             "Prevent data exfiltration",
-            "Restore normal operations"
+            "Restore normal operations",
         ]
 
         cols = st.columns(2)
         for i, suggestion in enumerate(suggestions):
             with cols[i % 2]:
-                if st.button(f"➕ {suggestion}", key=f"sugg_{i}", use_container_width=True):
-                    if suggestion not in objectives:
-                        objectives.append(suggestion)
-                        st.session_state.editing_scenario["objectives"] = objectives
-                        st.success(f"✅ Added: {suggestion}")
-                        st.rerun()
+                if (
+                    st.button(f"➕ {suggestion}", key=f"sugg_{i}", use_container_width=True)
+                    and suggestion not in objectives
+                ):
+                    objectives.append(suggestion)
+                    st.session_state.editing_scenario["objectives"] = objectives
+                    st.success(f"✅ Added: {suggestion}")
+                    st.rerun()
 
     # ===== Action Buttons =====
     st.markdown("---")

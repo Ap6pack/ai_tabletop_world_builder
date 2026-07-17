@@ -9,13 +9,28 @@
 """
 FastAPI main application entry point.
 """
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routers import llm_router, content_policy_router
+
 from api.middleware.cors import get_cors_origins
-from api.middleware.security import SecurityHeadersMiddleware
 from api.middleware.request_logging import RequestLoggingMiddleware
+from api.middleware.security import SecurityHeadersMiddleware
 from api.middleware.telemetry import TelemetryMiddleware
+from api.routers import (
+    analytics_router,
+    audit_router,
+    auth_router,
+    content_policy_router,
+    exercise_router,
+    game_router,
+    integrations_router,
+    library_router,
+    llm_router,
+    mitre_router,
+    scenarios_router,
+    settings_router,
+)
 from config import settings
 
 # Create FastAPI app
@@ -43,13 +58,6 @@ TelemetryMiddleware.setup_telemetry(app)
 # Include routers
 app.include_router(llm_router)
 app.include_router(content_policy_router)
-
-# Import scenarios, game, settings, and audit routers
-from api.routers import (
-    scenarios_router, game_router, settings_router, audit_router,
-    analytics_router, auth_router, library_router, integrations_router,
-    mitre_router, exercise_router,
-)
 app.include_router(scenarios_router)
 app.include_router(game_router)
 app.include_router(settings_router)
@@ -65,11 +73,7 @@ app.include_router(exercise_router)
 @app.get("/")
 async def root():
     """Root endpoint."""
-    return {
-        "message": "Cybersecurity War Gaming Platform API",
-        "version": "0.1.0",
-        "docs": "/docs"
-    }
+    return {"message": "Cybersecurity War Gaming Platform API", "version": "0.1.0", "docs": "/docs"}
 
 
 @app.get("/health")
@@ -80,9 +84,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "main:app",
-        host=settings.api_host,
-        port=settings.api_port,
-        reload=settings.api_reload
-    )
+
+    uvicorn.run("main:app", host=settings.api_host, port=settings.api_port, reload=settings.api_reload)

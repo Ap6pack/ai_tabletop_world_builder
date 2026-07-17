@@ -9,11 +9,13 @@
 """
 Streamlit After Action Review Page - Post-game analysis and decision evaluation.
 """
-import streamlit as st
-import requests
-import plotly.graph_objects as go
-import sys
+
 import os
+import sys
+
+import plotly.graph_objects as go
+import requests
+import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,10 +28,18 @@ st.markdown("Post-game analysis of decisions, performance, and training recommen
 st.markdown("---")
 
 GRADE_COLORS = {
-    "A": "#2ecc71", "A+": "#27ae60", "A-": "#2ecc71",
-    "B": "#3498db", "B+": "#2980b9", "B-": "#3498db",
-    "C": "#f39c12", "C+": "#e67e22", "C-": "#f39c12",
-    "D": "#e74c3c", "D+": "#c0392b", "D-": "#e74c3c",
+    "A": "#2ecc71",
+    "A+": "#27ae60",
+    "A-": "#2ecc71",
+    "B": "#3498db",
+    "B+": "#2980b9",
+    "B-": "#3498db",
+    "C": "#f39c12",
+    "C+": "#e67e22",
+    "C-": "#f39c12",
+    "D": "#e74c3c",
+    "D+": "#c0392b",
+    "D-": "#e74c3c",
     "F": "#8e44ad",
 }
 IMPACT_LABELS = {"positive": "🟢 Positive", "neutral": "🟡 Neutral", "negative": "🔴 Negative"}
@@ -65,12 +75,12 @@ if not sessions:
             st.switch_page("pages/1_Scenario_Builder.py")
 else:
     session_labels = [
-        f"{s.get('organization', 'Unknown')[:30]} | {s.get('status', '').title()} "
-        f"| Score: {s.get('score', 0)}"
+        f"{s.get('organization', 'Unknown')[:30]} | {s.get('status', '').title()} | Score: {s.get('score', 0)}"
         for s in sessions
     ]
     selected_idx = st.selectbox(
-        "Completed Sessions", range(len(session_labels)),
+        "Completed Sessions",
+        range(len(session_labels)),
         format_func=lambda i: session_labels[i],
     )
     selected_session = sessions[selected_idx]
@@ -111,7 +121,8 @@ else:
         with st.spinner("Fetching After Action Review..."):
             try:
                 resp = requests.get(
-                    f"{API_BASE_URL}/analytics/aar/{session_id}", timeout=DEFAULT_TIMEOUT,
+                    f"{API_BASE_URL}/analytics/aar/{session_id}",
+                    timeout=DEFAULT_TIMEOUT,
                 )
                 if resp.status_code == 200:
                     aar = resp.json()
@@ -245,19 +256,26 @@ else:
             categories = list(chart_data.keys())
             values = list(chart_data.values())
             is_breakdown = bool(score_breakdown)
-            fig = go.Figure(data=[go.Bar(
-                x=categories, y=values,
-                marker_color=[
-                    ("#2ecc71" if v >= 0 else "#e74c3c") for v in values
-                ] if is_breakdown else "#3498db",
-                text=[f"{v:+d}" if isinstance(v, int) and is_breakdown else f"{v}" for v in values],
-                textposition="outside",
-            )])
+            fig = go.Figure(
+                data=[
+                    go.Bar(
+                        x=categories,
+                        y=values,
+                        marker_color=[("#2ecc71" if v >= 0 else "#e74c3c") for v in values]
+                        if is_breakdown
+                        else "#3498db",
+                        text=[f"{v:+d}" if isinstance(v, int) and is_breakdown else f"{v}" for v in values],
+                        textposition="outside",
+                    )
+                ]
+            )
             fig.update_layout(
                 title="Points by Category" if is_breakdown else "Performance Metrics",
                 xaxis_title="Category" if is_breakdown else "Metric",
                 yaxis_title="Points" if is_breakdown else "Value",
-                template="plotly_dark", height=350, margin=dict(t=40, b=40),
+                template="plotly_dark",
+                height=350,
+                margin=dict(t=40, b=40),
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
@@ -277,11 +295,13 @@ else:
                     )
                     if resp.status_code == 200:
                         import json
+
                         st.download_button(
                             label="Download JSON",
                             data=json.dumps(resp.json(), indent=2),
                             file_name=f"aar_{session_id}.json",
-                            mime="application/json", use_container_width=True,
+                            mime="application/json",
+                            use_container_width=True,
                         )
                     else:
                         st.error(f"Export failed (HTTP {resp.status_code})")
@@ -299,9 +319,11 @@ else:
                     )
                     if resp.status_code == 200:
                         st.download_button(
-                            label="Download CSV", data=resp.text,
+                            label="Download CSV",
+                            data=resp.text,
                             file_name=f"aar_{session_id}.csv",
-                            mime="text/csv", use_container_width=True,
+                            mime="text/csv",
+                            use_container_width=True,
                         )
                     else:
                         st.error(f"Export failed (HTTP {resp.status_code})")

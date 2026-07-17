@@ -10,6 +10,7 @@
 Test suite for AuthService — user registration, authentication,
 JWT token management, and user CRUD operations.
 """
+
 import os
 import shutil
 import sys
@@ -58,7 +59,7 @@ def test_register_duplicate_username():
     service.register("bob", "bob@example.com", "password123")
     try:
         service.register("bob", "bob2@example.com", "password123")
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError:
         pass
     print("  PASS — duplicate username rejected")
@@ -70,7 +71,7 @@ def test_register_invalid_username():
     service = make_service()
     try:
         service.register("ab", "short@example.com", "password123")
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError:
         pass
     print("  PASS — short username rejected")
@@ -82,7 +83,7 @@ def test_register_invalid_password():
     service = make_service()
     try:
         service.register("charlie", "charlie@example.com", "short")
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError:
         pass
     print("  PASS — short password rejected")
@@ -94,7 +95,7 @@ def test_register_invalid_email():
     service = make_service()
     try:
         service.register("dave", "no-at-sign.com", "password123")
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError:
         pass
     print("  PASS — invalid email rejected")
@@ -284,6 +285,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n  FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         all_passed = False
     finally:

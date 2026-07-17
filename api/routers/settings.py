@@ -9,11 +9,14 @@
 """
 API endpoints for managing application settings.
 """
+
+import contextlib
+from pathlib import Path
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Literal
-import os
-from pathlib import Path
+
 from config import settings
 
 router = APIRouter(prefix="/settings", tags=["settings"])
@@ -21,38 +24,40 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 class SettingsUpdate(BaseModel):
     """Model for updating settings."""
+
     # LLM Provider
-    default_llm_provider: Optional[Literal["openai", "anthropic", "ollama"]] = None
+    default_llm_provider: Literal["openai", "anthropic", "ollama"] | None = None
 
     # OpenAI
-    openai_api_key: Optional[str] = None
-    openai_model: Optional[str] = None
-    openai_temperature: Optional[float] = None
+    openai_api_key: str | None = None
+    openai_model: str | None = None
+    openai_temperature: float | None = None
 
     # Anthropic
-    anthropic_api_key: Optional[str] = None
-    anthropic_model: Optional[str] = None
-    anthropic_temperature: Optional[float] = None
+    anthropic_api_key: str | None = None
+    anthropic_model: str | None = None
+    anthropic_temperature: float | None = None
 
     # Ollama
-    ollama_base_url: Optional[str] = None
-    ollama_model: Optional[str] = None
-    ollama_temperature: Optional[float] = None
+    ollama_base_url: str | None = None
+    ollama_model: str | None = None
+    ollama_temperature: float | None = None
 
     # Content Policy
-    default_content_policy: Optional[Literal["defensive", "educational", "advanced", "unrestricted"]] = None
+    default_content_policy: Literal["defensive", "educational", "advanced", "unrestricted"] | None = None
 
     # Session Configuration
-    session_timeout: Optional[int] = None
-    max_context_length: Optional[int] = None
+    session_timeout: int | None = None
+    max_context_length: int | None = None
 
     # Storage
-    scenarios_path: Optional[str] = None
-    data_path: Optional[str] = None
+    scenarios_path: str | None = None
+    data_path: str | None = None
 
 
 class StorageStats(BaseModel):
     """Storage statistics."""
+
     saved_scenarios: int
     disk_usage_mb: float
     scenarios_path: str
@@ -94,7 +99,7 @@ async def update_settings(updates: SettingsUpdate):
     # Read existing .env file
     env_lines = []
     if env_path.exists():
-        with open(env_path, "r") as f:
+        with open(env_path) as f:
             env_lines = f.readlines()
 
     # Build map of existing env vars
@@ -132,7 +137,7 @@ async def update_settings(updates: SettingsUpdate):
     return {
         "message": "Settings updated successfully",
         "note": "Some settings may require API restart to take full effect",
-        "updated_keys": list(updates_dict.keys())
+        "updated_keys": list(updates_dict.keys()),
     }
 
 
@@ -154,10 +159,8 @@ async def get_storage_stats() -> StorageStats:
         if path.exists():
             for item in path.rglob("*"):
                 if item.is_file():
-                    try:
+                    with contextlib.suppress(OSError, PermissionError):
                         disk_usage_bytes += item.stat().st_size
-                    except (OSError, PermissionError):
-                        pass
 
     disk_usage_mb = disk_usage_bytes / (1024 * 1024)
 
@@ -165,7 +168,7 @@ async def get_storage_stats() -> StorageStats:
         saved_scenarios=saved_scenarios,
         disk_usage_mb=round(disk_usage_mb, 2),
         scenarios_path=str(scenarios_path),
-        data_path=str(data_path)
+        data_path=str(data_path),
     )
 
 
@@ -178,28 +181,22 @@ async def export_config():
             "openai": {
                 "model": settings.openai_model,
                 "temperature": settings.openai_temperature,
-                "api_key_configured": bool(settings.openai_api_key)
+                "api_key_configured": bool(settings.openai_api_key),
             },
             "anthropic": {
                 "model": settings.anthropic_model,
                 "temperature": settings.anthropic_temperature,
-                "api_key_configured": bool(settings.anthropic_api_key)
+                "api_key_configured": bool(settings.anthropic_api_key),
             },
             "ollama": {
                 "base_url": settings.ollama_base_url,
                 "model": settings.ollama_model,
-                "temperature": settings.ollama_temperature
-            }
+                "temperature": settings.ollama_temperature,
+            },
         },
         "content_policy": settings.default_content_policy,
-        "session": {
-            "timeout": settings.session_timeout,
-            "max_context_length": settings.max_context_length
-        },
-        "storage": {
-            "scenarios_path": settings.scenarios_path,
-            "data_path": settings.data_path
-        }
+        "session": {"timeout": settings.session_timeout, "max_context_length": settings.max_context_length},
+        "storage": {"scenarios_path": settings.scenarios_path, "data_path": settings.data_path},
     }
 
     return config_data
@@ -241,16 +238,10 @@ async def clear_all_data():
     if errors:
         raise HTTPException(
             status_code=500,
-            detail={
-                "message": f"Deleted {deleted_files} files with {len(errors)} errors",
-                "errors": errors
-            }
+            detail={"message": f"Deleted {deleted_files} files with {len(errors)} errors", "errors": errors},
         )
 
-    return {
-        "message": f"Successfully deleted {deleted_files} files",
-        "deleted_files": deleted_files
-    }
+    return {"message": f"Successfully deleted {deleted_files} files", "deleted_files": deleted_files}
 
 
 @router.post("/reset/defaults")
@@ -273,7 +264,7 @@ async def reset_to_defaults():
         "SESSION_TIMEOUT": "3600",
         "MAX_CONTEXT_LENGTH": "4000",
         "SCENARIOS_PATH": "./scenarios/generated",
-        "DATA_PATH": "./data"
+        "DATA_PATH": "./data",
     }
 
     # Keep API keys from current .env
@@ -281,7 +272,7 @@ async def reset_to_defaults():
     existing_keys = {}
 
     if env_path.exists():
-        with open(env_path, "r") as f:
+        with open(env_path) as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
@@ -316,10 +307,7 @@ async def reset_to_defaults():
     settings.scenarios_path = "./scenarios/generated"
     settings.data_path = "./data"
 
-    return {
-        "message": "Settings reset to defaults",
-        "note": "API keys were preserved. API restart recommended."
-    }
+    return {"message": "Settings reset to defaults", "note": "API keys were preserved. API restart recommended."}
 
 
 @router.delete("/provider/{provider}/key")
@@ -339,14 +327,11 @@ async def clear_provider_key(provider: Literal["openai", "anthropic", "ollama"])
     key_mapping = {
         "openai": "OPENAI_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
-        "ollama": None  # Ollama doesn't use API keys
+        "ollama": None,  # Ollama doesn't use API keys
     }
 
     if provider == "ollama":
-        raise HTTPException(
-            status_code=400,
-            detail="Ollama does not use API keys. Clear the base URL if needed."
-        )
+        raise HTTPException(status_code=400, detail="Ollama does not use API keys. Clear the base URL if needed.")
 
     env_key = key_mapping[provider]
     env_path = Path(".env")
@@ -356,7 +341,7 @@ async def clear_provider_key(provider: Literal["openai", "anthropic", "ollama"])
 
     # Read existing .env
     env_lines = []
-    with open(env_path, "r") as f:
+    with open(env_path) as f:
         env_lines = f.readlines()
 
     # Remove the API key line
@@ -372,10 +357,7 @@ async def clear_provider_key(provider: Literal["openai", "anthropic", "ollama"])
         new_lines.append(line)
 
     if not key_found:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No API key found for {provider}"
-        )
+        raise HTTPException(status_code=404, detail=f"No API key found for {provider}")
 
     # Write updated .env
     with open(env_path, "w") as f:
@@ -390,5 +372,5 @@ async def clear_provider_key(provider: Literal["openai", "anthropic", "ollama"])
     return {
         "message": f"API key for {provider} has been removed",
         "provider": provider,
-        "note": "The provider will no longer be available until a new API key is added."
+        "note": "The provider will no longer be available until a new API key is added.",
     }

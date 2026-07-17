@@ -11,19 +11,19 @@ Test suite for Business Impact Service.
 
 Tests all cost calculation methods and business impact tracking.
 """
+
 import sys
-from datetime import datetime
-from api.services.business_impact_service import BusinessImpactService
+
 from api.models import (
-    Organization,
     Department,
-    System,
-    Vulnerability,
-    ThreatActor,
     GameState,
     Inventory,
-    BusinessImpact,
+    Organization,
+    System,
+    ThreatActor,
+    Vulnerability,
 )
+from api.services.business_impact_service import BusinessImpactService
 
 
 def create_test_organization() -> Organization:
@@ -148,7 +148,7 @@ def test_calculate_downtime_cost():
 
     print(f"   System: {system.name} ({system.criticality})")
     print(f"   Industry: {org.industry}")
-    print(f"   Downtime: 2.0 hours")
+    print("   Downtime: 2.0 hours")
     print(f"   Cost: ${cost:,.2f}")
     print(f"   Description: {description}")
 
@@ -170,7 +170,7 @@ def test_calculate_data_loss_cost():
     records = 10000
     cost, description = service.calculate_data_loss_cost(org, "IT Department", records)
 
-    print(f"   Department: IT Department (confidential)")
+    print("   Department: IT Department (confidential)")
     print(f"   Records compromised: {records:,}")
     print(f"   Cost: ${cost:,.2f}")
     print(f"   Description: {description}")
@@ -217,7 +217,7 @@ def test_calculate_reputation_damage():
     cost, description = service.calculate_reputation_damage(org, records, "high")
 
     print(f"   Records affected: {records:,}")
-    print(f"   Severity: high")
+    print("   Severity: high")
     print(f"   Cost: ${cost:,.2f}")
     print(f"   Description: {description}")
 
@@ -251,11 +251,11 @@ def test_update_impact_downtime():
     assert game_state.business_impact.downtime_cost > 0, "Downtime cost should be > 0"
     assert len(game_state.impact_events) == 1, "Should have 1 impact event"
 
-    print(f"   System: sys-001 (Customer Database)")
-    print(f"   Downtime: 1.0 hours")
+    print("   System: sys-001 (Customer Database)")
+    print("   Downtime: 1.0 hours")
     print(f"   Cost: ${game_state.business_impact.downtime_cost:,.2f}")
     print(f"   Total cost: ${game_state.business_impact.total_cost:,.2f}")
-    print(f"✅ Downtime impact updated successfully")
+    print("✅ Downtime impact updated successfully")
 
 
 def test_update_impact_data_loss():
@@ -279,11 +279,11 @@ def test_update_impact_data_loss():
     assert game_state.business_impact.data_loss_cost > 0, "Data loss cost should be > 0"
     assert len(game_state.impact_events) == 1, "Should have 1 impact event"
 
-    print(f"   Records compromised: 5,000")
-    print(f"   Department: IT Department")
+    print("   Records compromised: 5,000")
+    print("   Department: IT Department")
     print(f"   Cost: ${game_state.business_impact.data_loss_cost:,.2f}")
     print(f"   Total cost: ${game_state.business_impact.total_cost:,.2f}")
-    print(f"✅ Data loss impact updated successfully")
+    print("✅ Data loss impact updated successfully")
 
 
 def test_update_impact_compliance():
@@ -306,12 +306,12 @@ def test_update_impact_compliance():
     total_penalties = sum(game_state.business_impact.compliance_penalties.values())
     assert total_penalties > 0, "Total penalties should be > 0"
 
-    print(f"   Records: 5,000")
+    print("   Records: 5,000")
     print(f"   Frameworks affected: {list(game_state.business_impact.compliance_penalties.keys())}")
     print(f"   Total penalties: ${total_penalties:,.2f}")
     for framework, penalty in game_state.business_impact.compliance_penalties.items():
         print(f"   - {framework}: ${penalty:,.2f}")
-    print(f"✅ Compliance penalties updated successfully")
+    print("✅ Compliance penalties updated successfully")
 
 
 def test_update_impact_reputation():
@@ -332,11 +332,11 @@ def test_update_impact_reputation():
 
     assert game_state.business_impact.reputation_damage > 0, "Reputation damage should be > 0"
 
-    print(f"   Records affected: 5,000")
-    print(f"   Severity: critical")
+    print("   Records affected: 5,000")
+    print("   Severity: critical")
     print(f"   Cost: ${game_state.business_impact.reputation_damage:,.2f}")
     print(f"   Total cost: ${game_state.business_impact.total_cost:,.2f}")
-    print(f"✅ Reputation damage updated successfully")
+    print("✅ Reputation damage updated successfully")
 
 
 def test_cumulative_impact():
@@ -387,14 +387,14 @@ def test_cumulative_impact():
     assert len(game_state.impact_events) == 4, "Should have 4 impact events"
     assert game_state.business_impact.total_cost > 0, "Total cost should be > 0"
 
-    print(f"   Events processed: 4")
+    print("   Events processed: 4")
     print(f"   Downtime: ${game_state.business_impact.downtime_cost:,.2f}")
     print(f"   Data loss: ${game_state.business_impact.data_loss_cost:,.2f}")
     print(f"   Compliance: ${sum(game_state.business_impact.compliance_penalties.values()):,.2f}")
     print(f"   Reputation: ${game_state.business_impact.reputation_damage:,.2f}")
     print(f"   TOTAL COST: ${game_state.business_impact.total_cost:,.2f}")
     print(f"\n   Summary: {game_state.business_impact.impact_description}")
-    print(f"✅ Cumulative impact calculated successfully")
+    print("✅ Cumulative impact calculated successfully")
 
 
 def test_get_impact_summary():
@@ -405,9 +405,7 @@ def test_get_impact_summary():
     game_state = create_test_game_state(org)
 
     # Add multiple impacts
-    game_state = service.update_impact(
-        game_state, org, "downtime", system_id="sys-001", hours=1.5, severity="high"
-    )
+    game_state = service.update_impact(game_state, org, "downtime", system_id="sys-001", hours=1.5, severity="high")
     game_state = service.update_impact(
         game_state, org, "data_loss", records=5000, department="IT Department", severity="high"
     )
@@ -419,7 +417,7 @@ def test_get_impact_summary():
     assert "Total" in summary, "Summary should include total"
 
     print(f"   Summary: {summary}")
-    print(f"✅ Impact summary generated successfully")
+    print("✅ Impact summary generated successfully")
 
 
 def test_different_industries():
@@ -452,7 +450,7 @@ def test_different_industries():
         cost, _ = service.calculate_downtime_cost(org, system, 1.0)
         print(f"   {industry.capitalize():12} - 1 hour downtime (high system): ${cost:,.2f}")
 
-    print(f"✅ Industry multipliers working correctly")
+    print("✅ Industry multipliers working correctly")
 
 
 def run_all_tests():

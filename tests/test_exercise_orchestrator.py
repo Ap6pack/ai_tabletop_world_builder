@@ -8,39 +8,54 @@
 # For inquiries, contact: contact@veritasandaequitas.com
 # Copyright (c) 2026 Veritas Aequitas Holdings LLC. All rights reserved.
 """Tests for the multi-team exercise orchestration service."""
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone
 
-from api.services.exercise_orchestrator import ExerciseOrchestrator
+from unittest.mock import AsyncMock
+
+import pytest
+
 from api.models.exercise_models import (
-    ExerciseConfig, TeamMember, ExerciseState, Inject, InjectTrigger,
+    ExerciseConfig,
+    ExerciseState,
+    Inject,
+    InjectTrigger,
     InjectType,
+    TeamMember,
 )
 from api.models.schemas import (
-    GameState, Organization, Department, Inventory, GameResponse,
-    IncidentEvent, BusinessImpact,
+    Department,
+    GameResponse,
+    GameState,
+    Inventory,
+    Organization,
 )
-
+from api.services.exercise_orchestrator import ExerciseOrchestrator
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def make_org():
     """Minimal Organization for test scenarios."""
     return Organization(
-        id="org-1", name="Test Corp", description="Test",
-        industry="Technology", size="medium",
+        id="org-1",
+        name="Test Corp",
+        description="Test",
+        industry="Technology",
+        size="medium",
         departments=[
             Department(
-                id="d1", name="IT", description="IT",
-                business_function="Tech", systems=[],
+                id="d1",
+                name="IT",
+                description="IT",
+                business_function="Tech",
+                systems=[],
                 data_classification="internal",
                 compliance_requirements=[],
             )
         ],
-        threat_actors=[], security_posture="developing",
+        threat_actors=[],
+        security_posture="developing",
         compliance_frameworks=[],
     )
 
@@ -48,9 +63,12 @@ def make_org():
 def make_game_state(**overrides):
     """Factory for minimal GameState instances."""
     defaults = dict(
-        session_id="test-session", organization=make_org(),
-        current_scenario="test", player_role="mixed",
-        inventory=Inventory(), status="in-progress",
+        session_id="test-session",
+        organization=make_org(),
+        current_scenario="test",
+        player_role="mixed",
+        inventory=Inventory(),
+        status="in-progress",
     )
     defaults.update(overrides)
     return GameState(**defaults)
@@ -59,9 +77,11 @@ def make_game_state(**overrides):
 def make_config(**overrides):
     """Factory for ExerciseConfig with sensible defaults."""
     defaults = dict(
-        name="Test Exercise", description="A test exercise",
+        name="Test Exercise",
+        description="A test exercise",
         scenario_filename="test_scenario.yaml",
-        scenario_type="incident-response", difficulty="intermediate",
+        scenario_type="incident-response",
+        difficulty="intermediate",
         max_rounds=3,
     )
     defaults.update(overrides)
@@ -71,6 +91,7 @@ def make_config(**overrides):
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_orchestrator(tmp_path):
@@ -105,6 +126,7 @@ def mock_orchestrator(tmp_path):
 # Exercise creation
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_create_exercise_default_teams(mock_orchestrator):
     """No teams in config -> Blue Team + Facilitator created by default."""
@@ -138,6 +160,7 @@ async def test_create_exercise_custom_teams(mock_orchestrator):
 # Joining
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_join_exercise(mock_orchestrator):
     """A member can join an existing exercise team."""
@@ -146,7 +169,8 @@ async def test_join_exercise(mock_orchestrator):
 
     blue_team = [t for t in state.teams if t.team_type == "blue"][0]
     member = TeamMember(
-        display_name="Alice", role="SOC Analyst",
+        display_name="Alice",
+        role="SOC Analyst",
         team_id=blue_team.team_id,
     )
 
@@ -160,7 +184,9 @@ async def test_join_exercise(mock_orchestrator):
 async def test_join_exercise_not_found(mock_orchestrator):
     """Joining a non-existent exercise raises FileNotFoundError."""
     member = TeamMember(
-        display_name="Bob", role="Analyst", team_id="no-such-team",
+        display_name="Bob",
+        role="Analyst",
+        team_id="no-such-team",
     )
     with pytest.raises(FileNotFoundError):
         await mock_orchestrator.join_exercise("nonexistent-id", member)
@@ -174,13 +200,15 @@ async def test_join_duplicate_member(mock_orchestrator):
 
     blue_team = [t for t in state.teams if t.team_type == "blue"][0]
     member = TeamMember(
-        display_name="Alice", role="SOC Analyst",
+        display_name="Alice",
+        role="SOC Analyst",
         team_id=blue_team.team_id,
     )
     await mock_orchestrator.join_exercise(state.exercise_id, member)
 
     dup = TeamMember(
-        display_name="Alice", role="Lead",
+        display_name="Alice",
+        role="Lead",
         team_id=blue_team.team_id,
     )
     with pytest.raises(ValueError, match="already on team"):
@@ -191,6 +219,7 @@ async def test_join_duplicate_member(mock_orchestrator):
 # Round advancement
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_advance_round_start(mock_orchestrator):
     """Advancing from setup transitions to active round 1."""
@@ -199,7 +228,8 @@ async def test_advance_round_start(mock_orchestrator):
 
     facilitator_id = state.facilitator_id
     updated = await mock_orchestrator.advance_round(
-        state.exercise_id, facilitator_id,
+        state.exercise_id,
+        facilitator_id,
     )
     assert updated.phase == "active"
     assert updated.current_round == 1
@@ -237,6 +267,7 @@ async def test_advance_round_max(mock_orchestrator):
 # Action submission
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_submit_action(mock_orchestrator):
     """A team member action is processed through the game engine."""
@@ -250,7 +281,8 @@ async def test_submit_action(mock_orchestrator):
     # Add a member
     blue_team = [t for t in state.teams if t.team_type == "blue"][0]
     member = TeamMember(
-        display_name="Charlie", role="Analyst",
+        display_name="Charlie",
+        role="Analyst",
         team_id=blue_team.team_id,
     )
     state = await mock_orchestrator.join_exercise(state.exercise_id, member)
@@ -268,6 +300,7 @@ async def test_submit_action(mock_orchestrator):
 # ---------------------------------------------------------------------------
 # Inject delivery
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_inject_event(mock_orchestrator):
@@ -292,6 +325,7 @@ async def test_inject_event(mock_orchestrator):
 # Team view
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_get_team_view(mock_orchestrator):
     """get_team_view returns a filtered TeamGameView."""
@@ -300,7 +334,8 @@ async def test_get_team_view(mock_orchestrator):
 
     blue_team = [t for t in state.teams if t.team_type == "blue"][0]
     view = await mock_orchestrator.get_team_view(
-        state.exercise_id, blue_team.team_id,
+        state.exercise_id,
+        blue_team.team_id,
     )
     assert view is not None
     assert view.exercise_id == state.exercise_id
@@ -310,6 +345,7 @@ async def test_get_team_view(mock_orchestrator):
 # ---------------------------------------------------------------------------
 # Pause / resume
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_pause_and_resume(mock_orchestrator):

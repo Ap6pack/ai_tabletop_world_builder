@@ -23,8 +23,9 @@ and adds higher-level calculations including:
 - Board and SEC disclosure requirements
 - Executive-ready board report generation
 """
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional
+
+from datetime import UTC, datetime
+from typing import Any, Literal
 
 from api.models.schemas import (
     BusinessImpact,
@@ -46,7 +47,7 @@ class ExecutiveDashboardService:
     """
 
     # Average stock price decline percentage after a data breach by industry
-    STOCK_IMPACT_BY_INDUSTRY: Dict[str, float] = {
+    STOCK_IMPACT_BY_INDUSTRY: dict[str, float] = {
         "financial": 5.5,
         "healthcare": 4.2,
         "technology": 3.8,
@@ -58,7 +59,7 @@ class ExecutiveDashboardService:
     }
 
     # Average customer churn rate after breach by industry
-    CHURN_RATE_BY_INDUSTRY: Dict[str, float] = {
+    CHURN_RATE_BY_INDUSTRY: dict[str, float] = {
         "financial": 5.7,
         "healthcare": 6.7,
         "technology": 4.5,
@@ -69,7 +70,7 @@ class ExecutiveDashboardService:
     }
 
     # Base recovery time in days by industry
-    RECOVERY_TIME_BASE_DAYS: Dict[str, int] = {
+    RECOVERY_TIME_BASE_DAYS: dict[str, int] = {
         "financial": 45,
         "healthcare": 55,
         "technology": 35,
@@ -80,7 +81,7 @@ class ExecutiveDashboardService:
     }
 
     # Notification rules defining when regulatory notification is required
-    NOTIFICATION_RULES: List[Dict[str, Any]] = [
+    NOTIFICATION_RULES: list[dict[str, Any]] = [
         {
             "framework": "GDPR",
             "min_records": 0,
@@ -223,8 +224,7 @@ class ExecutiveDashboardService:
         compliance_frameworks = business_impact.compliance_penalties
         has_hipaa = "HIPAA" in compliance_frameworks
         has_health_data = any(
-            "health" in framework.lower() or "hipaa" in framework.lower()
-            for framework in compliance_frameworks
+            "health" in framework.lower() or "hipaa" in framework.lower() for framework in compliance_frameworks
         )
         if has_hipaa or has_health_data:
             churn_rate *= 1.5
@@ -278,11 +278,7 @@ class ExecutiveDashboardService:
 
         # Bump to "critical" if records exceed 100K OR penalties exceed $1M
         # OR multiple compliance frameworks are violated
-        if (
-            records > 100_000
-            or total_penalties > 1_000_000
-            or frameworks_violated >= 2
-        ):
+        if records > 100_000 or total_penalties > 1_000_000 or frameworks_violated >= 2:
             risk_level = "critical"
 
         logger.debug(
@@ -317,9 +313,7 @@ class ExecutiveDashboardService:
 
         # Determine media exposure level based on thresholds
         if total_cost >= 10_000_000 or records >= 100_000:
-            level: Literal["none", "local", "national", "international"] = (
-                "international"
-            )
+            level: Literal["none", "local", "national", "international"] = "international"
         elif total_cost >= 500_000 or records >= 1_000:
             level = "national"
         elif total_cost >= 50_000 or records >= 100:
@@ -372,8 +366,7 @@ class ExecutiveDashboardService:
         total_days = base_days + additional_cost_days + additional_compliance_days
 
         logger.debug(
-            "Recovery time calculated: %d days for %s "
-            "(base=%d, cost_add=%d, compliance_add=%d)",
+            "Recovery time calculated: %d days for %s (base=%d, cost_add=%d, compliance_add=%d)",
             total_days,
             organization.name,
             base_days,
@@ -386,7 +379,7 @@ class ExecutiveDashboardService:
     def determine_notification_obligations(
         self,
         game_state: GameState,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Determine which regulatory notification obligations apply.
 
@@ -405,13 +398,12 @@ class ExecutiveDashboardService:
         impact = game_state.business_impact
         records = impact.records_compromised
         total_cost = impact.total_cost
-        obligations: List[str] = []
+        obligations: list[str] = []
 
         # Check if payment data is involved by looking at compliance penalties
         # or organization compliance frameworks
         has_payment_data = "PCI-DSS" in impact.compliance_penalties or any(
-            "pci" in fw.lower()
-            for fw in game_state.organization.compliance_frameworks
+            "pci" in fw.lower() for fw in game_state.organization.compliance_frameworks
         )
 
         for rule in self.NOTIFICATION_RULES:
@@ -435,9 +427,7 @@ class ExecutiveDashboardService:
                 continue
 
             # All conditions met; notification is required
-            obligations.append(
-                f"{framework}: Notify within {deadline} ({scope})"
-            )
+            obligations.append(f"{framework}: Notify within {deadline} ({scope})")
 
         logger.debug(
             "Notification obligations determined: %d obligations",
@@ -471,7 +461,7 @@ class ExecutiveDashboardService:
         self,
         business_impact: BusinessImpact,
         organization: Organization,
-        regulatory_risk: Optional[Literal["low", "medium", "high", "critical"]] = None,
+        regulatory_risk: Literal["low", "medium", "high", "critical"] | None = None,
     ) -> bool:
         """
         Check whether the board of directors should be notified.
@@ -545,9 +535,7 @@ class ExecutiveDashboardService:
         recovery_days = self.calculate_recovery_time(impact, org)
         notifications = self.determine_notification_obligations(game_state)
         sec_required = self.check_sec_disclosure(impact)
-        board_required = self.check_board_notification(
-            impact, org, regulatory_risk=regulatory_risk
-        )
+        board_required = self.check_board_notification(impact, org, regulatory_risk=regulatory_risk)
 
         metrics = ExecutiveMetrics(
             stock_price_impact_pct=round(stock_impact, 2),
@@ -577,7 +565,7 @@ class ExecutiveDashboardService:
     def generate_board_report(
         self,
         game_state: GameState,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate an executive board-ready incident report.
 
@@ -591,9 +579,7 @@ class ExecutiveDashboardService:
         Returns:
             Dictionary containing the board report sections.
         """
-        logger.info(
-            "Generating board report for session %s", game_state.session_id
-        )
+        logger.info("Generating board report for session %s", game_state.session_id)
 
         metrics = self.calculate_executive_metrics(game_state)
         impact = game_state.business_impact
@@ -641,9 +627,7 @@ class ExecutiveDashboardService:
         # Build customer impact
         customer_impact = {
             "churn_rate_pct": metrics.customer_churn_rate,
-            "records_compromised": (
-                impact.records_compromised if impact else 0
-            ),
+            "records_compromised": (impact.records_compromised if impact else 0),
             "media_exposure": metrics.media_exposure_level,
         }
 
@@ -658,18 +642,14 @@ class ExecutiveDashboardService:
         # Build recovery timeline
         recovery_timeline = {
             "estimated_days": metrics.estimated_recovery_time_days,
-            "current_downtime_hours": (
-                impact.downtime_hours if impact else 0.0
-            ),
+            "current_downtime_hours": (impact.downtime_hours if impact else 0.0),
         }
 
         # Generate recommendations based on current state
-        recommendations = self._generate_recommendations(
-            game_state, metrics
-        )
+        recommendations = self._generate_recommendations(game_state, metrics)
 
         report = {
-            "report_generated_at": datetime.now(timezone.utc).isoformat(),
+            "report_generated_at": datetime.now(UTC).isoformat(),
             "organization": org.name,
             "industry": org.industry,
             "incident_summary": incident_summary,
@@ -688,7 +668,7 @@ class ExecutiveDashboardService:
         self,
         game_state: GameState,
         metrics: ExecutiveMetrics,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Generate actionable recommendations based on current incident state.
 
@@ -702,24 +682,19 @@ class ExecutiveDashboardService:
         Returns:
             List of 3-5 recommendation strings.
         """
-        recommendations: List[str] = []
+        recommendations: list[str] = []
         impact = game_state.business_impact
 
         # Always recommend incident response activation
         recommendations.append(
-            "Activate the incident response plan and establish an executive "
-            "war room for coordinated decision-making."
+            "Activate the incident response plan and establish an executive war room for coordinated decision-making."
         )
 
         # Regulatory notification recommendation
         if metrics.notification_obligations:
-            frameworks = ", ".join(
-                obligation.split(":")[0]
-                for obligation in metrics.notification_obligations
-            )
+            frameworks = ", ".join(obligation.split(":")[0] for obligation in metrics.notification_obligations)
             recommendations.append(
-                f"Engage legal counsel immediately to begin regulatory "
-                f"notifications for: {frameworks}."
+                f"Engage legal counsel immediately to begin regulatory notifications for: {frameworks}."
             )
 
         # SEC disclosure recommendation
@@ -746,15 +721,13 @@ class ExecutiveDashboardService:
         # Stock impact recommendation
         if metrics.stock_price_impact_pct < -5.0:
             recommendations.append(
-                "Coordinate with investor relations to prepare public "
-                "statements and manage shareholder communications."
+                "Coordinate with investor relations to prepare public statements and manage shareholder communications."
             )
 
         # Ensure we have at least 3 recommendations
         if len(recommendations) < 3:
             recommendations.append(
-                "Conduct a thorough post-incident review to identify root "
-                "causes and implement preventive controls."
+                "Conduct a thorough post-incident review to identify root causes and implement preventive controls."
             )
 
         if len(recommendations) < 3:

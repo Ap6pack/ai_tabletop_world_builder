@@ -16,9 +16,9 @@ This service provides:
 - Gap analysis identifying controls below threshold
 - Multi-framework compliance report generation
 """
+
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -39,11 +39,11 @@ class ComplianceControl(BaseModel):
     control_id: str
     name: str
     description: str = ""
-    attack_techniques: List[str] = Field(default_factory=list)
-    observable_actions: List[str] = Field(default_factory=list)
+    attack_techniques: list[str] = Field(default_factory=list)
+    observable_actions: list[str] = Field(default_factory=list)
     weight: int = 1
     score: float = 0.0  # 0-100
-    evidence: List[str] = Field(default_factory=list)
+    evidence: list[str] = Field(default_factory=list)
 
 
 class ComplianceFunction(BaseModel):
@@ -51,7 +51,7 @@ class ComplianceFunction(BaseModel):
 
     function_id: str
     name: str
-    controls: List[ComplianceControl] = Field(default_factory=list)
+    controls: list[ComplianceControl] = Field(default_factory=list)
     score: float = 0.0
 
 
@@ -61,9 +61,9 @@ class ComplianceScoreReport(BaseModel):
     framework_name: str
     framework_version: str = ""
     overall_score: float = 0.0
-    functions: List[ComplianceFunction] = Field(default_factory=list)
-    gaps: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
+    functions: list[ComplianceFunction] = Field(default_factory=list)
+    gaps: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
 
 
 class ComplianceGap(BaseModel):
@@ -74,7 +74,7 @@ class ComplianceGap(BaseModel):
     framework: str
     gap_description: str
     remediation: str
-    related_techniques: List[str] = Field(default_factory=list)
+    related_techniques: list[str] = Field(default_factory=list)
 
 
 # ============================================================================
@@ -85,13 +85,13 @@ class ComplianceGap(BaseModel):
 # controls.  These constants map framework keys to the JSON field that holds
 # the list of control objects and to the field name used for the control ID.
 
-_FRAMEWORK_LIST_KEYS: Dict[str, str] = {
+_FRAMEWORK_LIST_KEYS: dict[str, str] = {
     "nist_csf_2_0": "functions",
     "pci_dss_4_0_1": "requirements",
     "hipaa": "controls",
 }
 
-_FRAMEWORK_ID_FIELDS: Dict[str, str] = {
+_FRAMEWORK_ID_FIELDS: dict[str, str] = {
     "nist_csf_2_0": "category_id",
     "pci_dss_4_0_1": "requirement_id",
     "hipaa": "control_id",
@@ -121,7 +121,7 @@ class ComplianceScoringService:
     MAX_CONTROL_SCORE = 100
 
     def __init__(self) -> None:
-        self._frameworks: Dict[str, dict] = {}
+        self._frameworks: dict[str, dict] = {}
         self._load_frameworks()
 
     # ------------------------------------------------------------------ #
@@ -130,16 +130,10 @@ class ComplianceScoringService:
 
     def _load_frameworks(self) -> None:
         """Load all JSON files from the compliance frameworks data directory."""
-        frameworks_dir = (
-            Path(__file__).resolve().parent.parent.parent
-            / "data"
-            / "compliance_frameworks"
-        )
+        frameworks_dir = Path(__file__).resolve().parent.parent.parent / "data" / "compliance_frameworks"
 
         if not frameworks_dir.exists():
-            logger.warning(
-                "Compliance frameworks directory not found: %s", frameworks_dir
-            )
+            logger.warning("Compliance frameworks directory not found: %s", frameworks_dir)
             return
 
         json_files = list(frameworks_dir.glob("*.json"))
@@ -149,7 +143,7 @@ class ComplianceScoringService:
 
         for json_file in json_files:
             try:
-                with open(json_file, "r", encoding="utf-8") as fh:
+                with open(json_file, encoding="utf-8") as fh:
                     data = json.load(fh)
                 framework_key = json_file.stem  # e.g. "nist_csf_2_0"
                 self._frameworks[framework_key] = data
@@ -159,9 +153,7 @@ class ComplianceScoringService:
                     data.get("framework_version", "unknown"),
                 )
             except (json.JSONDecodeError, OSError) as exc:
-                logger.error(
-                    "Failed to load framework file %s: %s", json_file, exc
-                )
+                logger.error("Failed to load framework file %s: %s", json_file, exc)
 
         logger.info("Loaded %d compliance frameworks", len(self._frameworks))
 
@@ -173,9 +165,7 @@ class ComplianceScoringService:
         """Return the list of loaded framework keys."""
         return list(self._frameworks.keys())
 
-    def score_session(
-        self, game_state: GameState, framework: str
-    ) -> ComplianceScoreReport:
+    def score_session(self, game_state: GameState, framework: str) -> ComplianceScoreReport:
         """Score a game session against the specified compliance framework.
 
         Scoring process:
@@ -205,9 +195,7 @@ class ComplianceScoringService:
         fw_data = self._frameworks[framework]
 
         # -- Step 1: gather technique sets from threat states ---------------
-        active_techniques, detected_techniques, mitigated_techniques = (
-            self._extract_technique_sets(game_state)
-        )
+        active_techniques, detected_techniques, mitigated_techniques = self._extract_technique_sets(game_state)
 
         # -- Step 2: gather player action text ------------------------------
         player_action_texts = self._extract_player_actions(game_state)
@@ -226,20 +214,13 @@ class ComplianceScoringService:
         overall_score = self._compute_overall_score(functions)
 
         # -- Collect gaps & recommendations ---------------------------------
-        gaps: List[str] = []
-        recommendations: List[str] = []
+        gaps: list[str] = []
+        recommendations: list[str] = []
         for func in functions:
             for ctrl in func.controls:
                 if ctrl.score < 50:
-                    gaps.append(
-                        f"{ctrl.control_id} ({ctrl.name}): "
-                        f"score {ctrl.score:.0f}/100"
-                    )
-                    technique_hint = (
-                        ", ".join(ctrl.attack_techniques[:3])
-                        if ctrl.attack_techniques
-                        else "N/A"
-                    )
+                    gaps.append(f"{ctrl.control_id} ({ctrl.name}): score {ctrl.score:.0f}/100")
+                    technique_hint = ", ".join(ctrl.attack_techniques[:3]) if ctrl.attack_techniques else "N/A"
                     recommendations.append(
                         f"Improve coverage for {ctrl.control_id} - "
                         f"{ctrl.name}. Focus on detecting/mitigating: "
@@ -263,9 +244,7 @@ class ComplianceScoringService:
         )
         return report
 
-    def get_gap_analysis(
-        self, game_state: GameState, framework: str
-    ) -> list[ComplianceGap]:
+    def get_gap_analysis(self, game_state: GameState, framework: str) -> list[ComplianceGap]:
         """Return controls with a score below 50."""
         report = self.score_session(game_state, framework)
         gap_list: list[ComplianceGap] = []
@@ -302,16 +281,14 @@ class ComplianceScoringService:
         )
         return gap_list
 
-    def generate_compliance_report(
-        self, game_state: GameState, frameworks: list[str]
-    ) -> dict:
+    def generate_compliance_report(self, game_state: GameState, frameworks: list[str]) -> dict:
         """Generate a multi-framework compliance report.
 
         Returns a dictionary with per-framework score reports and an
         aggregate summary.
         """
-        framework_reports: Dict[str, ComplianceScoreReport] = {}
-        all_gaps: List[ComplianceGap] = []
+        framework_reports: dict[str, ComplianceScoreReport] = {}
+        all_gaps: list[ComplianceGap] = []
         total_score = 0.0
         scored_count = 0
 
@@ -322,9 +299,7 @@ class ComplianceScoringService:
             scored_count += 1
             all_gaps.extend(self.get_gap_analysis(game_state, fw_key))
 
-        aggregate_score = (
-            total_score / scored_count if scored_count > 0 else 0.0
-        )
+        aggregate_score = total_score / scored_count if scored_count > 0 else 0.0
 
         # Determine overall posture label
         if aggregate_score >= 80:
@@ -338,7 +313,7 @@ class ComplianceScoringService:
 
         # Deduplicate recommendations across frameworks
         seen_recs: set[str] = set()
-        unique_recommendations: List[str] = []
+        unique_recommendations: list[str] = []
         for report in framework_reports.values():
             for rec in report.recommendations:
                 if rec not in seen_recs:
@@ -355,10 +330,7 @@ class ComplianceScoringService:
                     "framework_name": rpt.framework_name,
                     "framework_version": rpt.framework_version,
                     "overall_score": round(rpt.overall_score, 1),
-                    "function_scores": {
-                        fn.function_id: round(fn.score, 1)
-                        for fn in rpt.functions
-                    },
+                    "function_scores": {fn.function_id: round(fn.score, 1) for fn in rpt.functions},
                     "gap_count": len(rpt.gaps),
                 }
                 for key, rpt in framework_reports.items()
@@ -378,8 +350,7 @@ class ComplianceScoringService:
         }
 
         logger.info(
-            "Generated multi-framework report for session %s: "
-            "%d frameworks, aggregate %.1f",
+            "Generated multi-framework report for session %s: %d frameworks, aggregate %.1f",
             game_state.session_id,
             scored_count,
             aggregate_score,
@@ -407,9 +378,9 @@ class ComplianceScoringService:
         return active, detected, mitigated
 
     @staticmethod
-    def _extract_player_actions(game_state: GameState) -> List[str]:
+    def _extract_player_actions(game_state: GameState) -> list[str]:
         """Collect lowercased descriptions of player actions from the timeline."""
-        actions: List[str] = []
+        actions: list[str] = []
         for event in game_state.incident_timeline:
             if event.actor == "player":
                 actions.append(event.description.lower())
@@ -422,8 +393,8 @@ class ComplianceScoringService:
         active_techniques: set[str],
         detected_techniques: set[str],
         mitigated_techniques: set[str],
-        player_action_texts: List[str],
-    ) -> List[ComplianceFunction]:
+        player_action_texts: list[str],
+    ) -> list[ComplianceFunction]:
         """Parse framework data and score each control.
 
         Handles the structural differences between frameworks:
@@ -431,7 +402,7 @@ class ComplianceScoringService:
         - PCI DSS 4.0.1: requirements (flat list, single function)
         - HIPAA: controls (flat list, single function)
         """
-        functions: List[ComplianceFunction] = []
+        functions: list[ComplianceFunction] = []
 
         if framework_key == "nist_csf_2_0":
             functions = self._build_nist_functions(
@@ -469,17 +440,13 @@ class ComplianceScoringService:
             # Generic fallback: try common keys
             for key in ("requirements", "controls", "categories"):
                 if key in fw_data:
-                    id_field = _FRAMEWORK_ID_FIELDS.get(
-                        framework_key, "control_id"
-                    )
+                    id_field = _FRAMEWORK_ID_FIELDS.get(framework_key, "control_id")
                     functions = self._build_flat_framework_functions(
                         fw_data,
                         list_key=key,
                         id_field=id_field,
                         function_id=framework_key.upper(),
-                        function_name=fw_data.get(
-                            "framework_name", framework_key
-                        ),
+                        function_name=fw_data.get("framework_name", framework_key),
                         active_techniques=active_techniques,
                         detected_techniques=detected_techniques,
                         mitigated_techniques=mitigated_techniques,
@@ -495,13 +462,13 @@ class ComplianceScoringService:
         active_techniques: set[str],
         detected_techniques: set[str],
         mitigated_techniques: set[str],
-        player_action_texts: List[str],
-    ) -> List[ComplianceFunction]:
+        player_action_texts: list[str],
+    ) -> list[ComplianceFunction]:
         """Build scored functions for the NIST CSF 2.0 nested structure."""
-        functions: List[ComplianceFunction] = []
+        functions: list[ComplianceFunction] = []
 
         for func_data in fw_data.get("functions", []):
-            scored_controls: List[ComplianceControl] = []
+            scored_controls: list[ComplianceControl] = []
 
             for cat in func_data.get("categories", []):
                 control = self._score_control(
@@ -540,10 +507,10 @@ class ComplianceScoringService:
         active_techniques: set[str],
         detected_techniques: set[str],
         mitigated_techniques: set[str],
-        player_action_texts: List[str],
-    ) -> List[ComplianceFunction]:
+        player_action_texts: list[str],
+    ) -> list[ComplianceFunction]:
         """Build scored functions for flat-list frameworks (PCI, HIPAA)."""
-        scored_controls: List[ComplianceControl] = []
+        scored_controls: list[ComplianceControl] = []
 
         for item in fw_data.get(list_key, []):
             control = self._score_control(
@@ -575,13 +542,13 @@ class ComplianceScoringService:
         control_id: str,
         name: str,
         description: str,
-        attack_techniques: List[str],
-        observable_actions: List[str],
+        attack_techniques: list[str],
+        observable_actions: list[str],
         weight: int,
         active_techniques: set[str],
         detected_techniques: set[str],
         mitigated_techniques: set[str],
-        player_action_texts: List[str],
+        player_action_texts: list[str],
     ) -> ComplianceControl:
         """Score an individual control based on the game state.
 
@@ -593,37 +560,28 @@ class ComplianceScoringService:
         - Total capped at 100
         """
         score = 0.0
-        evidence: List[str] = []
+        evidence: list[str] = []
         ctrl_techniques = set(attack_techniques)
 
         # Technique-based scoring
         active_overlap = ctrl_techniques & active_techniques
         if active_overlap:
             score += self.POINTS_TECHNIQUE_ACTIVE
-            evidence.append(
-                f"Techniques actively exercised: "
-                f"{', '.join(sorted(active_overlap))}"
-            )
+            evidence.append(f"Techniques actively exercised: {', '.join(sorted(active_overlap))}")
 
         detected_overlap = ctrl_techniques & detected_techniques
         if detected_overlap:
             score += self.POINTS_TECHNIQUE_DETECTED
-            evidence.append(
-                f"Techniques detected: "
-                f"{', '.join(sorted(detected_overlap))}"
-            )
+            evidence.append(f"Techniques detected: {', '.join(sorted(detected_overlap))}")
 
         mitigated_overlap = ctrl_techniques & mitigated_techniques
         if mitigated_overlap:
             score += self.POINTS_TECHNIQUE_MITIGATED
-            evidence.append(
-                f"Techniques mitigated: "
-                f"{', '.join(sorted(mitigated_overlap))}"
-            )
+            evidence.append(f"Techniques mitigated: {', '.join(sorted(mitigated_overlap))}")
 
         # Observable action keyword matching
         action_bonus = 0.0
-        matched_actions: List[str] = []
+        matched_actions: list[str] = []
         for keyword in observable_actions:
             keyword_lower = keyword.lower()
             for action_text in player_action_texts:
@@ -637,10 +595,7 @@ class ComplianceScoringService:
 
         action_bonus = min(action_bonus, self.MAX_ACTION_BONUS)
         if matched_actions:
-            evidence.append(
-                f"Observed player actions: "
-                f"{', '.join(matched_actions)}"
-            )
+            evidence.append(f"Observed player actions: {', '.join(matched_actions)}")
 
         score = min(score + action_bonus, self.MAX_CONTROL_SCORE)
 
@@ -656,7 +611,7 @@ class ComplianceScoringService:
         )
 
     @staticmethod
-    def _weighted_average(controls: List[ComplianceControl]) -> float:
+    def _weighted_average(controls: list[ComplianceControl]) -> float:
         """Compute weighted average score across a list of controls."""
         if not controls:
             return 0.0
@@ -670,7 +625,7 @@ class ComplianceScoringService:
 
     @staticmethod
     def _compute_overall_score(
-        functions: List[ComplianceFunction],
+        functions: list[ComplianceFunction],
     ) -> float:
         """Compute the overall framework score from function scores.
 

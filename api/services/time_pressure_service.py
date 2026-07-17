@@ -15,17 +15,15 @@ This service manages:
 - Time-based scoring multipliers
 - Deadline tracking and expiry events
 """
-from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Optional, Tuple
+
 import uuid
+from datetime import UTC, datetime
 
 from api.models import (
-    GameState,
-    Timer,
     EscalationRule,
+    GameState,
     Objective,
-    ThreatActorState,
-    SystemState,
+    Timer,
 )
 from api.utils.logger import setup_logger
 
@@ -40,9 +38,9 @@ class TimePressureService:
     # Time-based score multipliers (bonus for fast completion)
     TIME_MULTIPLIERS = {
         "easy": {
-            "fast": 1.5,      # < 50% of time limit
-            "normal": 1.0,    # 50-100% of time limit
-            "slow": 0.5,      # > 100% of time limit
+            "fast": 1.5,  # < 50% of time limit
+            "normal": 1.0,  # 50-100% of time limit
+            "slow": 0.5,  # > 100% of time limit
         },
         "medium": {
             "fast": 2.0,
@@ -53,7 +51,7 @@ class TimePressureService:
             "fast": 3.0,
             "normal": 1.0,
             "slow": 0.1,
-        }
+        },
     }
 
     def __init__(self):
@@ -67,7 +65,7 @@ class TimePressureService:
         duration_minutes: int,
         is_critical: bool = False,
         on_expiry_event: str = "Time limit exceeded",
-        related_objective_id: Optional[str] = None,
+        related_objective_id: str | None = None,
     ) -> Timer:
         """
         Create a new countdown timer.
@@ -92,7 +90,7 @@ class TimePressureService:
             description=description,
             duration_seconds=duration_seconds,
             remaining_seconds=duration_seconds,
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
             is_critical=is_critical,
             on_expiry_event=on_expiry_event,
             related_objective_id=related_objective_id,
@@ -102,7 +100,7 @@ class TimePressureService:
         self,
         trigger_time_minutes: int,
         action: str,
-        target_id: Optional[str] = None,
+        target_id: str | None = None,
         severity_increase: int = 10,
         description: str = "Automatic escalation",
     ) -> EscalationRule:
@@ -133,7 +131,7 @@ class TimePressureService:
         self,
         game_state: GameState,
         time_elapsed_minutes: int,
-    ) -> Tuple[GameState, List[str]]:
+    ) -> tuple[GameState, list[str]]:
         """
         Update all active timers and check for expiries.
 
@@ -159,18 +157,14 @@ class TimePressureService:
             # Check for expiry (only report if just expired)
             if timer.is_expired and not was_expired:
                 # Timer just expired
-                expiry_messages.append(
-                    f"⏰ **Timer Expired:** {timer.name} - {timer.on_expiry_event}"
-                )
+                expiry_messages.append(f"⏰ **Timer Expired:** {timer.name} - {timer.on_expiry_event}")
 
                 # If related to an objective, mark it as failed
                 if timer.related_objective_id:
                     for obj in game_state.objectives:
                         if obj.id == timer.related_objective_id and obj.status != "completed":
                             obj.status = "failed"
-                            expiry_messages.append(
-                                f"❌ **Objective Failed:** {obj.description} (time limit exceeded)"
-                            )
+                            expiry_messages.append(f"❌ **Objective Failed:** {obj.description} (time limit exceeded)")
 
         return game_state, expiry_messages
 
@@ -178,7 +172,7 @@ class TimePressureService:
         self,
         game_state: GameState,
         time_elapsed_minutes: int,
-    ) -> Tuple[GameState, List[str]]:
+    ) -> tuple[GameState, list[str]]:
         """
         Check and trigger escalation rules based on elapsed time.
 
@@ -207,7 +201,7 @@ class TimePressureService:
                         threat_state = game_state.threat_states[rule.target_id]
                         old_aggression = threat_state.aggression_level
                         threat_state.aggression_level = min(100, old_aggression + rule.severity_increase)
-                        threat_state.last_update = datetime.now(timezone.utc)
+                        threat_state.last_update = datetime.now(UTC)
 
                         escalation_messages.append(
                             f"⚠️ **Threat Escalation:** {rule.description} "
@@ -220,7 +214,7 @@ class TimePressureService:
                         system_state = game_state.system_states[rule.target_id]
                         old_health = system_state.health
                         system_state.health = max(0, old_health - rule.severity_increase)
-                        system_state.last_update = datetime.now(timezone.utc)
+                        system_state.last_update = datetime.now(UTC)
 
                         escalation_messages.append(
                             f"⚠️ **System Degradation:** {rule.description} "
@@ -231,21 +225,18 @@ class TimePressureService:
                         if system_state.health == 0 and system_state.status != "offline":
                             system_state.status = "offline"
                             escalation_messages.append(
-                                f"🔴 **System Offline:** System has gone offline due to degradation"
+                                "🔴 **System Offline:** System has gone offline due to degradation"
                             )
 
                 elif rule.action == "spread":
                     # Threat spreads to new systems
                     escalation_messages.append(
-                        f"🔴 **Threat Spreading:** {rule.description} - "
-                        f"Threat actor attempting lateral movement"
+                        f"🔴 **Threat Spreading:** {rule.description} - Threat actor attempting lateral movement"
                     )
 
                 elif rule.action == "alert":
                     # General alert
-                    escalation_messages.append(
-                        f"🚨 **Alert:** {rule.description}"
-                    )
+                    escalation_messages.append(f"🚨 **Alert:** {rule.description}")
 
         return game_state, escalation_messages
 
@@ -283,7 +274,7 @@ class TimePressureService:
             # Slow completion (over time limit)
             return self.TIME_MULTIPLIERS[difficulty]["slow"]
 
-    def get_timer_status(self, timer: Timer) -> Dict[str, any]:
+    def get_timer_status(self, timer: Timer) -> dict[str, any]:
         """
         Get human-readable timer status.
 
@@ -321,7 +312,7 @@ class TimePressureService:
     def create_objective_timer(
         self,
         objective: Objective,
-    ) -> Optional[Timer]:
+    ) -> Timer | None:
         """
         Create a timer for an objective with a time limit.
 
@@ -348,9 +339,9 @@ class TimePressureService:
         scenario_type: str,
         difficulty: str,
         duration_minutes: int,
-        threat_ids: List[str],
-        system_ids: List[str],
-    ) -> List[EscalationRule]:
+        threat_ids: list[str],
+        system_ids: list[str],
+    ) -> list[EscalationRule]:
         """
         Create escalation rules based on scenario parameters.
 
@@ -368,7 +359,7 @@ class TimePressureService:
 
         # Escalation timing based on difficulty
         escalation_intervals = {
-            "beginner": [0.5, 0.75],     # 50%, 75% of duration
+            "beginner": [0.5, 0.75],  # 50%, 75% of duration
             "intermediate": [0.33, 0.66],  # 33%, 66% of duration
             "advanced": [0.25, 0.5, 0.75],  # 25%, 50%, 75% of duration
             "expert": [0.2, 0.4, 0.6, 0.8],  # 20%, 40%, 60%, 80% of duration
@@ -384,38 +375,44 @@ class TimePressureService:
                 # Pick a threat to escalate (cycle through them)
                 threat_id = threat_ids[i % len(threat_ids)]
 
-                rules.append(self.create_escalation_rule(
-                    trigger_time_minutes=trigger_time,
-                    action="threat_escalate",
-                    target_id=threat_id,
-                    severity_increase=15 if difficulty == "expert" else 10,
-                    description=f"Threat actor increases aggression (checkpoint {i+1})"
-                ))
+                rules.append(
+                    self.create_escalation_rule(
+                        trigger_time_minutes=trigger_time,
+                        action="threat_escalate",
+                        target_id=threat_id,
+                        severity_increase=15 if difficulty == "expert" else 10,
+                        description=f"Threat actor increases aggression (checkpoint {i + 1})",
+                    )
+                )
 
             # System degradation rules (if systems available)
             if system_ids and i < len(system_ids):
-                rules.append(self.create_escalation_rule(
-                    trigger_time_minutes=trigger_time + 2,  # Slightly after threat escalation
-                    action="system_degrade",
-                    target_id=system_ids[i],
-                    severity_increase=20,
-                    description=f"System health degrading due to ongoing attack"
-                ))
+                rules.append(
+                    self.create_escalation_rule(
+                        trigger_time_minutes=trigger_time + 2,  # Slightly after threat escalation
+                        action="system_degrade",
+                        target_id=system_ids[i],
+                        severity_increase=20,
+                        description="System health degrading due to ongoing attack",
+                    )
+                )
 
         # Add spread rule for advanced scenarios
         if difficulty in ["advanced", "expert"] and threat_ids:
             spread_time = int(duration_minutes * 0.6)
-            rules.append(self.create_escalation_rule(
-                trigger_time_minutes=spread_time,
-                action="spread",
-                target_id=threat_ids[0],
-                severity_increase=0,
-                description="Threat actor attempts lateral movement to additional systems"
-            ))
+            rules.append(
+                self.create_escalation_rule(
+                    trigger_time_minutes=spread_time,
+                    action="spread",
+                    target_id=threat_ids[0],
+                    severity_increase=0,
+                    description="Threat actor attempts lateral movement to additional systems",
+                )
+            )
 
         return rules
 
-    def get_active_timers_summary(self, game_state: GameState) -> Dict[str, any]:
+    def get_active_timers_summary(self, game_state: GameState) -> dict[str, any]:
         """
         Get a summary of all active timers.
 
@@ -444,7 +441,7 @@ class TimePressureService:
             "expired_timers": expired_timers,
         }
 
-    def get_next_escalation(self, game_state: GameState, time_elapsed_minutes: int) -> Optional[Dict[str, any]]:
+    def get_next_escalation(self, game_state: GameState, time_elapsed_minutes: int) -> dict[str, any] | None:
         """
         Get information about the next scheduled escalation.
 

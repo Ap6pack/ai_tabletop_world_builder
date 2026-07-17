@@ -11,17 +11,19 @@ Test suite for Time Pressure Service.
 
 Tests timer creation, escalation rules, and time-based mechanics.
 """
+
 import sys
-from datetime import datetime, timedelta, timezone
-from api.services.time_pressure_service import TimePressureService
+from datetime import UTC, datetime
+
 from api.models import (
     GameState,
-    Organization,
-    Objective,
-    ThreatActorState,
-    SystemState,
     Inventory,
+    Objective,
+    Organization,
+    SystemState,
+    ThreatActorState,
 )
+from api.services.time_pressure_service import TimePressureService
 
 
 def create_test_game_state() -> GameState:
@@ -47,7 +49,7 @@ def create_test_game_state() -> GameState:
         score=0,
         time_elapsed=0,
         status="in-progress",
-        game_started_at=datetime.now(timezone.utc),
+        game_started_at=datetime.now(UTC),
     )
 
 
@@ -95,7 +97,7 @@ def test_create_escalation_rule():
     assert rule.severity_increase == 20
     assert rule.triggered is False
 
-    print(f"✅ Escalation rule created")
+    print("✅ Escalation rule created")
     print(f"   Trigger time: {rule.trigger_time_minutes} minutes")
     print(f"   Action: {rule.action}")
     print(f"   Target: {rule.target_id}")
@@ -126,7 +128,7 @@ def test_timer_expiry():
     print(f"   After 60s: expired={timer.is_expired}, remaining={timer.remaining_seconds}s")
     assert timer.is_expired
 
-    print(f"✅ Timer expiry works correctly")
+    print("✅ Timer expiry works correctly")
 
 
 def test_update_timers():
@@ -175,7 +177,7 @@ def test_update_timers():
     assert len(messages) > 0, "Should have expiry messages"
     assert objective.status == "failed", "Objective should be failed"
 
-    print(f"✅ Timer updates work correctly")
+    print("✅ Timer updates work correctly")
 
 
 def test_threat_escalation():
@@ -190,7 +192,7 @@ def test_threat_escalation():
         status="active",
         aggression_level=50,
         detection_level=20,
-        last_update=datetime.now(timezone.utc),
+        last_update=datetime.now(UTC),
     )
     game_state.threat_states["threat-001"] = threat_state
 
@@ -224,7 +226,7 @@ def test_threat_escalation():
     assert threat_state.aggression_level == 70, "Aggression should increase"
     assert len(messages) > 0, "Should have escalation message"
 
-    print(f"✅ Threat escalation works correctly")
+    print("✅ Threat escalation works correctly")
 
 
 def test_system_degradation():
@@ -238,7 +240,7 @@ def test_system_degradation():
         system_id="sys-001",
         status="compromised",
         health=100,
-        last_update=datetime.now(timezone.utc),
+        last_update=datetime.now(UTC),
     )
     game_state.system_states["sys-001"] = system_state
 
@@ -265,7 +267,7 @@ def test_system_degradation():
     assert system_state.health == 70, "Health should degrade"
     assert len(messages) > 0, "Should have degradation message"
 
-    print(f"✅ System degradation works correctly")
+    print("✅ System degradation works correctly")
 
 
 def test_time_multiplier():
@@ -314,7 +316,7 @@ def test_time_multiplier():
     print(f"   Hard fast completion (10/30 min): {multiplier_hard}x")
     assert multiplier_hard == 3.0, "Fast hard should be 3.0x"
 
-    print(f"✅ Time multipliers calculated correctly")
+    print("✅ Time multipliers calculated correctly")
 
 
 def test_timer_status():
@@ -355,7 +357,7 @@ def test_timer_status():
     assert status["status"] == "expired"
     assert status["urgency"] == "critical"
 
-    print(f"✅ Timer status reporting works correctly")
+    print("✅ Timer status reporting works correctly")
 
 
 def test_create_scenario_escalation_rules():
@@ -396,7 +398,7 @@ def test_create_scenario_escalation_rules():
 
     assert len(expert_rules) > len(rules), "Expert should have more rules"
 
-    print(f"✅ Scenario escalation rules created correctly")
+    print("✅ Scenario escalation rules created correctly")
 
 
 def test_active_timers_summary():
@@ -424,16 +426,16 @@ def test_active_timers_summary():
     print(f"   Expired: {summary['expired_count']}")
     print(f"   Critical: {summary['critical_count']}")
 
-    if summary['most_urgent']:
+    if summary["most_urgent"]:
         print(f"   Most urgent: {summary['most_urgent'].name} ({summary['most_urgent'].remaining_seconds}s)")
 
-    assert summary['total_timers'] == 3
-    assert summary['active_count'] == 2
-    assert summary['expired_count'] == 1
-    assert summary['critical_count'] == 1
-    assert summary['most_urgent'].name == "Timer 1"
+    assert summary["total_timers"] == 3
+    assert summary["active_count"] == 2
+    assert summary["expired_count"] == 1
+    assert summary["critical_count"] == 1
+    assert summary["most_urgent"].name == "Timer 1"
 
-    print(f"✅ Active timers summary works correctly")
+    print("✅ Active timers summary works correctly")
 
 
 def run_all_tests():
@@ -468,6 +470,7 @@ def run_all_tests():
         except Exception as e:
             print(f"❌ Test error: {e}")
             import traceback
+
             traceback.print_exc()
             failed += 1
 

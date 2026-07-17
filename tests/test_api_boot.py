@@ -7,22 +7,24 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Tests for API boot — verifies the FastAPI app imports and wires correctly."""
-import pytest
-from fastapi.testclient import TestClient
 
+from fastapi.testclient import TestClient
 
 # ---------------------------------------------------------------------------
 # App import
 # ---------------------------------------------------------------------------
 
+
 class TestAppImport:
     def test_app_imports_without_error(self):
         """Importing main.app should not raise."""
         from main import app
+
         assert app is not None
 
     def test_app_has_title(self):
         from main import app
+
         assert app.title == "Cybersecurity War Gaming Platform API"
 
 
@@ -30,9 +32,11 @@ class TestAppImport:
 # Health endpoint
 # ---------------------------------------------------------------------------
 
+
 class TestHealthEndpoint:
     def test_health_returns_200(self):
         from main import app
+
         client = TestClient(app)
         response = client.get("/health")
         assert response.status_code == 200
@@ -43,10 +47,12 @@ class TestHealthEndpoint:
 # Router registration
 # ---------------------------------------------------------------------------
 
+
 class TestRouterRegistration:
     def test_all_routers_registered(self):
         """Verify a minimum number of routes are registered."""
         from main import app
+
         routes = [r for r in app.routes if hasattr(r, "methods")]
         # We have 75+ endpoints across 12 routers
         assert len(routes) >= 20, f"Only {len(routes)} routes registered"
@@ -54,6 +60,7 @@ class TestRouterRegistration:
     def test_key_endpoints_exist(self):
         """Verify critical endpoint paths are registered."""
         from main import app
+
         paths = {r.path for r in app.routes if hasattr(r, "path")}
         expected = ["/health", "/", "/docs", "/openapi.json"]
         for ep in expected:
@@ -64,9 +71,11 @@ class TestRouterRegistration:
 # OpenAPI schema
 # ---------------------------------------------------------------------------
 
+
 class TestOpenAPISchema:
     def test_openapi_schema_generates(self):
         from main import app
+
         schema = app.openapi()
         assert "info" in schema
         assert "paths" in schema

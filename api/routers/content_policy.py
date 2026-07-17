@@ -9,7 +9,9 @@
 """
 Content policy API router.
 """
+
 from fastapi import APIRouter, HTTPException
+
 from api.models import ContentCheckRequest, ContentCheckResponse
 from api.services import ContentPolicyService
 
@@ -33,7 +35,7 @@ async def check_content(request: ContentCheckRequest):
     try:
         return await ContentPolicyService.check_content(request)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Content check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Content check failed: {str(e)}") from e
 
 
 @router.get("/policies")

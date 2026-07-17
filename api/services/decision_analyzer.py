@@ -15,10 +15,8 @@ This service analyzes:
 - Action categorization via keyword matching
 - Impact assessment based on subsequent events
 """
-from datetime import datetime, timezone
-from typing import List, Optional
 
-from api.models import GameState, DecisionEvaluation, IncidentEvent, Objective
+from api.models import DecisionEvaluation, GameState, IncidentEvent, Objective
 from api.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -31,26 +29,79 @@ class DecisionAnalyzer:
     objective alignment, and threat context."""
 
     CATEGORY_KEYWORDS = {
-        "detection": ["scan", "check logs", "monitor", "detect", "observe", "review logs",
-                       "check alerts", "inspect", "search for", "check siem", "query", "hunt"],
-        "containment": ["isolate", "block", "quarantine", "disable", "disconnect",
-                         "shut down", "firewall", "contain", "segment", "lock"],
-        "mitigation": ["patch", "restore", "fix", "update", "remediate", "repair",
-                        "rebuild", "recover", "reinstall", "rollback", "upgrade"],
-        "communication": ["alert", "notify", "report", "escalate", "inform",
-                           "brief", "communicate", "call", "email", "warn"],
-        "investigation": ["investigate", "analyze", "forensic", "correlate", "trace",
-                           "examine", "deep dive", "root cause", "determine", "assess",
-                           "review evidence", "memory dump"],
+        "detection": [
+            "scan",
+            "check logs",
+            "monitor",
+            "detect",
+            "observe",
+            "review logs",
+            "check alerts",
+            "inspect",
+            "search for",
+            "check siem",
+            "query",
+            "hunt",
+        ],
+        "containment": [
+            "isolate",
+            "block",
+            "quarantine",
+            "disable",
+            "disconnect",
+            "shut down",
+            "firewall",
+            "contain",
+            "segment",
+            "lock",
+        ],
+        "mitigation": [
+            "patch",
+            "restore",
+            "fix",
+            "update",
+            "remediate",
+            "repair",
+            "rebuild",
+            "recover",
+            "reinstall",
+            "rollback",
+            "upgrade",
+        ],
+        "communication": [
+            "alert",
+            "notify",
+            "report",
+            "escalate",
+            "inform",
+            "brief",
+            "communicate",
+            "call",
+            "email",
+            "warn",
+        ],
+        "investigation": [
+            "investigate",
+            "analyze",
+            "forensic",
+            "correlate",
+            "trace",
+            "examine",
+            "deep dive",
+            "root cause",
+            "determine",
+            "assess",
+            "review evidence",
+            "memory dump",
+        ],
     }
-    PASSIVE_KEYWORDS = ["wait", "observe", "monitor", "watch", "hold",
-                        "standby", "do nothing", "pause", "delay"]
+    PASSIVE_KEYWORDS = ["wait", "observe", "monitor", "watch", "hold", "standby", "do nothing", "pause", "delay"]
 
     def __init__(self):
         """Initialize the decision analyzer."""
         pass
 
-    def analyze_timeline(self, game_state: GameState) -> List[DecisionEvaluation]:
+    def analyze_timeline(self, game_state: GameState) -> list[DecisionEvaluation]:
         """Extract all player actions from the incident timeline and evaluate each.
 
         Args:
@@ -60,10 +111,9 @@ class DecisionAnalyzer:
             List of DecisionEvaluation objects, one per player action.
         """
         logger.info(
-            f"Analyzing timeline for session {game_state.session_id}: "
-            f"{len(game_state.incident_timeline)} events"
+            f"Analyzing timeline for session {game_state.session_id}: {len(game_state.incident_timeline)} events"
         )
-        evaluations: List[DecisionEvaluation] = []
+        evaluations: list[DecisionEvaluation] = []
         for index, event in enumerate(game_state.incident_timeline):
             if event.actor != "player" or event.event_type != "action":
                 continue
@@ -89,7 +139,10 @@ class DecisionAnalyzer:
         return "other"
 
     def evaluate_decision(
-        self, event: IncidentEvent, game_state: GameState, event_index: int,
+        self,
+        event: IncidentEvent,
+        game_state: GameState,
+        event_index: int,
     ) -> DecisionEvaluation:
         """Score a single player decision using rule-based evaluation.
 
@@ -106,9 +159,9 @@ class DecisionAnalyzer:
             DecisionEvaluation with score, impact, category, and reasoning.
         """
         score = 50
-        reasoning_parts: List[str] = []
+        reasoning_parts: list[str] = []
         category = self.categorize_action(event.description)
-        subsequent_events = game_state.incident_timeline[event_index + 1:]
+        subsequent_events = game_state.incident_timeline[event_index + 1 :]
         impact = self._get_action_impact(event, subsequent_events)
         context = self._get_context(game_state, event_index)
 
@@ -136,19 +189,24 @@ class DecisionAnalyzer:
         better_alternative = self._suggest_alternative(event, category, score, game_state)
 
         evaluation = DecisionEvaluation(
-            action=event.description, timestamp=event.timestamp,
-            context=context, quality_score=score, impact=impact,
-            reasoning=reasoning, better_alternative=better_alternative,
+            action=event.description,
+            timestamp=event.timestamp,
+            context=context,
+            quality_score=score,
+            impact=impact,
+            reasoning=reasoning,
+            better_alternative=better_alternative,
             category=category,
         )
         logger.debug(
-            f"Decision evaluated: '{event.description[:50]}...' "
-            f"score={score}, impact={impact}, category={category}"
+            f"Decision evaluated: '{event.description[:50]}...' score={score}, impact={impact}, category={category}"
         )
         return evaluation
 
     def _get_action_impact(
-        self, event: IncidentEvent, subsequent_events: List[IncidentEvent],
+        self,
+        event: IncidentEvent,
+        subsequent_events: list[IncidentEvent],
     ) -> str:
         """Check the next 1-3 events to determine action impact.
 
@@ -190,20 +248,21 @@ class DecisionAnalyzer:
         Returns:
             Human-readable context string.
         """
-        parts: List[str] = []
+        parts: list[str] = []
         timeline = game_state.incident_timeline
         start = max(0, event_index - 2)
         preceding = timeline[start:event_index]
         if preceding:
             descs = [f"[{e.event_type}/{e.severity}] {e.description}" for e in preceding]
             parts.append("Preceding: " + "; ".join(descs))
-        following = timeline[event_index + 1: event_index + 3]
+        following = timeline[event_index + 1 : event_index + 3]
         if following:
             descs = [f"[{e.event_type}/{e.severity}] {e.description}" for e in following]
             parts.append("Following: " + "; ".join(descs))
         threats = [
             f"{tid} (aggression={ts.aggression_level}%)"
-            for tid, ts in game_state.threat_states.items() if ts.status == "active"
+            for tid, ts in game_state.threat_states.items()
+            if ts.status == "active"
         ]
         if threats:
             parts.append("Active threats: " + ", ".join(threats))
@@ -217,7 +276,9 @@ class DecisionAnalyzer:
         return " | ".join(parts) if parts else "No additional context available."
 
     def _matches_objective_category(
-        self, action_category: str, objectives: List[Objective],
+        self,
+        action_category: str,
+        objectives: list[Objective],
     ) -> bool:
         """Check if an action category matches any active objective type.
 
@@ -229,20 +290,21 @@ class DecisionAnalyzer:
             True if the action category aligns with an active objective.
         """
         category_to_objective = {
-            "detection": "detect", "containment": "contain",
-            "mitigation": "mitigate", "communication": "report",
+            "detection": "detect",
+            "containment": "contain",
+            "mitigation": "mitigate",
+            "communication": "report",
             "investigation": "investigate",
         }
         objective_type = category_to_objective.get(action_category)
         if not objective_type:
             return False
-        return any(
-            obj.type == objective_type and obj.status in ("pending", "in-progress")
-            for obj in objectives
-        )
+        return any(obj.type == objective_type and obj.status in ("pending", "in-progress") for obj in objectives)
 
     def _is_passive_during_high_threat(
-        self, event: IncidentEvent, game_state: GameState,
+        self,
+        event: IncidentEvent,
+        game_state: GameState,
     ) -> bool:
         """Determine if action was passive while threats were highly active.
 
@@ -259,15 +321,15 @@ class DecisionAnalyzer:
         action_lower = event.description.lower()
         if not any(kw in action_lower for kw in self.PASSIVE_KEYWORDS):
             return False
-        return any(
-            ts.status == "active" and ts.aggression_level > 70
-            for ts in game_state.threat_states.values()
-        )
+        return any(ts.status == "active" and ts.aggression_level > 70 for ts in game_state.threat_states.values())
 
     def _suggest_alternative(
-        self, event: IncidentEvent, category: str, score: int,
+        self,
+        event: IncidentEvent,
+        category: str,
+        score: int,
         game_state: GameState,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Suggest a better alternative action if the decision scored below 50.
 
         Args:
@@ -281,31 +343,16 @@ class DecisionAnalyzer:
         """
         if score >= 50:
             return None
-        compromised = [
-            sid for sid, ss in game_state.system_states.items()
-            if ss.status == "compromised"
-        ]
-        active_threats = [
-            ts for ts in game_state.threat_states.values() if ts.status == "active"
-        ]
+        compromised = [sid for sid, ss in game_state.system_states.items() if ss.status == "compromised"]
+        active_threats = [ts for ts in game_state.threat_states.values() if ts.status == "active"]
         if compromised and category != "containment":
-            return (
-                f"Consider isolating compromised systems "
-                f"({', '.join(compromised[:2])}) to prevent lateral movement."
-            )
+            return f"Consider isolating compromised systems ({', '.join(compromised[:2])}) to prevent lateral movement."
         if active_threats and category not in ("detection", "investigation"):
-            return (
-                "Consider investigating active threats to gather intelligence "
-                "before taking further action."
-            )
+            return "Consider investigating active threats to gather intelligence before taking further action."
         if score < 30 and category != "communication":
-            return (
-                "Consider escalating the incident and notifying relevant "
-                "stakeholders for additional support."
-            )
+            return "Consider escalating the incident and notifying relevant stakeholders for additional support."
         if category == "other":
             return (
-                "Consider taking a more targeted action such as scanning "
-                "affected systems or reviewing security logs."
+                "Consider taking a more targeted action such as scanning affected systems or reviewing security logs."
             )
         return None

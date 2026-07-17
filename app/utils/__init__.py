@@ -9,15 +9,16 @@
 """
 Utility modules for Streamlit frontend.
 """
+
 from .api_client import (
     API_BASE_URL,
-    check_api_health,
     api_call,
-    format_timestamp,
+    check_api_health,
     format_duration,
-    get_status_emoji,
+    format_timestamp,
+    get_event_type_emoji,
     get_severity_emoji,
-    get_event_type_emoji
+    get_status_emoji,
 )
 
 __all__ = [
@@ -28,5 +29,5 @@ __all__ = [
     "format_duration",
     "get_status_emoji",
     "get_severity_emoji",
-    "get_event_type_emoji"
+    "get_event_type_emoji",
 ]

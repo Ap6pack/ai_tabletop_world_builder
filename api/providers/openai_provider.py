@@ -9,8 +9,11 @@
 """
 OpenAI LLM provider implementation.
 """
-from typing import Optional, Dict, Any
+
+from typing import Any
+
 from openai import AsyncOpenAI
+
 from .base import BaseLLMProvider
 
 
@@ -25,11 +28,11 @@ class OpenAIProvider(BaseLLMProvider):
     async def complete(
         self,
         prompt: str,
-        system_message: Optional[str] = None,
+        system_message: str | None = None,
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
+        max_tokens: int | None = None,
+        **kwargs,
+    ) -> dict[str, Any]:
         """Generate completion using OpenAI API."""
         messages = []
 
@@ -39,11 +42,7 @@ class OpenAIProvider(BaseLLMProvider):
         messages.append({"role": "user", "content": prompt})
 
         response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            **kwargs
+            model=self.model, messages=messages, temperature=temperature, max_tokens=max_tokens, **kwargs
         )
 
         return {

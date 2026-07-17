@@ -7,11 +7,12 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """LLM providers module."""
-from .base import BaseLLMProvider
-from .openai_provider import OpenAIProvider
+
 from .anthropic_provider import AnthropicProvider
-from .ollama_provider import OllamaProvider
+from .base import BaseLLMProvider
 from .factory import LLMProviderFactory, ProviderType
+from .ollama_provider import OllamaProvider
+from .openai_provider import OpenAIProvider
 
 __all__ = [
     "BaseLLMProvider",
