@@ -9,9 +9,10 @@
 """
 Objective Generator Service - Automatically generates training objectives from scenarios.
 """
+
 import logging
-from typing import List
-from api.models import Organization, Objective, Vulnerability, ThreatActor, System
+
+from api.models import Objective, Organization, System, ThreatActor, Vulnerability
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +74,8 @@ class ObjectiveGenerator:
         organization: Organization,
         scenario_type: str = "incident-response",
         difficulty: str = "intermediate",
-        player_role: str = "soc-analyst"
-    ) -> List[Objective]:
+        player_role: str = "soc-analyst",
+    ) -> list[Objective]:
         """
         Generate objectives automatically from scenario data.
 
@@ -90,12 +91,7 @@ class ObjectiveGenerator:
         objectives = []
 
         # Determine number of objectives based on difficulty
-        objective_counts = {
-            "beginner": 3,
-            "intermediate": 5,
-            "advanced": 6,
-            "expert": 8
-        }
+        objective_counts = {"beginner": 3, "intermediate": 5, "advanced": 6, "expert": 8}
         target_count = objective_counts.get(difficulty, 5)
 
         # Get key elements from organization
@@ -110,7 +106,7 @@ class ObjectiveGenerator:
                     threat_actors[:2],  # Top 2 threats
                     critical_systems,
                     difficulty,
-                    player_role
+                    player_role,
                 )[:2]  # Max 2 detection objectives
             )
 
@@ -121,7 +117,7 @@ class ObjectiveGenerator:
                     threat_actors[0],  # Primary threat
                     critical_systems,
                     difficulty,
-                    player_role
+                    player_role,
                 )[:2]  # Max 2 containment objectives
             )
 
@@ -131,40 +127,31 @@ class ObjectiveGenerator:
                 self._generate_mitigation_objectives(
                     vulnerabilities[:3],  # Top 3 vulnerabilities
                     difficulty,
-                    player_role
+                    player_role,
                 )[:2]  # Max 2 mitigation objectives
             )
 
         # Generate investigation objectives (threat hunting focus)
         if scenario_type == "threat-hunting" and threat_actors:
             objectives.extend(
-                self._generate_investigation_objectives(
-                    threat_actors[0],
-                    critical_systems,
-                    difficulty,
-                    player_role
-                )[:2]  # Max 2 investigation objectives
+                self._generate_investigation_objectives(threat_actors[0], critical_systems, difficulty, player_role)[
+                    :2
+                ]  # Max 2 investigation objectives
             )
 
         # Generate protection objectives (based on role)
         if player_role in ["security-engineer", "ciso"]:
             objectives.extend(
-                self._generate_protection_objectives(
-                    critical_systems,
-                    vulnerabilities,
-                    difficulty,
-                    player_role
-                )[:1]  # Max 1 protection objective
+                self._generate_protection_objectives(critical_systems, vulnerabilities, difficulty, player_role)[
+                    :1
+                ]  # Max 1 protection objective
             )
 
         # Always include a reporting objective
         if player_role in ["incident-responder", "ciso"]:
             objectives.append(
                 self._generate_reporting_objective(
-                    threat_actors[0] if threat_actors else None,
-                    organization,
-                    difficulty,
-                    player_role
+                    threat_actors[0] if threat_actors else None, organization, difficulty, player_role
                 )
             )
 
@@ -179,7 +166,7 @@ class ObjectiveGenerator:
 
         return objectives
 
-    def _extract_vulnerabilities(self, organization: Organization) -> List[Vulnerability]:
+    def _extract_vulnerabilities(self, organization: Organization) -> list[Vulnerability]:
         """Extract all vulnerabilities from organization systems."""
         vulnerabilities = []
         for dept in organization.departments:
@@ -192,7 +179,7 @@ class ObjectiveGenerator:
 
         return vulnerabilities
 
-    def _extract_critical_systems(self, organization: Organization) -> List[System]:
+    def _extract_critical_systems(self, organization: Organization) -> list[System]:
         """Extract critical and high-priority systems."""
         critical_systems = []
         for dept in organization.departments:
@@ -201,12 +188,8 @@ class ObjectiveGenerator:
         return critical_systems
 
     def _generate_detection_objectives(
-        self,
-        threat_actors: List[ThreatActor],
-        systems: List[System],
-        difficulty: str,
-        player_role: str
-    ) -> List[Objective]:
+        self, threat_actors: list[ThreatActor], systems: list[System], difficulty: str, player_role: str
+    ) -> list[Objective]:
         """Generate detection-focused objectives."""
         objectives = []
 
@@ -223,8 +206,8 @@ class ObjectiveGenerator:
                 hints=[
                     f"Check SIEM logs for patterns associated with {threat.ttps[0] if threat.ttps else 'suspicious activity'}",
                     f"Look for {threat.motivation} indicators in network traffic",
-                    "Review recent alerts for anomalies"
-                ]
+                    "Review recent alerts for anomalies",
+                ],
             )
 
             if difficulty in ["advanced", "expert"]:
@@ -235,12 +218,8 @@ class ObjectiveGenerator:
         return objectives
 
     def _generate_containment_objectives(
-        self,
-        threat: ThreatActor,
-        systems: List[System],
-        difficulty: str,
-        player_role: str
-    ) -> List[Objective]:
+        self, threat: ThreatActor, systems: list[System], difficulty: str, player_role: str
+    ) -> list[Objective]:
         """Generate containment-focused objectives."""
         objectives = []
 
@@ -258,8 +237,8 @@ class ObjectiveGenerator:
                 hints=[
                     "Use network segmentation to isolate affected systems",
                     "Coordinate with business units before isolation",
-                    "Monitor for lateral movement attempts"
-                ]
+                    "Monitor for lateral movement attempts",
+                ],
             )
 
             if difficulty in ["advanced", "expert"]:
@@ -279,8 +258,8 @@ class ObjectiveGenerator:
             hints=[
                 "Identify C2 IP addresses and domains",
                 "Update firewall rules to block malicious traffic",
-                "Monitor for C2 reconnection attempts"
-            ]
+                "Monitor for C2 reconnection attempts",
+            ],
         )
 
         if difficulty == "expert":
@@ -291,11 +270,8 @@ class ObjectiveGenerator:
         return objectives
 
     def _generate_mitigation_objectives(
-        self,
-        vulnerabilities: List[Vulnerability],
-        difficulty: str,
-        player_role: str
-    ) -> List[Objective]:
+        self, vulnerabilities: list[Vulnerability], difficulty: str, player_role: str
+    ) -> list[Objective]:
         """Generate mitigation-focused objectives."""
         objectives = []
 
@@ -311,8 +287,8 @@ class ObjectiveGenerator:
                 hints=[
                     f"Priority: {vuln.severity.upper()} severity",
                     f"Remediation: {vuln.remediation[:80]}",
-                    "Test patches in staging before production deployment"
-                ]
+                    "Test patches in staging before production deployment",
+                ],
             )
 
             # Time limits based on severity
@@ -324,12 +300,8 @@ class ObjectiveGenerator:
         return objectives
 
     def _generate_investigation_objectives(
-        self,
-        threat: ThreatActor,
-        systems: List[System],
-        difficulty: str,
-        player_role: str
-    ) -> List[Objective]:
+        self, threat: ThreatActor, systems: list[System], difficulty: str, player_role: str
+    ) -> list[Objective]:
         """Generate investigation-focused objectives."""
         objectives = []
 
@@ -345,8 +317,8 @@ class ObjectiveGenerator:
             hints=[
                 f"Review {threat.ttps[0] if threat.ttps else 'attack'} patterns",
                 "Check authentication logs for anomalies",
-                "Analyze network traffic captures"
-            ]
+                "Analyze network traffic captures",
+            ],
         )
 
         if difficulty == "expert":
@@ -367,8 +339,8 @@ class ObjectiveGenerator:
                 hints=[
                     "Review data access logs",
                     "Check for large outbound data transfers",
-                    "Analyze file access patterns"
-                ]
+                    "Analyze file access patterns",
+                ],
             )
 
             objectives.append(obj)
@@ -376,12 +348,8 @@ class ObjectiveGenerator:
         return objectives
 
     def _generate_protection_objectives(
-        self,
-        systems: List[System],
-        vulnerabilities: List[Vulnerability],
-        difficulty: str,
-        player_role: str
-    ) -> List[Objective]:
+        self, systems: list[System], vulnerabilities: list[Vulnerability], difficulty: str, player_role: str
+    ) -> list[Objective]:
         """Generate protection-focused objectives."""
         objectives = []
 
@@ -397,8 +365,8 @@ class ObjectiveGenerator:
                 hints=[
                     "Enable enhanced logging and monitoring",
                     "Implement additional access restrictions",
-                    "Deploy threat detection rules"
-                ]
+                    "Deploy threat detection rules",
+                ],
             )
 
             objectives.append(obj)
@@ -406,11 +374,7 @@ class ObjectiveGenerator:
         return objectives
 
     def _generate_reporting_objective(
-        self,
-        threat: ThreatActor,
-        organization: Organization,
-        difficulty: str,
-        player_role: str
+        self, threat: ThreatActor, organization: Organization, difficulty: str, player_role: str
     ) -> Objective:
         """Generate a reporting objective."""
         threat_name = threat.name if threat else "the security incident"
@@ -425,29 +389,17 @@ class ObjectiveGenerator:
             hints=[
                 "Include incident timeline from detection to resolution",
                 "Document business impact and affected systems",
-                "Provide actionable recommendations for prevention"
-            ]
+                "Provide actionable recommendations for prevention",
+            ],
         )
 
         return obj
 
     def _calculate_points(self, objective_type: str, difficulty: str) -> int:
         """Calculate points for an objective based on type and difficulty."""
-        base_points = {
-            "detect": 20,
-            "contain": 30,
-            "mitigate": 25,
-            "investigate": 35,
-            "protect": 30,
-            "report": 15
-        }
+        base_points = {"detect": 20, "contain": 30, "mitigate": 25, "investigate": 35, "protect": 30, "report": 15}
 
-        difficulty_multiplier = {
-            "beginner": 0.8,
-            "intermediate": 1.0,
-            "advanced": 1.3,
-            "expert": 1.5
-        }
+        difficulty_multiplier = {"beginner": 0.8, "intermediate": 1.0, "advanced": 1.3, "expert": 1.5}
 
         base = base_points.get(objective_type, 25)
         multiplier = difficulty_multiplier.get(difficulty, 1.0)
@@ -456,10 +408,5 @@ class ObjectiveGenerator:
 
     def _map_difficulty(self, scenario_difficulty: str) -> str:
         """Map scenario difficulty to objective difficulty."""
-        mapping = {
-            "beginner": "easy",
-            "intermediate": "medium",
-            "advanced": "hard",
-            "expert": "hard"
-        }
+        mapping = {"beginner": "easy", "intermediate": "medium", "advanced": "hard", "expert": "hard"}
         return mapping.get(scenario_difficulty, "medium")

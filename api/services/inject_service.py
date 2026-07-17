@@ -15,12 +15,12 @@ Provides:
 - Dynamic inject suggestion based on game state heuristics
 - Inject delivery tracking and team response recording
 """
+
 import json
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from api.models.exercise_models import (
     ExerciseState,
@@ -51,7 +51,7 @@ class InjectService:
     """
 
     def __init__(self) -> None:
-        self._templates: Dict[str, list] = {}
+        self._templates: dict[str, list] = {}
         self._load_templates()
 
     # ------------------------------------------------------------------ #
@@ -60,21 +60,15 @@ class InjectService:
 
     def _load_templates(self) -> None:
         """Load inject templates from ``data/inject_templates/``."""
-        templates_dir = (
-            Path(__file__).resolve().parent.parent.parent
-            / "data"
-            / "inject_templates"
-        )
+        templates_dir = Path(__file__).resolve().parent.parent.parent / "data" / "inject_templates"
 
         if not templates_dir.exists():
-            logger.warning(
-                "Inject templates directory not found: %s", templates_dir
-            )
+            logger.warning("Inject templates directory not found: %s", templates_dir)
             return
 
         for json_file in templates_dir.glob("*.json"):
             try:
-                with open(json_file, "r", encoding="utf-8") as fh:
+                with open(json_file, encoding="utf-8") as fh:
                     data = json.load(fh)
                 key = json_file.stem  # e.g. "generic", "financial_sector"
                 self._templates[key] = data if isinstance(data, list) else []
@@ -84,27 +78,23 @@ class InjectService:
                     json_file.name,
                 )
             except (json.JSONDecodeError, OSError) as exc:
-                logger.error(
-                    "Failed to load inject template %s: %s", json_file, exc
-                )
+                logger.error("Failed to load inject template %s: %s", json_file, exc)
 
-        logger.info(
-            "Loaded inject templates from %d files", len(self._templates)
-        )
+        logger.info("Loaded inject templates from %d files", len(self._templates))
 
     # ------------------------------------------------------------------ #
     # Public API
     # ------------------------------------------------------------------ #
 
-    def get_template_categories(self) -> List[str]:
+    def get_template_categories(self) -> list[str]:
         """Return available template category names."""
         return list(self._templates.keys())
 
-    def get_templates(self, category: str) -> List[dict]:
+    def get_templates(self, category: str) -> list[dict]:
         """Return templates for a given category."""
         return self._templates.get(category, [])
 
-    def get_all_templates(self) -> Dict[str, list]:
+    def get_all_templates(self) -> dict[str, list]:
         """Return all loaded templates keyed by category."""
         return dict(self._templates)
 
@@ -116,10 +106,10 @@ class InjectService:
         severity: str = "medium",
         trigger_type: str = "manual",
         trigger_value=None,
-        target_teams: Optional[List[str]] = None,
+        target_teams: list[str] | None = None,
         requires_response: bool = False,
-        response_time_limit_minutes: Optional[int] = None,
-        attack_technique_id: Optional[str] = None,
+        response_time_limit_minutes: int | None = None,
+        attack_technique_id: str | None = None,
     ) -> Inject:
         """Create a new inject, optionally from a trigger specification.
 
@@ -161,9 +151,9 @@ class InjectService:
     def create_inject_from_template(
         self,
         template: dict,
-        trigger_type: Optional[str] = None,
+        trigger_type: str | None = None,
         trigger_value=None,
-        target_teams: Optional[List[str]] = None,
+        target_teams: list[str] | None = None,
     ) -> Inject:
         """Create an inject from a template dictionary."""
         return self.create_inject(
@@ -171,8 +161,7 @@ class InjectService:
             title=template.get("title", "Untitled Inject"),
             content=template.get("content", ""),
             severity=template.get("severity", "medium"),
-            trigger_type=trigger_type
-            or template.get("suggested_trigger_type", "manual"),
+            trigger_type=trigger_type or template.get("suggested_trigger_type", "manual"),
             trigger_value=trigger_value,
             target_teams=target_teams,
             requires_response=template.get("requires_response", False),
@@ -183,7 +172,7 @@ class InjectService:
         self,
         exercise_state: ExerciseState,
         elapsed_minutes: float = 0.0,
-    ) -> List[Inject]:
+    ) -> list[Inject]:
         """Evaluate pending injects and return those whose triggers have fired.
 
         Trigger types:
@@ -195,7 +184,7 @@ class InjectService:
           exercise log
         - ``manual`` : never fires automatically (facilitator must deliver)
         """
-        fired: List[Inject] = []
+        fired: list[Inject] = []
 
         for inject in list(exercise_state.pending_injects):
             if inject.delivered:
@@ -216,23 +205,19 @@ class InjectService:
 
             elif trigger.trigger_type == "condition":
                 pattern = str(trigger.trigger_value) if trigger.trigger_value else ""
-                if pattern and self._condition_matches(
-                    pattern, exercise_state
-                ):
+                if pattern and self._condition_matches(pattern, exercise_state):
                     should_fire = True
 
             elif trigger.trigger_type == "event":
                 event_type = str(trigger.trigger_value) if trigger.trigger_value else ""
-                if event_type and self._event_type_present(
-                    event_type, exercise_state
-                ):
+                if event_type and self._event_type_present(event_type, exercise_state):
                     should_fire = True
 
             # "manual" never auto-fires
 
             if should_fire:
                 inject.delivered = True
-                inject.delivered_at = datetime.now(timezone.utc)
+                inject.delivered_at = datetime.now(UTC)
                 fired.append(inject)
                 logger.info(
                     "Inject triggered: '%s' (trigger=%s)",
@@ -243,18 +228,12 @@ class InjectService:
         # Move fired injects from pending to delivered
         if fired:
             fired_ids = {i.inject_id for i in fired}
-            exercise_state.pending_injects = [
-                i
-                for i in exercise_state.pending_injects
-                if i.inject_id not in fired_ids
-            ]
+            exercise_state.pending_injects = [i for i in exercise_state.pending_injects if i.inject_id not in fired_ids]
             exercise_state.injects.extend(fired)
 
         return fired
 
-    def suggest_inject(
-        self, game_state: GameState, exercise_state: ExerciseState
-    ) -> Optional[Inject]:
+    def suggest_inject(self, game_state: GameState, exercise_state: ExerciseState) -> Inject | None:
         """Suggest a context-aware inject based on current game state.
 
         Uses six heuristics to determine what inject would increase exercise
@@ -286,10 +265,7 @@ class InjectService:
             active_techniques.update(ts.active_techniques)
 
         # Heuristic 1: Media inquiry after prolonged incident
-        if (
-            downtime_hours > 0.5
-            and InjectType.MEDIA_INQUIRY not in delivered_types
-        ):
+        if downtime_hours > 0.5 and InjectType.MEDIA_INQUIRY not in delivered_types:
             return self.create_inject(
                 inject_type="media_inquiry",
                 title="Journalist Requests Comment on Reported Incident",
@@ -306,10 +282,7 @@ class InjectService:
             )
 
         # Heuristic 2: Regulator call after significant data exposure
-        if (
-            records > 1000
-            and InjectType.REGULATOR_CALL not in delivered_types
-        ):
+        if records > 1000 and InjectType.REGULATOR_CALL not in delivered_types:
             return self.create_inject(
                 inject_type="regulator_call",
                 title="Regulatory Authority Demands Incident Report",
@@ -326,10 +299,7 @@ class InjectService:
             )
 
         # Heuristic 3: CEO demand after extended downtime
-        if (
-            downtime_hours > 2
-            and InjectType.CEO_DEMAND not in delivered_types
-        ):
+        if downtime_hours > 2 and InjectType.CEO_DEMAND not in delivered_types:
             return self.create_inject(
                 inject_type="ceo_demand",
                 title="CEO Demands Immediate Status Update",
@@ -347,10 +317,7 @@ class InjectService:
 
         # Heuristic 4: Technical failure if ransomware techniques are active
         ransomware_techniques = {"T1486", "T1490", "T1489", "T1529"}
-        if (
-            active_techniques & ransomware_techniques
-            and InjectType.TECHNICAL_FAILURE not in delivered_types
-        ):
+        if active_techniques & ransomware_techniques and InjectType.TECHNICAL_FAILURE not in delivered_types:
             return self.create_inject(
                 inject_type="technical_failure",
                 title="Critical System Recovery Failure",
@@ -368,10 +335,7 @@ class InjectService:
 
         # Heuristic 5: Customer complaint if exfiltration detected
         exfil_techniques = {"T1041", "T1048", "T1567", "T1537"}
-        if (
-            active_techniques & exfil_techniques
-            and InjectType.CUSTOMER_COMPLAINT not in delivered_types
-        ):
+        if active_techniques & exfil_techniques and InjectType.CUSTOMER_COMPLAINT not in delivered_types:
             return self.create_inject(
                 inject_type="customer_complaint",
                 title="Major Client Demands Security Assessment",
@@ -388,10 +352,7 @@ class InjectService:
             )
 
         # Heuristic 6: Vendor alert after extended exercise
-        if (
-            exercise_state.current_round >= 3
-            and InjectType.VENDOR_ALERT not in delivered_types
-        ):
+        if exercise_state.current_round >= 3 and InjectType.VENDOR_ALERT not in delivered_types:
             return self.create_inject(
                 inject_type="vendor_alert",
                 title="Security Vendor Issues Urgent Advisory",
@@ -410,9 +371,7 @@ class InjectService:
 
         return None
 
-    def get_inject_by_id(
-        self, exercise_state: ExerciseState, inject_id: str
-    ) -> Optional[Inject]:
+    def get_inject_by_id(self, exercise_state: ExerciseState, inject_id: str) -> Inject | None:
         """Find an inject by ID across delivered and pending lists."""
         for inject in exercise_state.injects:
             if inject.inject_id == inject_id:
@@ -435,22 +394,16 @@ class InjectService:
         """
         inject = self.get_inject_by_id(exercise_state, inject_id)
         if not inject:
-            logger.warning(
-                "Inject %s not found for response recording", inject_id
-            )
+            logger.warning("Inject %s not found for response recording", inject_id)
             return False
 
         inject.responses[team_id] = response
-        logger.info(
-            "Team %s responded to inject '%s'", team_id, inject.title
-        )
+        logger.info("Team %s responded to inject '%s'", team_id, inject.title)
         return True
 
-    def get_unresponded_injects(
-        self, exercise_state: ExerciseState, team_id: str
-    ) -> List[Inject]:
+    def get_unresponded_injects(self, exercise_state: ExerciseState, team_id: str) -> list[Inject]:
         """Return delivered injects that require a response from a team."""
-        result: List[Inject] = []
+        result: list[Inject] = []
         for inject in exercise_state.injects:
             if not inject.delivered or not inject.requires_response:
                 continue
@@ -466,9 +419,7 @@ class InjectService:
     # ------------------------------------------------------------------ #
 
     @staticmethod
-    def _condition_matches(
-        pattern: str, exercise_state: ExerciseState
-    ) -> bool:
+    def _condition_matches(pattern: str, exercise_state: ExerciseState) -> bool:
         """Check if a regex condition matches any recent exercise event."""
         try:
             compiled = re.compile(pattern, re.IGNORECASE)
@@ -492,14 +443,9 @@ class InjectService:
         return False
 
     @staticmethod
-    def _event_type_present(
-        event_type: str, exercise_state: ExerciseState
-    ) -> bool:
+    def _event_type_present(event_type: str, exercise_state: ExerciseState) -> bool:
         """Check if a specific event type has occurred in the exercise."""
-        for event in exercise_state.exercise_log:
-            if event.event_type == event_type:
-                return True
-        return False
+        return any(event.event_type == event_type for event in exercise_state.exercise_log)
 
 
 # ============================================================================

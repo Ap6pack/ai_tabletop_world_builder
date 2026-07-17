@@ -9,17 +9,15 @@
 """
 Streamlit Home Page - Main entry point for the war gaming platform.
 """
-import streamlit as st
-from pathlib import Path
-from config import API_BASE_URL, HEALTH_CHECK_TIMEOUT, DEFAULT_TIMEOUT
+
 import requests
+import streamlit as st
+
+from config import API_BASE_URL, DEFAULT_TIMEOUT, HEALTH_CHECK_TIMEOUT
 
 # Configure page
 st.set_page_config(
-    page_title="Cybersecurity War Gaming Platform",
-    page_icon="",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Cybersecurity War Gaming Platform", page_icon="", layout="wide", initial_sidebar_state="expanded"
 )
 
 # Main title
@@ -224,7 +222,7 @@ with col3:
             st.metric("Saved Scenarios", "0", delta="API error")
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         st.metric("Saved Scenarios", "0", delta="API offline")
-    except Exception as e:
+    except Exception:
         st.metric("Saved Scenarios", "0", delta="Error")
 
 # Sidebar

@@ -9,8 +9,8 @@
 """
 Content policy service for safety and moderation.
 """
-from typing import List
-from api.models import ContentPolicy, ContentCheckRequest, ContentCheckResponse
+
+from api.models import ContentCheckRequest, ContentCheckResponse, ContentPolicy
 from api.providers import LLMProviderFactory
 
 
@@ -27,15 +27,15 @@ class ContentPolicyService:
                 "Security controls and hardening",
                 "Compliance and auditing",
                 "Risk assessment",
-                "Security awareness training"
+                "Security awareness training",
             ],
             "blocked_categories": [
                 "Exploit code or payloads",
                 "Offensive hacking techniques",
                 "Social engineering attacks",
                 "Malware development",
-                "Network intrusion methods"
-            ]
+                "Network intrusion methods",
+            ],
         },
         "educational": {
             "description": "Educational content - realistic scenarios with defensive focus and learning objectives",
@@ -46,14 +46,14 @@ class ContentPolicyService:
                 "Threat modeling",
                 "Security architecture",
                 "Penetration testing concepts (theory)",
-                "Forensics and investigation"
+                "Forensics and investigation",
             ],
             "blocked_categories": [
                 "Actual exploit code",
                 "Real credential theft techniques",
                 "Weaponized malware",
-                "Active attack campaigns"
-            ]
+                "Active attack campaigns",
+            ],
         },
         "advanced": {
             "description": "Advanced training - realistic attack/defense scenarios for experienced security professionals",
@@ -63,13 +63,13 @@ class ContentPolicyService:
                 "Exploitation techniques (sandboxed)",
                 "Advanced persistent threats (analysis)",
                 "Zero-day vulnerability discussion",
-                "Offensive security concepts"
+                "Offensive security concepts",
             ],
             "blocked_categories": [
                 "Production-ready exploit code",
                 "Real-world attack coordination",
-                "Illegal activities"
-            ]
+                "Illegal activities",
+            ],
         },
         "unrestricted": {
             "description": "Unrestricted content - full realism for advanced security training (use with caution)",
@@ -77,12 +77,10 @@ class ContentPolicyService:
                 "All security content",
                 "Realistic attack scenarios",
                 "Detailed exploitation techniques",
-                "Advanced threat actor TTPs"
+                "Advanced threat actor TTPs",
             ],
-            "blocked_categories": [
-                "Illegal activities unrelated to security training"
-            ]
-        }
+            "blocked_categories": ["Illegal activities unrelated to security training"],
+        },
     }
 
     @staticmethod
@@ -101,7 +99,7 @@ class ContentPolicyService:
             level=level,
             description=policy_config["description"],
             allowed_categories=policy_config["allowed_categories"],
-            blocked_categories=policy_config["blocked_categories"]
+            blocked_categories=policy_config["blocked_categories"],
         )
 
     @staticmethod
@@ -153,7 +151,7 @@ REASONING: [brief explanation]"""
                 prompt=prompt,
                 system_message=system_message,
                 temperature=0.3,  # Lower temperature for more consistent safety checks
-                max_tokens=500
+                max_tokens=500,
             )
 
             response_text = result["content"].strip()
@@ -173,10 +171,7 @@ REASONING: [brief explanation]"""
                 message = response_text.split("REASONING:")[1].strip()
 
             return ContentCheckResponse(
-                is_safe=is_safe,
-                policy_level=policy.level,
-                violations=violations,
-                message=message
+                is_safe=is_safe, policy_level=policy.level, violations=violations, message=message
             )
 
         except Exception as e:
@@ -185,7 +180,7 @@ REASONING: [brief explanation]"""
                 is_safe=False,
                 policy_level=policy.level,
                 violations=["Error during policy check"],
-                message=f"Policy check failed: {str(e)}"
+                message=f"Policy check failed: {str(e)}",
             )
 
     @staticmethod

@@ -13,17 +13,20 @@ Analyzes player performance across multiple war game sessions to identify
 weak areas, recommend targeted scenarios, build training plans, and track
 improvement over time.
 """
-from datetime import datetime, timezone
-from typing import Dict, List, Optional
 
-from api.models import GameState, DecisionEvaluation
+from api.models import GameState
 from api.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
 SKILL_AREAS = [
-    "detection", "containment", "mitigation", "communication",
-    "investigation", "resource_management", "time_management",
+    "detection",
+    "containment",
+    "mitigation",
+    "communication",
+    "investigation",
+    "resource_management",
+    "time_management",
 ]
 DEFAULT_TARGET_LEVEL = 80
 
@@ -38,21 +41,39 @@ SCENARIO_MAPPING = {
 }
 
 CATEGORY_KEYWORDS = {
-    "detection": ["scan", "check logs", "monitor", "detect", "observe",
-                   "review logs", "check alerts", "inspect", "hunt"],
-    "containment": ["isolate", "block", "quarantine", "disable",
-                     "disconnect", "shut down", "firewall", "contain"],
-    "mitigation": ["patch", "restore", "fix", "update", "remediate",
-                    "repair", "rebuild", "recover", "rollback"],
-    "communication": ["alert", "notify", "report", "escalate", "inform",
-                       "brief", "communicate", "call", "email", "warn"],
-    "investigation": ["investigate", "analyze", "forensic", "correlate",
-                       "trace", "examine", "root cause", "assess"],
+    "detection": [
+        "scan",
+        "check logs",
+        "monitor",
+        "detect",
+        "observe",
+        "review logs",
+        "check alerts",
+        "inspect",
+        "hunt",
+    ],
+    "containment": ["isolate", "block", "quarantine", "disable", "disconnect", "shut down", "firewall", "contain"],
+    "mitigation": ["patch", "restore", "fix", "update", "remediate", "repair", "rebuild", "recover", "rollback"],
+    "communication": [
+        "alert",
+        "notify",
+        "report",
+        "escalate",
+        "inform",
+        "brief",
+        "communicate",
+        "call",
+        "email",
+        "warn",
+    ],
+    "investigation": ["investigate", "analyze", "forensic", "correlate", "trace", "examine", "root cause", "assess"],
 }
 
 OBJ_TYPE_MAP = {
-    "detection": "detect", "containment": "contain",
-    "mitigation": "mitigate", "communication": "report",
+    "detection": "detect",
+    "containment": "contain",
+    "mitigation": "mitigate",
+    "communication": "report",
     "investigation": "investigate",
 }
 
@@ -63,7 +84,7 @@ class TrainingPathService:
     def __init__(self) -> None:
         pass
 
-    def analyze_skill_gaps(self, session_states: List[GameState]) -> List[Dict]:
+    def analyze_skill_gaps(self, session_states: list[GameState]) -> list[dict]:
         """Analyze multiple sessions to find weak areas, returning a priority-sorted
         list of dicts with skill_area, current_level, target_level, gap, priority,
         and recommended_scenarios."""
@@ -71,35 +92,46 @@ class TrainingPathService:
             logger.warning("No session states provided for skill gap analysis")
             return []
         logger.info(f"Analyzing skill gaps across {len(session_states)} sessions")
-        gaps: List[Dict] = []
+        gaps: list[dict] = []
         for area in SKILL_AREAS:
             scores = [self._calculate_area_score(gs, area) for gs in session_states]
             level = int(sum(scores) / len(scores))
             gap = max(0, DEFAULT_TARGET_LEVEL - level)
             priority = "high" if gap >= 40 else ("medium" if gap >= 20 else "low")
-            gaps.append({"skill_area": area, "current_level": level,
-                         "target_level": DEFAULT_TARGET_LEVEL, "gap": gap,
-                         "priority": priority,
-                         "recommended_scenarios": SCENARIO_MAPPING.get(area, ["incident-response"])})
+            gaps.append(
+                {
+                    "skill_area": area,
+                    "current_level": level,
+                    "target_level": DEFAULT_TARGET_LEVEL,
+                    "gap": gap,
+                    "priority": priority,
+                    "recommended_scenarios": SCENARIO_MAPPING.get(area, ["incident-response"]),
+                }
+            )
         gaps.sort(key=lambda g: g["gap"], reverse=True)
-        logger.info(f"Skill gap analysis complete: "
-                    f"{sum(1 for g in gaps if g['priority'] == 'high')} high-priority gaps")
+        logger.info(
+            f"Skill gap analysis complete: {sum(1 for g in gaps if g['priority'] == 'high')} high-priority gaps"
+        )
         return gaps
 
     def recommend_next_scenario(
-        self, skill_gaps: List[Dict], available_scenarios: Optional[List[str]] = None,
-    ) -> Dict:
+        self,
+        skill_gaps: list[dict],
+        available_scenarios: list[str] | None = None,
+    ) -> dict:
         """Recommend the next scenario based on skill gaps. Returns dict with
         scenario_type, difficulty, focus_areas, and reasoning."""
         if not skill_gaps:
-            return {"scenario_type": "incident-response", "difficulty": "medium",
-                    "focus_areas": ["detection", "containment"],
-                    "reasoning": "No skill gap data available; defaulting to "
-                                 "general incident response training."}
+            return {
+                "scenario_type": "incident-response",
+                "difficulty": "medium",
+                "focus_areas": ["detection", "containment"],
+                "reasoning": "No skill gap data available; defaulting to general incident response training.",
+            }
         high = [g for g in skill_gaps if g["priority"] == "high"]
         targets = high if high else skill_gaps[:3]
         focus_areas = [g["skill_area"] for g in targets[:3]]
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for gap in targets:
             for s in gap.get("recommended_scenarios", []):
                 if available_scenarios is None or s in available_scenarios:
@@ -111,10 +143,14 @@ class TrainingPathService:
         if high:
             parts.append(f"{len(high)} high-priority gap(s) require focused practice")
         parts.append(f"Current average level in focus areas: {int(avg_lvl)}/100")
-        return {"scenario_type": scenario_type, "difficulty": difficulty,
-                "focus_areas": focus_areas, "reasoning": ". ".join(parts) + "."}
+        return {
+            "scenario_type": scenario_type,
+            "difficulty": difficulty,
+            "focus_areas": focus_areas,
+            "reasoning": ". ".join(parts) + ".",
+        }
 
-    def build_training_plan(self, session_states: List[GameState]) -> Dict:
+    def build_training_plan(self, session_states: list[GameState]) -> dict:
         """Build a multi-session training plan with current_level, target_level,
         skill_profile, recommended_sessions, estimated_sessions_to_target,
         and focus_priorities."""
@@ -125,7 +161,7 @@ class TrainingPathService:
         focus_priorities = [g["skill_area"] for g in gaps if g["gap"] > 0]
         remaining = [g for g in gaps if g["gap"] > 0]
         n_sessions = min(5, max(3, len([g for g in gaps if g["priority"] != "low"])))
-        recommended_sessions: List[Dict] = []
+        recommended_sessions: list[dict] = []
         for i in range(n_sessions):
             if remaining:
                 rec = self.recommend_next_scenario(remaining[:3])
@@ -135,27 +171,33 @@ class TrainingPathService:
         needed = max(0, DEFAULT_TARGET_LEVEL - current_level)
         estimated = max(len(recommended_sessions), (needed + 4) // 5) if needed > 0 else 0
         logger.info(f"Training plan: current={current_level}, estimated_sessions={estimated}")
-        return {"current_level": current_level, "target_level": DEFAULT_TARGET_LEVEL,
-                "skill_profile": skill_profile, "recommended_sessions": recommended_sessions,
-                "estimated_sessions_to_target": estimated, "focus_priorities": focus_priorities}
+        return {
+            "current_level": current_level,
+            "target_level": DEFAULT_TARGET_LEVEL,
+            "skill_profile": skill_profile,
+            "recommended_sessions": recommended_sessions,
+            "estimated_sessions_to_target": estimated,
+            "focus_priorities": focus_priorities,
+        }
 
-    def track_progress(self, session_states: List[GameState]) -> Dict:
+    def track_progress(self, session_states: list[GameState]) -> dict:
         """Track improvement across sessions. Returns sessions_completed,
         score_trend, skill_improvements, and milestones."""
         if not session_states:
-            return {"sessions_completed": 0, "score_trend": [],
-                    "skill_improvements": {}, "milestones": []}
+            return {"sessions_completed": 0, "score_trend": [], "skill_improvements": {}, "milestones": []}
         logger.info(f"Tracking progress across {len(session_states)} sessions")
-        skill_improvements: Dict[str, Dict] = {}
+        skill_improvements: dict[str, dict] = {}
         for area in SKILL_AREAS:
             scores = [self._calculate_area_score(gs, area) for gs in session_states]
             first, latest = int(scores[0]), int(scores[-1])
-            skill_improvements[area] = {"first": first, "latest": latest,
-                                        "change": latest - first}
+            skill_improvements[area] = {"first": first, "latest": latest, "change": latest - first}
         milestones = self._detect_milestones(session_states)
-        result = {"sessions_completed": len(session_states),
-                  "score_trend": [gs.score for gs in session_states],
-                  "skill_improvements": skill_improvements, "milestones": milestones}
+        result = {
+            "sessions_completed": len(session_states),
+            "score_trend": [gs.score for gs in session_states],
+            "skill_improvements": skill_improvements,
+            "milestones": milestones,
+        }
         logger.info(f"Progress: {len(session_states)} sessions, {len(milestones)} milestones")
         return result
 
@@ -169,17 +211,20 @@ class TrainingPathService:
         if not keywords:
             return 50.0
         timeline = game_state.incident_timeline
-        scores: List[float] = []
+        scores: list[float] = []
         for i, event in enumerate(timeline):
             if event.actor != "player" or event.event_type != "action":
                 continue
             if not any(kw in event.description.lower() for kw in keywords):
                 continue
             score = 50.0
-            for sub in timeline[i + 1: i + 4]:
+            for sub in timeline[i + 1 : i + 4]:
                 if sub.event_type == "consequence":
-                    score += 15.0 if sub.severity in ("low", "info") else (
-                        -15.0 if sub.severity in ("critical", "high") else 0.0)
+                    score += (
+                        15.0
+                        if sub.severity in ("low", "info")
+                        else (-15.0 if sub.severity in ("critical", "high") else 0.0)
+                    )
                 if sub.event_type == "escalation":
                     score -= 10.0
             scores.append(max(0.0, min(100.0, score)))
@@ -214,11 +259,11 @@ class TrainingPathService:
             return max(0.0, min(100.0, ratio * 80 + 20 - penalty))
         return sum(1 for o in timed if o.status == "completed") / len(timed) * 100
 
-    def _detect_milestones(self, session_states: List[GameState]) -> List[str]:
+    def _detect_milestones(self, session_states: list[GameState]) -> list[str]:
         """Check for achievements based on session history."""
         if not session_states:
             return []
-        milestones: List[str] = ["First session completed"]
+        milestones: list[str] = ["First session completed"]
         if len(session_states) >= 5:
             milestones.append("Five sessions completed")
         if len(session_states) >= 10:

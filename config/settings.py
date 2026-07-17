@@ -9,8 +9,10 @@
 """
 Application configuration settings.
 """
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from typing import Literal
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -19,7 +21,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
     # API Configuration
-    api_host: str = "0.0.0.0"
+    api_host: str = "0.0.0.0"  # noqa: S104 — bind all interfaces (intended for containers)
     api_port: int = 8000
     api_reload: bool = True
 
@@ -66,7 +68,6 @@ class Settings(BaseSettings):
     # Storage Paths
     scenarios_path: str = "./scenarios/generated"
     data_path: str = "./data"
-
 
 
 # Global settings instance

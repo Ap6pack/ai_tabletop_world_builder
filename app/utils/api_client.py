@@ -9,11 +9,13 @@
 """
 API Client utilities for Streamlit frontend.
 """
+
+import os
+import sys
+from typing import Any
+
 import requests
 import streamlit as st
-from typing import Optional, Dict, Any
-import sys
-import os
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -32,11 +34,11 @@ def check_api_health() -> bool:
 def api_call(
     method: str,
     endpoint: str,
-    json_data: Optional[Dict[str, Any]] = None,
-    params: Optional[Dict[str, Any]] = None,
+    json_data: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
     timeout: int = 30,
-    show_error: bool = True
-) -> Optional[Dict[str, Any]]:
+    show_error: bool = True,
+) -> dict[str, Any] | None:
     """
     Make an API call with error handling and user feedback.
 
@@ -95,7 +97,8 @@ def format_timestamp(timestamp: str) -> str:
     """Format ISO timestamp for display."""
     try:
         from datetime import datetime
-        dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+
+        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
         return dt.strftime("%Y-%m-%d %H:%M:%S")
     except Exception:
         return timestamp
@@ -114,23 +117,12 @@ def format_duration(minutes: int) -> str:
 
 def get_status_emoji(status: str) -> str:
     """Get emoji for session status."""
-    return {
-        "in_progress": "🟢",
-        "completed": "✅",
-        "failed": "❌",
-        "pending": "⏳"
-    }.get(status, "⚪")
+    return {"in_progress": "🟢", "completed": "✅", "failed": "❌", "pending": "⏳"}.get(status, "⚪")
 
 
 def get_severity_emoji(severity: str) -> str:
     """Get emoji for severity level."""
-    return {
-        "critical": "🔴",
-        "high": "🟠",
-        "medium": "🟡",
-        "low": "🟢",
-        "info": "⚪"
-    }.get(severity, "⚪")
+    return {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢", "info": "⚪"}.get(severity, "⚪")
 
 
 def get_event_type_emoji(event_type: str) -> str:
@@ -142,5 +134,5 @@ def get_event_type_emoji(event_type: str) -> str:
         "escalation": "⚠️",
         "discovery": "🔍",
         "success": "✅",
-        "failure": "❌"
+        "failure": "❌",
     }.get(event_type, "📌")

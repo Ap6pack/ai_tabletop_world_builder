@@ -9,6 +9,7 @@
 """
 Centralized logging configuration for the application.
 """
+
 import logging
 import sys
 from pathlib import Path
@@ -20,6 +21,7 @@ LOGS_DIR.mkdir(exist_ok=True)
 # Configure logging format
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 
 def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
     """

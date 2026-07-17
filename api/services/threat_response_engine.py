@@ -9,11 +9,12 @@
 """
 Threat Response Engine - Simulates dynamic threat actor behavior during gameplay.
 """
+
 import logging
 import random
-from typing import List, Dict, Optional
 from datetime import datetime
-from api.models import GameState, ThreatActorState, ThreatActor, Organization, IncidentEvent
+
+from api.models import GameState, IncidentEvent, Organization, ThreatActor, ThreatActorState
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class ThreatResponseEngine:
         """Initialize the threat response engine."""
         pass
 
-    def initialize_threat_states(self, organization: Organization) -> Dict[str, ThreatActorState]:
+    def initialize_threat_states(self, organization: Organization) -> dict[str, ThreatActorState]:
         """
         Initialize threat actor states for all threats in the scenario.
         All threats start active with base aggression levels.
@@ -43,12 +44,9 @@ class ThreatResponseEngine:
 
         for threat in organization.threat_actors:
             # Set initial aggression based on sophistication
-            base_aggression = {
-                "script-kiddie": 30,
-                "hacktivist": 50,
-                "organized-crime": 70,
-                "nation-state": 85
-            }.get(threat.sophistication, 50)
+            base_aggression = {"script-kiddie": 30, "hacktivist": 50, "organized-crime": 70, "nation-state": 85}.get(
+                threat.sophistication, 50
+            )
 
             threat_states[threat.id] = ThreatActorState(
                 threat_actor_id=threat.id,
@@ -59,17 +57,13 @@ class ThreatResponseEngine:
                 aggression_level=base_aggression,
                 last_action="Initial access attempt",
                 last_update=datetime.now(),
-                notes=f"{threat.name} has begun operations"
+                notes=f"{threat.name} has begun operations",
             )
 
         logger.info(f"Initialized {len(threat_states)} threat actor states")
         return threat_states
 
-    def evaluate_player_action(
-        self,
-        action: str,
-        game_state: GameState
-    ) -> Dict[str, any]:
+    def evaluate_player_action(self, action: str, game_state: GameState) -> dict[str, any]:
         """
         Evaluate how threat actors respond to a player action.
 
@@ -81,15 +75,15 @@ class ThreatResponseEngine:
             Dictionary with threat response data including new events
         """
         action_lower = action.lower()
-        responses = {
-            "threat_updates": [],
-            "new_events": [],
-            "system_impacts": []
-        }
+        responses = {"threat_updates": [], "new_events": [], "system_impacts": []}
 
         # Determine action type
-        is_detection_action = any(word in action_lower for word in ["scan", "investigate", "analyze", "check", "monitor", "detect"])
-        is_containment_action = any(word in action_lower for word in ["isolate", "block", "shutdown", "disable", "quarantine", "contain"])
+        is_detection_action = any(
+            word in action_lower for word in ["scan", "investigate", "analyze", "check", "monitor", "detect"]
+        )
+        is_containment_action = any(
+            word in action_lower for word in ["isolate", "block", "shutdown", "disable", "quarantine", "contain"]
+        )
         is_mitigation_action = any(word in action_lower for word in ["patch", "fix", "remediate", "update", "remove"])
 
         # Process each active threat
@@ -124,48 +118,45 @@ class ThreatResponseEngine:
                         event_type="consequence",
                         description=f"{threat_actor.name} has been contained by player actions",
                         severity="medium",
-                        actor="system"
+                        actor="system",
                     )
                     responses["new_events"].append(event)
-                    responses["threat_updates"].append({
-                        "threat_id": threat_id,
-                        "old_status": old_status,
-                        "new_status": "contained",
-                        "message": f"Successfully contained {threat_actor.name}"
-                    })
+                    responses["threat_updates"].append(
+                        {
+                            "threat_id": threat_id,
+                            "old_status": old_status,
+                            "new_status": "contained",
+                            "message": f"Successfully contained {threat_actor.name}",
+                        }
+                    )
                 else:
                     # Containment failed - threat escalates
                     response = self._generate_escalation_response(threat_actor, threat_state, game_state)
                     responses["threat_updates"].append(response)
                     responses["new_events"].extend(response.get("events", []))
 
-            # Mitigation actions reduce threat effectiveness
-            if is_mitigation_action:
-                # Remove compromised systems that are being patched
-                if threat_state.systems_compromised:
-                    removed_systems = []
-                    for sys_id in threat_state.systems_compromised[:]:
-                        if random.random() < 0.4:  # 40% chance to remove per system
-                            threat_state.systems_compromised.remove(sys_id)
-                            removed_systems.append(sys_id)
+            # Mitigation actions reduce threat effectiveness — remove compromised
+            # systems that are being patched.
+            if is_mitigation_action and threat_state.systems_compromised:
+                removed_systems = []
+                for sys_id in threat_state.systems_compromised[:]:
+                    if random.random() < 0.4:  # 40% chance to remove per system
+                        threat_state.systems_compromised.remove(sys_id)
+                        removed_systems.append(sys_id)
 
-                    if removed_systems:
-                        event = IncidentEvent(
-                            timestamp=datetime.now(),
-                            event_type="consequence",
-                            description=f"Mitigation actions have removed {len(removed_systems)} systems from {threat_actor.name}'s control",
-                            severity="low",
-                            actor="system"
-                        )
-                        responses["new_events"].append(event)
+                if removed_systems:
+                    event = IncidentEvent(
+                        timestamp=datetime.now(),
+                        event_type="consequence",
+                        description=f"Mitigation actions have removed {len(removed_systems)} systems from {threat_actor.name}'s control",
+                        severity="low",
+                        actor="system",
+                    )
+                    responses["new_events"].append(event)
 
         return responses
 
-    def escalate_threat(
-        self,
-        threat_id: str,
-        game_state: GameState
-    ) -> Dict[str, any]:
+    def escalate_threat(self, threat_id: str, game_state: GameState) -> dict[str, any]:
         """
         Escalate threat actor activities (automatic escalation over time).
 
@@ -189,11 +180,7 @@ class ThreatResponseEngine:
 
         return self._generate_escalation_response(threat_actor, threat_state, game_state)
 
-    def adapt_tactics(
-        self,
-        threat_id: str,
-        game_state: GameState
-    ) -> bool:
+    def adapt_tactics(self, threat_id: str, game_state: GameState) -> bool:
         """
         Change threat actor tactics in response to detection.
 
@@ -226,10 +213,7 @@ class ThreatResponseEngine:
         return False
 
     def generate_threat_event(
-        self,
-        threat_state: ThreatActorState,
-        threat_actor: ThreatActor,
-        game_state: GameState
+        self, threat_state: ThreatActorState, threat_actor: ThreatActor, game_state: GameState
     ) -> IncidentEvent:
         """
         Generate a random threat event based on current state.
@@ -248,7 +232,7 @@ class ThreatResponseEngine:
                 f"{threat_actor.name} is attempting lateral movement across the network",
                 f"{threat_actor.name} is escalating privileges on compromised systems",
                 f"{threat_actor.name} is exfiltrating sensitive data",
-                f"{threat_actor.name} has deployed ransomware on compromised systems"
+                f"{threat_actor.name} has deployed ransomware on compromised systems",
             ]
             severity = "critical"
         elif threat_state.aggression_level > 40:
@@ -256,7 +240,7 @@ class ThreatResponseEngine:
                 f"{threat_actor.name} is establishing persistence mechanisms",
                 f"{threat_actor.name} is conducting reconnaissance on internal systems",
                 f"{threat_actor.name} is attempting to compromise additional systems",
-                f"{threat_actor.name} is accessing sensitive databases"
+                f"{threat_actor.name} is accessing sensitive databases",
             ]
             severity = "high"
         else:
@@ -264,7 +248,7 @@ class ThreatResponseEngine:
                 f"{threat_actor.name} is probing network defenses",
                 f"{threat_actor.name} is gathering information about the environment",
                 f"{threat_actor.name} activity detected but no immediate impact",
-                f"{threat_actor.name} is testing security controls"
+                f"{threat_actor.name} is testing security controls",
             ]
             severity = "medium"
 
@@ -280,15 +264,12 @@ class ThreatResponseEngine:
             event_type="escalation",
             description=description,
             severity=severity,
-            actor="threat_actor"
+            actor="threat_actor",
         )
 
     def _generate_escalation_response(
-        self,
-        threat_actor: ThreatActor,
-        threat_state: ThreatActorState,
-        game_state: GameState
-    ) -> Dict[str, any]:
+        self, threat_actor: ThreatActor, threat_state: ThreatActorState, game_state: GameState
+    ) -> dict[str, any]:
         """Generate a threat escalation response."""
         # Increase aggression
         threat_state.aggression_level = min(100, threat_state.aggression_level + random.randint(10, 20))
@@ -322,7 +303,7 @@ class ThreatResponseEngine:
             event_type="escalation",
             description=event_desc,
             severity="high",
-            actor="threat_actor"
+            actor="threat_actor",
         )
 
         threat_state.last_action = "Escalated operations"
@@ -333,15 +314,12 @@ class ThreatResponseEngine:
             "action": "escalation",
             "new_compromise": new_compromise,
             "aggression_level": threat_state.aggression_level,
-            "events": [event]
+            "events": [event],
         }
 
     def _generate_evasion_response(
-        self,
-        threat_actor: ThreatActor,
-        threat_state: ThreatActorState,
-        game_state: GameState
-    ) -> Dict[str, any]:
+        self, threat_actor: ThreatActor, threat_state: ThreatActorState, game_state: GameState
+    ) -> dict[str, any]:
         """Generate a threat evasion response when detection is high."""
         # Threat is aware of detection - may go dormant or change tactics
         if threat_state.detection_level > 80:
@@ -367,7 +345,7 @@ class ThreatResponseEngine:
             event_type="consequence",
             description=event_desc,
             severity=severity,
-            actor="threat_actor"
+            actor="threat_actor",
         )
 
         threat_state.last_action = "Evasive maneuver"
@@ -377,17 +355,17 @@ class ThreatResponseEngine:
             "threat_id": threat_actor.id,
             "action": "evasion",
             "detection_level": threat_state.detection_level,
-            "events": [event]
+            "events": [event],
         }
 
-    def _find_threat_actor(self, organization: Organization, threat_id: str) -> Optional[ThreatActor]:
+    def _find_threat_actor(self, organization: Organization, threat_id: str) -> ThreatActor | None:
         """Find a threat actor by ID in the organization."""
         for threat in organization.threat_actors:
             if threat.id == threat_id:
                 return threat
         return None
 
-    def get_threat_status_summary(self, game_state: GameState) -> Dict[str, int]:
+    def get_threat_status_summary(self, game_state: GameState) -> dict[str, int]:
         """
         Get a summary of threat actor statuses.
 
@@ -402,7 +380,7 @@ class ThreatResponseEngine:
             "contained": 0,
             "eliminated": 0,
             "dormant": 0,
-            "total": len(game_state.organization.threat_actors)
+            "total": len(game_state.organization.threat_actors),
         }
 
         for state in game_state.threat_states.values():

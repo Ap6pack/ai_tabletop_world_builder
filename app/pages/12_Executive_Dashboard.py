@@ -13,16 +13,19 @@ Full-page dashboard showing stock impact, customer churn, regulatory risk,
 media exposure, notification obligations, and recovery projections.
 Works in both single-player and multi-team exercise modes.
 """
-import streamlit as st
-import requests
-import sys
+
 import os
+import sys
+
+import requests
+import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 try:
     import plotly.graph_objects as go
+
     PLOTLY_AVAILABLE = True
 except ImportError:
     PLOTLY_AVAILABLE = False
@@ -51,10 +54,7 @@ if not game_state and exercise_id:
         pass
 
 if not game_state:
-    st.warning(
-        "No active game session or exercise found. "
-        "Start a War Game or join an Exercise first."
-    )
+    st.warning("No active game session or exercise found. Start a War Game or join an Exercise first.")
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🎮 War Game", use_container_width=True):
@@ -123,13 +123,17 @@ with left_col:
         values = [downtime_cost, data_loss_cost, compliance_total, reputation_damage]
         colors = ["#FF6B6B", "#FFA07A", "#FFD700", "#87CEEB"]
 
-        fig = go.Figure(data=[go.Pie(
-            labels=labels,
-            values=values,
-            hole=0.4,
-            marker_colors=colors,
-            textinfo="label+percent",
-        )])
+        fig = go.Figure(
+            data=[
+                go.Pie(
+                    labels=labels,
+                    values=values,
+                    hole=0.4,
+                    marker_colors=colors,
+                    textinfo="label+percent",
+                )
+            ]
+        )
         fig.update_layout(
             title="Cost Distribution",
             height=350,
@@ -195,10 +199,7 @@ st.markdown("### ⏱️ Key Decision Points")
 timeline = game_state.get("incident_timeline", [])
 if timeline:
     # Show only critical/high severity events and player actions
-    key_events = [
-        e for e in timeline
-        if e.get("severity") in ("critical", "high") or e.get("actor") == "player"
-    ]
+    key_events = [e for e in timeline if e.get("severity") in ("critical", "high") or e.get("actor") == "player"]
     if key_events:
         for event in key_events[-15:]:
             sev = event.get("severity", "info")
@@ -206,8 +207,7 @@ if timeline:
             actor = event.get("actor", "system")
             actor_tag = "👤" if actor == "player" else "⚡"
             st.markdown(
-                f"{icon} {actor_tag} **{event.get('event_type', '').title()}** — "
-                f"{event.get('description', '')}"
+                f"{icon} {actor_tag} **{event.get('event_type', '').title()}** — {event.get('description', '')}"
             )
     else:
         st.info("No critical events recorded yet.")
@@ -225,6 +225,5 @@ with status_col:
     st.metric("Game Status", f"{status_icon} {status.title()}")
 
 # Refresh button
-if game_state.get("status") == "in-progress":
-    if st.button("🔄 Refresh Dashboard"):
-        st.rerun()
+if game_state.get("status") == "in-progress" and st.button("🔄 Refresh Dashboard"):
+    st.rerun()

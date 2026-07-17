@@ -7,52 +7,65 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Tests for GameOrchestrator — game session coordination."""
+
 import os
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
 from api.models.schemas import (
     Department,
     GameResponse,
-    GameState,
-    IncidentEvent,
-    Inventory,
     Organization,
     System,
     ThreatActor,
 )
 from api.services.game_orchestrator import GameOrchestrator
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_system():
     return System(
-        id="sys-1", name="Web Server", description="Primary web server",
-        type="server", os="Linux", services=["nginx"],
+        id="sys-1",
+        name="Web Server",
+        description="Primary web server",
+        type="server",
+        os="Linux",
+        services=["nginx"],
         criticality="high",
     )
 
 
 def _make_org():
     return Organization(
-        id="org-1", name="Test Corp", description="Test",
-        industry="Technology", size="medium",
-        departments=[Department(
-            id="d1", name="IT", description="IT",
-            business_function="Tech",
-            systems=[_make_system()],
-            data_classification="internal",
-        )],
-        threat_actors=[ThreatActor(
-            id="ta-1", name="TestActor", description="Test threat",
-            motivation="Financial", sophistication="organized-crime",
-            attack_techniques=["T1566"],
-        )],
+        id="org-1",
+        name="Test Corp",
+        description="Test",
+        industry="Technology",
+        size="medium",
+        departments=[
+            Department(
+                id="d1",
+                name="IT",
+                description="IT",
+                business_function="Tech",
+                systems=[_make_system()],
+                data_classification="internal",
+            )
+        ],
+        threat_actors=[
+            ThreatActor(
+                id="ta-1",
+                name="TestActor",
+                description="Test threat",
+                motivation="Financial",
+                sophistication="organized-crime",
+                attack_techniques=["T1566"],
+            )
+        ],
         security_posture="developing",
         compliance_frameworks=[],
     )
@@ -60,9 +73,12 @@ def _make_org():
 
 @pytest.fixture
 def orch(tmp_path):
-    """GameOrchestrator with session service pointed at temp dir."""
-    with patch("api.services.game_orchestrator.LLMProviderFactory"):
-        go = GameOrchestrator()
+    """GameOrchestrator with session service pointed at temp dir.
+
+    The autouse ``_no_real_llm`` fixture (see conftest) stubs the provider
+    factory, so the orchestrator constructs without an API key or network.
+    """
+    go = GameOrchestrator()
     go.session_service.sessions_dir = str(tmp_path / "sessions")
     os.makedirs(go.session_service.sessions_dir, exist_ok=True)
     return go
@@ -71,6 +87,7 @@ def orch(tmp_path):
 # ---------------------------------------------------------------------------
 # start_new_game
 # ---------------------------------------------------------------------------
+
 
 class TestStartNewGame:
     @pytest.mark.asyncio
@@ -123,17 +140,20 @@ class TestStartNewGame:
 # process_player_action
 # ---------------------------------------------------------------------------
 
+
 class TestProcessPlayerAction:
     @pytest.mark.asyncio
     async def test_process_action_basic(self, orch):
         orch.game_master.start_game = AsyncMock(return_value="Start")
-        orch.game_master.process_action = AsyncMock(return_value={
-            "narrative": "You investigate the logs...",
-            "new_events": [],
-            "inventory_changes": {},
-            "score_change": {"points": 10, "reason": "Good investigation"},
-            "hints": ["Check the firewall"],
-        })
+        orch.game_master.process_action = AsyncMock(
+            return_value={
+                "narrative": "You investigate the logs...",
+                "new_events": [],
+                "inventory_changes": {},
+                "score_change": {"points": 10, "reason": "Good investigation"},
+                "hints": ["Check the firewall"],
+            }
+        )
 
         response = await orch.start_new_game(organization=_make_org())
         sid = response.game_state.session_id
@@ -163,6 +183,7 @@ class TestProcessPlayerAction:
 # ---------------------------------------------------------------------------
 # get_hint / get_session_state
 # ---------------------------------------------------------------------------
+
 
 class TestHintAndState:
     @pytest.mark.asyncio
@@ -194,6 +215,7 @@ class TestHintAndState:
 # ---------------------------------------------------------------------------
 # end_game / complete_objective
 # ---------------------------------------------------------------------------
+
 
 class TestEndGame:
     @pytest.mark.asyncio

@@ -9,13 +9,15 @@
 """
 Factory for creating LLM providers.
 """
-from typing import Optional, Literal
-from .base import BaseLLMProvider
-from .openai_provider import OpenAIProvider
-from .anthropic_provider import AnthropicProvider
-from .ollama_provider import OllamaProvider
+
+from typing import Literal
+
 from config import settings
 
+from .anthropic_provider import AnthropicProvider
+from .base import BaseLLMProvider
+from .ollama_provider import OllamaProvider
+from .openai_provider import OpenAIProvider
 
 ProviderType = Literal["openai", "anthropic", "ollama"]
 
@@ -24,10 +26,7 @@ class LLMProviderFactory:
     """Factory for creating LLM provider instances."""
 
     @staticmethod
-    def create_provider(
-        provider_type: Optional[ProviderType] = None,
-        **kwargs
-    ) -> BaseLLMProvider:
+    def create_provider(provider_type: ProviderType | None = None, **kwargs) -> BaseLLMProvider:
         """
         Create an LLM provider instance.
 
@@ -120,15 +119,7 @@ class LLMProviderFactory:
             return False
 
         # Check for common placeholder values
-        placeholders = [
-            "your_",
-            "insert_",
-            "add_your_",
-            "replace_",
-            "paste_",
-            "api_key_here",
-            "key_here"
-        ]
+        placeholders = ["your_", "insert_", "add_your_", "replace_", "paste_", "api_key_here", "key_here"]
 
         key_lower = key.lower()
         return not any(placeholder in key_lower for placeholder in placeholders)

@@ -8,34 +8,45 @@
 # For inquiries, contact: contact@veritasandaequitas.com
 # Copyright (c) 2026 Veritas Aequitas Holdings LLC. All rights reserved.
 """Tests for the Executive Dashboard metrics service."""
+
 import pytest
-from datetime import datetime, timezone
 
-from api.services.executive_dashboard_service import ExecutiveDashboardService
 from api.models.schemas import (
-    GameState, Organization, Department, BusinessImpact, ExecutiveMetrics,
+    BusinessImpact,
+    Department,
+    ExecutiveMetrics,
+    GameState,
     Inventory,
+    Organization,
 )
-
+from api.services.executive_dashboard_service import ExecutiveDashboardService
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def make_org(industry="Technology", **overrides):
     """Factory for minimal Organization instances."""
     defaults = dict(
-        id="org-1", name="Test Corp", description="Test",
-        industry=industry, size="medium",
+        id="org-1",
+        name="Test Corp",
+        description="Test",
+        industry=industry,
+        size="medium",
         departments=[
             Department(
-                id="d1", name="IT", description="IT",
-                business_function="Tech", systems=[],
+                id="d1",
+                name="IT",
+                description="IT",
+                business_function="Tech",
+                systems=[],
                 data_classification="internal",
                 compliance_requirements=[],
             )
         ],
-        threat_actors=[], security_posture="developing",
+        threat_actors=[],
+        security_posture="developing",
         compliance_frameworks=[],
     )
     defaults.update(overrides)
@@ -46,9 +57,12 @@ def make_game_state(business_impact=None, industry="Technology", **overrides):
     """Factory for minimal GameState instances."""
     org = make_org(industry=industry)
     defaults = dict(
-        session_id="test-session", organization=org,
-        current_scenario="test", player_role="mixed",
-        inventory=Inventory(), status="in-progress",
+        session_id="test-session",
+        organization=org,
+        current_scenario="test",
+        player_role="mixed",
+        inventory=Inventory(),
+        status="in-progress",
         business_impact=business_impact,
     )
     defaults.update(overrides)
@@ -58,9 +72,13 @@ def make_game_state(business_impact=None, industry="Technology", **overrides):
 def make_impact(**overrides):
     """Factory for BusinessImpact with safe defaults."""
     defaults = dict(
-        total_cost=0.0, downtime_cost=0.0, data_loss_cost=0.0,
-        records_compromised=0, downtime_hours=0.0,
-        reputation_damage=0.0, compliance_penalties={},
+        total_cost=0.0,
+        downtime_cost=0.0,
+        data_loss_cost=0.0,
+        records_compromised=0,
+        downtime_hours=0.0,
+        reputation_damage=0.0,
+        compliance_penalties={},
     )
     defaults.update(overrides)
     return BusinessImpact(**defaults)
@@ -70,6 +88,7 @@ def make_impact(**overrides):
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def svc():
     return ExecutiveDashboardService()
@@ -78,6 +97,7 @@ def svc():
 # ---------------------------------------------------------------------------
 # Stock impact
 # ---------------------------------------------------------------------------
+
 
 def test_calculate_stock_impact_financial(svc):
     """Financial sector has higher base stock impact (5.5%)."""
@@ -103,6 +123,7 @@ def test_calculate_stock_impact_low(svc):
 # Customer churn
 # ---------------------------------------------------------------------------
 
+
 def test_customer_churn_healthcare(svc):
     """Healthcare base churn rate is 6.7%."""
     impact = make_impact(records_compromised=50)
@@ -125,6 +146,7 @@ def test_customer_churn_scales_with_records(svc):
 # Regulatory risk
 # ---------------------------------------------------------------------------
 
+
 def test_regulatory_risk_low(svc):
     """No records, no penalties -> low risk."""
     impact = make_impact()
@@ -146,6 +168,7 @@ def test_regulatory_risk_critical(svc):
 # Media exposure
 # ---------------------------------------------------------------------------
 
+
 def test_media_exposure_none(svc):
     """Small breach should have no media exposure."""
     impact = make_impact(total_cost=1_000, records_compromised=5)
@@ -164,12 +187,16 @@ def test_media_exposure_international(svc):
 # Aggregate metrics
 # ---------------------------------------------------------------------------
 
+
 def test_calculate_executive_metrics(svc):
     """Full metrics calculation produces a populated ExecutiveMetrics."""
     impact = make_impact(
-        total_cost=5_000_000, downtime_cost=1_000_000,
-        data_loss_cost=2_000_000, records_compromised=50_000,
-        downtime_hours=48, reputation_damage=500_000,
+        total_cost=5_000_000,
+        downtime_cost=1_000_000,
+        data_loss_cost=2_000_000,
+        records_compromised=50_000,
+        downtime_hours=48,
+        reputation_damage=500_000,
         compliance_penalties={"GDPR": 200_000},
     )
     gs = make_game_state(business_impact=impact)
@@ -187,19 +214,28 @@ def test_calculate_executive_metrics(svc):
 # Board report
 # ---------------------------------------------------------------------------
 
+
 def test_generate_board_report(svc):
     """Board report contains all required top-level sections."""
     impact = make_impact(
-        total_cost=2_000_000, records_compromised=10_000,
-        downtime_hours=24, compliance_penalties={"PCI-DSS": 100_000},
+        total_cost=2_000_000,
+        records_compromised=10_000,
+        downtime_hours=24,
+        compliance_penalties={"PCI-DSS": 100_000},
     )
     gs = make_game_state(business_impact=impact)
     report = svc.generate_board_report(gs)
 
     expected_keys = {
-        "report_generated_at", "organization", "industry",
-        "incident_summary", "financial_impact", "customer_impact",
-        "regulatory_status", "recovery_timeline", "recommendations",
+        "report_generated_at",
+        "organization",
+        "industry",
+        "incident_summary",
+        "financial_impact",
+        "customer_impact",
+        "regulatory_status",
+        "recovery_timeline",
+        "recommendations",
     }
     assert expected_keys.issubset(report.keys())
     assert len(report["recommendations"]) >= 3

@@ -10,16 +10,16 @@
 Authentication service for user management with Argon2id password hashing
 and JWT token generation/verification.
 """
+
 import json
 import os
 import re
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional
+from datetime import UTC, datetime, timedelta
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 
 from api.utils.logger import setup_logger
 from config.settings import settings
@@ -46,7 +46,7 @@ class AuthService:
         email: str,
         password: str,
         display_name: str = "",
-    ) -> Dict:
+    ) -> dict:
         """
         Register a new user.
 
@@ -77,19 +77,19 @@ class AuthService:
         for filename in os.listdir(self.users_dir):
             if filename.endswith(".json"):
                 filepath = os.path.join(self.users_dir, filename)
-                with open(filepath, "r") as f:
+                with open(filepath) as f:
                     data = json.load(f)
                 if data.get("email") == email:
                     raise ValueError(f"Email '{email}' is already registered")
 
         user_id = str(uuid.uuid4())
-        user_data: Dict = {
+        user_data: dict = {
             "id": user_id,
             "username": username,
             "email": email,
             "display_name": display_name or username,
             "hashed_password": self._hash_password(password),
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "role": "user",
             "is_active": True,
         }
@@ -100,7 +100,7 @@ class AuthService:
         safe_copy = {k: v for k, v in user_data.items() if k != "hashed_password"}
         return safe_copy
 
-    def authenticate(self, username: str, password: str) -> Optional[Dict]:
+    def authenticate(self, username: str, password: str) -> dict | None:
         """
         Authenticate a user by username and password.
 
@@ -131,9 +131,7 @@ class AuthService:
         safe_copy = {k: v for k, v in full_user.items() if k != "hashed_password"}
         return safe_copy
 
-    def create_access_token(
-        self, user_id: str, username: str, role: str = "user"
-    ) -> str:
+    def create_access_token(self, user_id: str, username: str, role: str = "user") -> str:
         """
         Create a JWT access token.
 
@@ -145,7 +143,7 @@ class AuthService:
         Returns:
             Encoded JWT string.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         payload = {
             "sub": user_id,
             "username": username,
@@ -165,7 +163,7 @@ class AuthService:
         Returns:
             Encoded JWT string.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         payload = {
             "sub": user_id,
             "type": "refresh",
@@ -174,7 +172,7 @@ class AuthService:
         }
         return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
 
-    def verify_token(self, token: str) -> Optional[Dict]:
+    def verify_token(self, token: str) -> dict | None:
         """
         Decode and verify a JWT token.
 
@@ -185,15 +183,13 @@ class AuthService:
             Decoded payload dict, or None if invalid/expired.
         """
         try:
-            payload = jwt.decode(
-                token, self.secret_key, algorithms=[self.algorithm]
-            )
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             return payload
         except JWTError as exc:
             logger.debug("Token verification failed: %s", exc)
             return None
 
-    def get_user(self, user_id: str) -> Optional[Dict]:
+    def get_user(self, user_id: str) -> dict | None:
         """
         Load a user by ID, excluding the hashed password.
 
@@ -209,7 +205,7 @@ class AuthService:
         safe_copy = {k: v for k, v in user_data.items() if k != "hashed_password"}
         return safe_copy
 
-    def get_user_by_username(self, username: str) -> Optional[Dict]:
+    def get_user_by_username(self, username: str) -> dict | None:
         """
         Search for a user by username.
 
@@ -223,18 +219,16 @@ class AuthService:
             if filename.endswith(".json"):
                 filepath = os.path.join(self.users_dir, filename)
                 try:
-                    with open(filepath, "r") as f:
+                    with open(filepath) as f:
                         data = json.load(f)
                     if data.get("username") == username:
-                        safe_copy = {
-                            k: v for k, v in data.items() if k != "hashed_password"
-                        }
+                        safe_copy = {k: v for k, v in data.items() if k != "hashed_password"}
                         return safe_copy
-                except (json.JSONDecodeError, IOError):
+                except (OSError, json.JSONDecodeError):
                     continue
         return None
 
-    def update_user(self, user_id: str, updates: Dict) -> Optional[Dict]:
+    def update_user(self, user_id: str, updates: dict) -> dict | None:
         """
         Update user fields (password changes are not allowed via this method).
 
@@ -259,9 +253,7 @@ class AuthService:
         safe_copy = {k: v for k, v in user_data.items() if k != "hashed_password"}
         return safe_copy
 
-    def change_password(
-        self, user_id: str, old_password: str, new_password: str
-    ) -> bool:
+    def change_password(self, user_id: str, old_password: str, new_password: str) -> bool:
         """
         Change a user's password after verifying the old one.
 
@@ -289,25 +281,23 @@ class AuthService:
         logger.info("Password changed for user: %s", user_id)
         return True
 
-    def list_users(self) -> List[Dict]:
+    def list_users(self) -> list[dict]:
         """
         Return all users without passwords.
 
         Returns:
             List of user dicts with hashed_password excluded.
         """
-        users: List[Dict] = []
+        users: list[dict] = []
         for filename in os.listdir(self.users_dir):
             if filename.endswith(".json"):
                 filepath = os.path.join(self.users_dir, filename)
                 try:
-                    with open(filepath, "r") as f:
+                    with open(filepath) as f:
                         data = json.load(f)
-                    safe_copy = {
-                        k: v for k, v in data.items() if k != "hashed_password"
-                    }
+                    safe_copy = {k: v for k, v in data.items() if k != "hashed_password"}
                     users.append(safe_copy)
-                except (json.JSONDecodeError, IOError):
+                except (OSError, json.JSONDecodeError):
                     continue
         return users
 
@@ -322,20 +312,20 @@ class AuthService:
         except VerifyMismatchError:
             return False
 
-    def _save_user(self, user_data: Dict) -> None:
+    def _save_user(self, user_data: dict) -> None:
         """Save user data to a JSON file."""
         filepath = os.path.join(self.users_dir, f"{user_data['id']}.json")
         with open(filepath, "w") as f:
             json.dump(user_data, f, indent=2, default=str)
 
-    def _load_user(self, user_id: str) -> Optional[Dict]:
+    def _load_user(self, user_id: str) -> dict | None:
         """Load user data from a JSON file."""
         filepath = os.path.join(self.users_dir, f"{user_id}.json")
         if not os.path.exists(filepath):
             return None
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError) as exc:
+        except (OSError, json.JSONDecodeError) as exc:
             logger.error("Failed to load user %s: %s", user_id, exc)
             return None

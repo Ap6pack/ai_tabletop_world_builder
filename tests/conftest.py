@@ -7,19 +7,22 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Root conftest for pytest — shared fixtures and collection config."""
-from datetime import datetime, timezone
-from pathlib import Path
+
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from api.models.exercise_models import (
+    ExerciseState,
+    ExerciseTeam,
+)
 from api.models.schemas import (
     BusinessImpact,
     Department,
     GameState,
     IncidentEvent,
     Inventory,
-    Objective,
     Organization,
     System,
     SystemState,
@@ -27,15 +30,6 @@ from api.models.schemas import (
     ThreatActorState,
     Vulnerability,
 )
-from api.models.exercise_models import (
-    ExerciseEvent,
-    ExerciseState,
-    ExerciseTeam,
-    Inject,
-    InjectTrigger,
-    InjectType,
-)
-
 
 # ============================================================================
 # Hermeticity guard
@@ -169,7 +163,7 @@ def sample_threat_actor_state():
         systems_compromised=[],
         detection_level=30,
         aggression_level=60,
-        last_update=datetime.now(timezone.utc),
+        last_update=datetime.now(UTC),
     )
 
 
@@ -184,7 +178,7 @@ def sample_game_state(sample_organization, sample_inventory, sample_threat_actor
         inventory=sample_inventory,
         incident_timeline=[
             IncidentEvent(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 event_type="detection",
                 description="Suspicious login detected",
                 severity="high",
@@ -198,7 +192,7 @@ def sample_game_state(sample_organization, sample_inventory, sample_threat_actor
                 system_id="sys-web-1",
                 status="online",
                 health=100,
-                last_update=datetime.now(timezone.utc),
+                last_update=datetime.now(UTC),
                 affected_services=[],
             )
         },

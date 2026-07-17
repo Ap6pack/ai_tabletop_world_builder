@@ -8,17 +8,18 @@
 # For inquiries, contact: contact@veritasandaequitas.com
 # Copyright (c) 2026 Veritas Aequitas Holdings LLC. All rights reserved.
 """Tests for the file-backed exercise state store."""
-import pytest
-import tempfile
+
 from pathlib import Path
 
-from api.services.exercise_store import ExerciseStore
-from api.models.exercise_models import ExerciseState, ExerciseTeam
+import pytest
 
+from api.models.exercise_models import ExerciseState
+from api.services.exercise_store import ExerciseStore
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def make_state(name="Test Exercise", phase="setup", **overrides):
     """Factory for minimal ExerciseState instances."""
@@ -30,6 +31,7 @@ def make_state(name="Test Exercise", phase="setup", **overrides):
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def store(tmp_path):
@@ -45,6 +47,7 @@ def store(tmp_path):
 # ---------------------------------------------------------------------------
 # Basic CRUD
 # ---------------------------------------------------------------------------
+
 
 def test_save_and_get(store):
     """Saved state is retrievable by exercise_id."""
@@ -66,6 +69,7 @@ def test_get_not_found(store):
 # Versioning
 # ---------------------------------------------------------------------------
 
+
 def test_version_increments(store):
     """Each save_exercise call bumps the version by one."""
     state = make_state()
@@ -85,6 +89,7 @@ def test_version_increments(store):
 # Deletion
 # ---------------------------------------------------------------------------
 
+
 def test_delete_exercise(store):
     """Deleting an exercise removes it from storage."""
     state = make_state()
@@ -99,6 +104,7 @@ def test_delete_exercise(store):
 # ---------------------------------------------------------------------------
 # Listing
 # ---------------------------------------------------------------------------
+
 
 def test_list_exercises(store):
     """list_exercises returns summaries of all saved exercises."""
@@ -126,6 +132,7 @@ def test_list_filter_by_phase(store):
 # Archiving
 # ---------------------------------------------------------------------------
 
+
 def test_archive_exercise(store):
     """Archiving moves the exercise out of primary storage."""
     state = make_state()
@@ -141,6 +148,7 @@ def test_archive_exercise(store):
 # ---------------------------------------------------------------------------
 # Version polling
 # ---------------------------------------------------------------------------
+
 
 def test_get_exercise_version(store):
     """get_exercise_version returns the current version without full load."""

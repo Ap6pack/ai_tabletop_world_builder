@@ -10,12 +10,13 @@
 Test script for audit log service.
 Tests comprehensive logging of policy checks, violations, and compliance reporting.
 """
-import asyncio
-import sys
+
 import shutil
+import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
-sys.path.insert(0, '.')
+
+sys.path.insert(0, ".")
 
 from api.services.audit_log_service import AuditLogService
 
@@ -43,7 +44,7 @@ def test_audit_log():
             policy_level="educational",
             result="allowed",
             violations=[],
-            session_id="sess-001"
+            session_id="sess-001",
         )
         if log_entry.event_type == "policy_check" and log_entry.result == "allowed":
             print("✅ PASS - Policy check logged")
@@ -62,7 +63,7 @@ def test_audit_log():
             policy_level="educational",
             result="blocked",
             violations=["credentials: password"],
-            session_id="sess-001"
+            session_id="sess-001",
         )
         if log_entry.event_type == "policy_check" and log_entry.result == "blocked":
             print("✅ PASS - Blocked action logged")
@@ -82,7 +83,7 @@ def test_audit_log():
             policy_level="educational",
             action_taken="Action blocked and user notified",
             session_id="sess-001",
-            user_id="user-123"
+            user_id="user-123",
         )
         if log_entry.event_type == "violation" and log_entry.severity == "critical":
             print("✅ PASS - Violation logged")
@@ -102,7 +103,7 @@ def test_audit_log():
             matched_patterns=["api_key", "openai_key"],
             policy_level="educational",
             result="sanitized",
-            session_id="sess-001"
+            session_id="sess-001",
         )
         if log_entry.event_type == "filter" and log_entry.result == "sanitized":
             print("✅ PASS - Filter event logged")
@@ -122,7 +123,7 @@ def test_audit_log():
             sanitized_content=sanitized,
             violations=["password", "api_key"],
             policy_level="educational",
-            session_id="sess-002"
+            session_id="sess-002",
         )
         if log_entry.event_type == "sanitization":
             print("✅ PASS - Sanitization logged")
@@ -135,10 +136,7 @@ def test_audit_log():
 
         # Test 6: Retrieve logs
         print("Test 6: Retrieve logs with filters")
-        logs = service.get_logs(
-            session_id="sess-001",
-            limit=10
-        )
+        logs = service.get_logs(session_id="sess-001", limit=10)
         if len(logs) >= 3:  # Should have at least 3 logs from sess-001
             print(f"✅ PASS - Retrieved {len(logs)} logs")
             for i, log in enumerate(logs[:3], 1):
@@ -151,35 +149,29 @@ def test_audit_log():
 
         # Test 7: Retrieve logs by event type
         print("Test 7: Filter logs by event type")
-        violation_logs = service.get_logs(
-            event_type="violation",
-            limit=10
-        )
+        violation_logs = service.get_logs(event_type="violation", limit=10)
         if len(violation_logs) >= 1:
             print(f"✅ PASS - Retrieved {len(violation_logs)} violation logs")
             passed += 1
         else:
-            print(f"❌ FAIL - No violation logs found")
+            print("❌ FAIL - No violation logs found")
             failed += 1
         print()
 
         # Test 8: Retrieve logs by severity
         print("Test 8: Filter logs by severity")
-        critical_logs = service.get_logs(
-            severity="critical",
-            limit=10
-        )
+        critical_logs = service.get_logs(severity="critical", limit=10)
         if len(critical_logs) >= 1:
             print(f"✅ PASS - Retrieved {len(critical_logs)} critical logs")
             passed += 1
         else:
-            print(f"❌ FAIL - No critical logs found")
+            print("❌ FAIL - No critical logs found")
             failed += 1
         print()
 
         # Test 9: Generate compliance report
         print("Test 9: Generate compliance report")
-        end_date = datetime.now(timezone.utc)
+        end_date = datetime.now(UTC)
         start_date = end_date - timedelta(days=1)
         report = service.generate_compliance_report(start_date, end_date)
 
@@ -190,10 +182,12 @@ def test_audit_log():
             print(f"   Violation rate: {report.violation_rate}%")
             print(f"   Policy levels: {list(report.policy_level_distribution.keys())}")
             if report.top_violation_patterns:
-                print(f"   Top violation: {report.top_violation_patterns[0]['pattern']} ({report.top_violation_patterns[0]['count']} times)")
+                print(
+                    f"   Top violation: {report.top_violation_patterns[0]['pattern']} ({report.top_violation_patterns[0]['count']} times)"
+                )
             passed += 1
         else:
-            print(f"❌ FAIL - Report has no data")
+            print("❌ FAIL - Report has no data")
             failed += 1
         print()
 
@@ -201,14 +195,10 @@ def test_audit_log():
         print("Test 10: Verify content hashing for privacy")
         # Two logs with same content should have same hash
         log1 = service.log_policy_check(
-            content="Test content for hashing",
-            policy_level="educational",
-            result="allowed"
+            content="Test content for hashing", policy_level="educational", result="allowed"
         )
         log2 = service.log_policy_check(
-            content="Test content for hashing",
-            policy_level="educational",
-            result="allowed"
+            content="Test content for hashing", policy_level="educational", result="allowed"
         )
         if log1.content_hash == log2.content_hash:
             print("✅ PASS - Content hashing consistent")
@@ -223,14 +213,15 @@ def test_audit_log():
         print("Test 11: Verify log file creation and format")
         log_file = service.current_log_file
         if log_file.exists():
-            with open(log_file, 'r') as f:
+            with open(log_file) as f:
                 lines = f.readlines()
                 if len(lines) > 0:
                     # Try to parse first line as JSON
                     import json
+
                     try:
                         log_data = json.loads(lines[0])
-                        if 'id' in log_data and 'timestamp' in log_data:
+                        if "id" in log_data and "timestamp" in log_data:
                             print("✅ PASS - Log file format valid (JSONL)")
                             print(f"   Log file: {log_file.name}")
                             print(f"   Entries: {len(lines)}")
@@ -253,7 +244,7 @@ def test_audit_log():
         print("Test 12: Test log cleanup (dry run)")
         # Don't actually delete anything in test, just verify the method works
         deleted = service.cleanup_old_logs(retention_days=365)  # High number won't delete test logs
-        print(f"✅ PASS - Cleanup method executed")
+        print("✅ PASS - Cleanup method executed")
         print(f"   Files deleted: {deleted}")
         passed += 1
         print()

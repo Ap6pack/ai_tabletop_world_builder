@@ -10,10 +10,12 @@
 Test script for violation handler service.
 Tests violation handling, escalation, and user education.
 """
-import sys
+
 import shutil
+import sys
 from pathlib import Path
-sys.path.insert(0, '.')
+
+sys.path.insert(0, ".")
 
 from api.services.violation_handler_service import ViolationHandlerService
 
@@ -42,7 +44,7 @@ def test_violation_handler():
             severity="low",
             policy_level="defensive",
             user_id="user-001",
-            session_id="sess-001"
+            session_id="sess-001",
         )
         if response.action == "warn" and not response.requires_review:
             print("✅ PASS - Low severity handled with warning")
@@ -62,7 +64,7 @@ def test_violation_handler():
             severity="low",
             policy_level="defensive",
             user_id="user-001",
-            session_id="sess-001"
+            session_id="sess-001",
         )
         if response.action == "warn":
             print("✅ PASS - Repeat low violation escalated to stronger warning")
@@ -81,7 +83,7 @@ def test_violation_handler():
             severity="medium",
             policy_level="educational",
             user_id="user-002",
-            session_id="sess-002"
+            session_id="sess-002",
         )
         if response.action == "block":
             print("✅ PASS - Medium severity blocked")
@@ -101,7 +103,7 @@ def test_violation_handler():
             severity="medium",
             policy_level="educational",
             user_id="user-002",
-            session_id="sess-002"
+            session_id="sess-002",
         )
         if response.action == "escalate" and response.requires_review:
             print("✅ PASS - Repeat medium violation escalated")
@@ -120,7 +122,7 @@ def test_violation_handler():
             severity="high",
             policy_level="educational",
             user_id="user-003",
-            session_id="sess-003"
+            session_id="sess-003",
         )
         if response.action == "escalate" and response.requires_review:
             print("✅ PASS - High severity escalated immediately")
@@ -139,7 +141,7 @@ def test_violation_handler():
             severity="critical",
             policy_level="educational",
             user_id="user-004",
-            session_id="sess-004"
+            session_id="sess-004",
         )
         if response.action == "escalate" and response.requires_review:
             print("✅ PASS - Critical violation escalated")
@@ -148,7 +150,7 @@ def test_violation_handler():
                 print("   ✓ Message mentions severity")
             passed += 1
         else:
-            print(f"❌ FAIL - Expected escalate with review")
+            print("❌ FAIL - Expected escalate with review")
             failed += 1
         print()
 
@@ -159,7 +161,7 @@ def test_violation_handler():
             violation_type="exploit_code",
             severity="high",
             policy_level="educational",
-            user_id="user-005"
+            user_id="user-005",
         )
         if "exploit" in response.educational_content.lower():
             print("✅ PASS - Educational content relevant to violation type")
@@ -177,7 +179,7 @@ def test_violation_handler():
             violation_type="credentials",
             severity="medium",
             policy_level="educational",
-            user_id="user-006"
+            user_id="user-006",
         )
         if response.suggested_alternative and len(response.suggested_alternative) > 0:
             print("✅ PASS - Alternative suggestion provided")
@@ -204,10 +206,7 @@ def test_violation_handler():
 
         # Test 10: Session-specific metrics
         print("Test 10: Session-specific violation metrics")
-        metrics = service.get_violation_metrics(
-            user_id="user-002",
-            session_id="sess-002"
-        )
+        metrics = service.get_violation_metrics(user_id="user-002", session_id="sess-002")
         if metrics["total_violations"] > 0:
             print("✅ PASS - Session filtering works")
             print(f"   Session violations: {metrics['total_violations']}")
@@ -250,7 +249,7 @@ def test_violation_handler():
                 violation_type=violation_type,
                 severity="medium",
                 policy_level="educational",
-                user_id=f"user-test-{violation_type}"
+                user_id=f"user-test-{violation_type}",
             )
             if expected_keyword.lower() in response.educational_content.lower():
                 type_matches += 1

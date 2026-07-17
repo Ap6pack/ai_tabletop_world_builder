@@ -9,20 +9,18 @@
 """
 Streamlit Scenario Library Page - Browse, rate, share, and fork scenarios.
 """
-import streamlit as st
-import requests
-import sys
+
 import os
+import sys
+
+import requests
+import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
-st.set_page_config(
-    page_title="Scenario Library",
-    page_icon="",
-    layout="wide"
-)
+st.set_page_config(page_title="Scenario Library", page_icon="", layout="wide")
 
 st.title("Scenario Library")
 st.markdown("Browse, rate, and fork community cybersecurity scenarios")
@@ -32,9 +30,7 @@ st.markdown("---")
 col_search, col_category, col_difficulty = st.columns([3, 1, 1])
 
 with col_search:
-    search_query = st.text_input(
-        "Search scenarios", placeholder="e.g., ransomware, APT, healthcare..."
-    )
+    search_query = st.text_input("Search scenarios", placeholder="e.g., ransomware, APT, healthcare...")
 
 with col_category:
     category_filter = st.selectbox(
@@ -90,71 +86,76 @@ else:
             if s_idx >= len(scenarios):
                 break
             scenario = scenarios[s_idx]
-            with col:
-                with st.container(border=True):
-                    name = scenario.get("name", "Untitled")
-                    diff = scenario.get("difficulty", "intermediate")
-                    db = {"beginner": "🟢 Beginner", "intermediate": "🟡 Intermediate",
-                          "advanced": "🟠 Advanced", "expert": "🔴 Expert"}
-                    st.markdown(f"**{name}**  &nbsp; {db.get(diff, diff.title())}")
-                    rating = scenario.get("rating", 0)
-                    filled = int(round(rating))
-                    stars = ("★" * filled) + ("☆" * (5 - filled))
-                    st.caption(f"{stars} {rating:.1f} ({scenario.get('rating_count', 0)} ratings) "
-                               f"| {scenario.get('category', 'N/A')} | {scenario.get('industry', 'N/A')}")
-                    desc = scenario.get("description", "")
-                    st.markdown(desc[:200] + ("..." if len(desc) > 200 else ""))
-                    tags = scenario.get("tags", [])
-                    if tags:
-                        st.caption(" ".join(f"`{t}`" for t in tags[:6]))
+            with col, st.container(border=True):
+                name = scenario.get("name", "Untitled")
+                diff = scenario.get("difficulty", "intermediate")
+                db = {
+                    "beginner": "🟢 Beginner",
+                    "intermediate": "🟡 Intermediate",
+                    "advanced": "🟠 Advanced",
+                    "expert": "🔴 Expert",
+                }
+                st.markdown(f"**{name}**  &nbsp; {db.get(diff, diff.title())}")
+                rating = scenario.get("rating", 0)
+                filled = int(round(rating))
+                stars = ("★" * filled) + ("☆" * (5 - filled))
+                st.caption(
+                    f"{stars} {rating:.1f} ({scenario.get('rating_count', 0)} ratings) "
+                    f"| {scenario.get('category', 'N/A')} | {scenario.get('industry', 'N/A')}"
+                )
+                desc = scenario.get("description", "")
+                st.markdown(desc[:200] + ("..." if len(desc) > 200 else ""))
+                tags = scenario.get("tags", [])
+                if tags:
+                    st.caption(" ".join(f"`{t}`" for t in tags[:6]))
 
-                    # Actions
-                    btn_cols = st.columns(3)
-                    scenario_id = scenario.get("id", "")
-                    with btn_cols[0]:
-                        if st.button(
-                            "View",
-                            key=f"view_{scenario_id}_{s_idx}",
-                            use_container_width=True,
-                        ):
-                            st.session_state["library_selected"] = scenario_id
-                    with btn_cols[1]:
-                        if st.button(
-                            "Fork",
-                            key=f"fork_{scenario_id}_{s_idx}",
-                            use_container_width=True,
-                        ):
-                            try:
-                                resp = requests.post(
-                                    f"{API_BASE_URL}/library/scenarios/{scenario_id}/fork",
-                                    json={"user_id": "local_user"},
-                                    timeout=DEFAULT_TIMEOUT,
-                                )
-                                if resp.status_code == 200:
-                                    st.success("Scenario forked!")
-                                    st.rerun()
-                                else:
-                                    st.error("Fork failed")
-                            except Exception as e:
-                                st.error(f"Error: {e}")
-                    with btn_cols[2]:
-                        user_rating = st.selectbox(
-                            "Rate",
-                            [0, 1, 2, 3, 4, 5],
-                            key=f"rate_{scenario_id}_{s_idx}",
-                            label_visibility="collapsed",
-                        )
-                        if user_rating > 0:
-                            try:
-                                resp = requests.post(
-                                    f"{API_BASE_URL}/library/scenarios/{scenario_id}/rate",
-                                    json={"rating": user_rating},
-                                    timeout=DEFAULT_TIMEOUT,
-                                )
-                                if resp.status_code == 200:
-                                    st.caption(f"Rated {user_rating}")
-                            except Exception:
-                                pass
+                # Actions
+                btn_cols = st.columns(3)
+                scenario_id = scenario.get("id", "")
+                with btn_cols[0]:
+                    if st.button(
+                        "View",
+                        key=f"view_{scenario_id}_{s_idx}",
+                        use_container_width=True,
+                    ):
+                        st.session_state["library_selected"] = scenario_id
+                with btn_cols[1]:
+                    if st.button(
+                        "Fork",
+                        key=f"fork_{scenario_id}_{s_idx}",
+                        use_container_width=True,
+                    ):
+                        try:
+                            resp = requests.post(
+                                f"{API_BASE_URL}/library/scenarios/{scenario_id}/fork",
+                                json={"user_id": "local_user"},
+                                timeout=DEFAULT_TIMEOUT,
+                            )
+                            if resp.status_code == 200:
+                                st.success("Scenario forked!")
+                                st.rerun()
+                            else:
+                                st.error("Fork failed")
+                        except Exception as e:
+                            st.error(f"Error: {e}")
+                with btn_cols[2]:
+                    user_rating = st.selectbox(
+                        "Rate",
+                        [0, 1, 2, 3, 4, 5],
+                        key=f"rate_{scenario_id}_{s_idx}",
+                        label_visibility="collapsed",
+                    )
+                    if user_rating > 0:
+                        try:
+                            resp = requests.post(
+                                f"{API_BASE_URL}/library/scenarios/{scenario_id}/rate",
+                                json={"rating": user_rating},
+                                timeout=DEFAULT_TIMEOUT,
+                            )
+                            if resp.status_code == 200:
+                                st.caption(f"Rated {user_rating}")
+                        except Exception:  # noqa: S110 — best-effort UI rating, failure is non-critical
+                            pass
 
 # --- Selected scenario detail view ---
 selected_id = st.session_state.get("library_selected")
@@ -202,9 +203,7 @@ st.markdown("### Pre-Built Templates")
 st.caption("Curated scenario templates ready for immediate use")
 
 try:
-    tpl_resp = requests.get(
-        f"{API_BASE_URL}/library/templates", timeout=DEFAULT_TIMEOUT
-    )
+    tpl_resp = requests.get(f"{API_BASE_URL}/library/templates", timeout=DEFAULT_TIMEOUT)
     if tpl_resp.status_code == 200:
         templates = tpl_resp.json().get("templates", [])
         if templates:
@@ -215,18 +214,16 @@ try:
                     if t_idx >= len(templates):
                         break
                     tpl = templates[t_idx]
-                    with tc:
-                        with st.container(border=True):
-                            st.markdown(f"**{tpl.get('name', 'Template')}**")
-                            diff = tpl.get("difficulty", "intermediate")
-                            db = {"beginner": "🟢", "intermediate": "🟡",
-                                  "advanced": "🟠", "expert": "🔴"}
-                            st.caption(f"{db.get(diff, '')} {diff.title()} | {tpl.get('category', 'N/A')}")
-                            desc = tpl.get("description", "")
-                            st.markdown(desc[:150] + ("..." if len(desc) > 150 else ""))
-                            tpl_tags = tpl.get("tags", [])
-                            if tpl_tags:
-                                st.caption(" ".join(f"`{t}`" for t in tpl_tags[:4]))
+                    with tc, st.container(border=True):
+                        st.markdown(f"**{tpl.get('name', 'Template')}**")
+                        diff = tpl.get("difficulty", "intermediate")
+                        db = {"beginner": "🟢", "intermediate": "🟡", "advanced": "🟠", "expert": "🔴"}
+                        st.caption(f"{db.get(diff, '')} {diff.title()} | {tpl.get('category', 'N/A')}")
+                        desc = tpl.get("description", "")
+                        st.markdown(desc[:150] + ("..." if len(desc) > 150 else ""))
+                        tpl_tags = tpl.get("tags", [])
+                        if tpl_tags:
+                            st.caption(" ".join(f"`{t}`" for t in tpl_tags[:4]))
         else:
             st.info("No templates available.")
     else:
@@ -251,5 +248,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("## About")
-    st.markdown("Discover, share, and fork community cybersecurity scenarios. "
-                "Categories: Incident Response, Threat Hunting, Compliance Drill.")
+    st.markdown(
+        "Discover, share, and fork community cybersecurity scenarios. "
+        "Categories: Incident Response, Threat Hunting, Compliance Drill."
+    )

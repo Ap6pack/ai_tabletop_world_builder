@@ -10,13 +10,14 @@
 Test script for content validator service.
 Tests post-generation validation with various content types.
 """
+
 import asyncio
 import sys
-sys.path.insert(0, '.')
+
+sys.path.insert(0, ".")
 import pytest
 
 from api.services.content_validator_service import ContentValidatorService
-from api.models import Organization, Department, System, Vulnerability, ThreatActor
 
 
 @pytest.mark.asyncio
@@ -47,7 +48,9 @@ async def test_content_validator():
 
     # Test 2: Narrative with credentials
     print("Test 2: Narrative with embedded credentials")
-    narrative_with_creds = "The attacker used API key sk-1234567890abcdefghijklmnopqrstuvwxyz1234567 to access the system."
+    narrative_with_creds = (
+        "The attacker used API key sk-1234567890abcdefghijklmnopqrstuvwxyz1234567 to access the system."
+    )
     result = await service.validate_narrative(narrative_with_creds, "educational")
     if not result.is_safe and len(result.violations) > 0:
         print(f"✅ PASS - Credentials detected: {result.violations}")
@@ -78,7 +81,7 @@ async def test_content_validator():
     if not result.is_safe and result.can_sanitize:
         sanitized = service.sanitize_content(unsafe_content, result.violations)
         if "[REDACTED-" in sanitized:
-            print(f"✅ PASS - Content sanitized")
+            print("✅ PASS - Content sanitized")
             print(f"   Original: {unsafe_content[:50]}...")
             print(f"   Sanitized: {sanitized[:80]}...")
             passed += 1
@@ -86,7 +89,7 @@ async def test_content_validator():
             print("❌ FAIL - Sanitization didn't redact content")
             failed += 1
     else:
-        print(f"❌ FAIL - Content not identified as sanitizable")
+        print("❌ FAIL - Content not identified as sanitizable")
         failed += 1
     print()
 
@@ -107,7 +110,7 @@ async def test_content_validator():
     dangerous_objective = "Execute rm -rf /tmp/* to clean up the compromised files"
     result = await service.validate_objective(dangerous_objective, "educational")
     if not result.is_safe:
-        print(f"✅ PASS - Dangerous objective blocked")
+        print("✅ PASS - Dangerous objective blocked")
         print(f"   Reason: {result.reason}")
         passed += 1
     else:
@@ -118,17 +121,13 @@ async def test_content_validator():
     # Test 7: Validate and auto-sanitize
     print("Test 7: Validate and auto-sanitize")
     content_with_creds = "Use API key sk-test123456789012345678901234567890123456 to authenticate"
-    is_safe, processed = await service.validate_and_sanitize(
-        content_with_creds,
-        "educational",
-        auto_sanitize=True
-    )
+    is_safe, processed = await service.validate_and_sanitize(content_with_creds, "educational", auto_sanitize=True)
     if is_safe and "[REDACTED-" in processed:
         print("✅ PASS - Auto-sanitization worked")
         print(f"   Result: {processed}")
         passed += 1
     else:
-        print(f"❌ FAIL - Auto-sanitization failed")
+        print("❌ FAIL - Auto-sanitization failed")
         print(f"   is_safe={is_safe}, has_redaction={'[REDACTED-' in processed}")
         failed += 1
     print()

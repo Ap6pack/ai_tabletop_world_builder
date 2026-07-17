@@ -9,10 +9,11 @@
 """
 System State Manager Service - Tracks and updates system status during gameplay.
 """
+
 import logging
-from typing import List, Optional, Dict
 from datetime import datetime
-from api.models import GameState, SystemState, System, Organization
+
+from api.models import GameState, Organization, System, SystemState
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class SystemStateManager:
         """Initialize the system state manager."""
         pass
 
-    def initialize_system_states(self, organization: Organization) -> Dict[str, SystemState]:
+    def initialize_system_states(self, organization: Organization) -> dict[str, SystemState]:
         """
         Initialize system states for all systems in the organization.
         All systems start in 'online' status with 100% health.
@@ -48,7 +49,7 @@ class SystemStateManager:
                     health=100,
                     last_update=datetime.now(),
                     affected_services=[],
-                    notes="System initialized and operational"
+                    notes="System initialized and operational",
                 )
 
         logger.info(f"Initialized {len(system_states)} system states for organization {organization.name}")
@@ -60,8 +61,8 @@ class SystemStateManager:
         system_id: str,
         new_status: str,
         health_change: int = 0,
-        affected_services: Optional[List[str]] = None,
-        reason: str = ""
+        affected_services: list[str] | None = None,
+        reason: str = "",
     ) -> SystemState:
         """
         Update the state of a specific system.
@@ -87,11 +88,7 @@ class SystemStateManager:
 
             # Initialize it
             game_state.system_states[system_id] = SystemState(
-                system_id=system_id,
-                status="online",
-                health=100,
-                last_update=datetime.now(),
-                affected_services=[]
+                system_id=system_id, status="online", health=100, last_update=datetime.now(), affected_services=[]
             )
 
         system_state = game_state.system_states[system_id]
@@ -116,11 +113,7 @@ class SystemStateManager:
 
         return system_state
 
-    def get_affected_systems(
-        self,
-        action: str,
-        game_state: GameState
-    ) -> List[str]:
+    def get_affected_systems(self, action: str, game_state: GameState) -> list[str]:
         """
         Determine which systems might be affected by a player action.
         Uses keyword matching to identify relevant systems.
@@ -137,13 +130,13 @@ class SystemStateManager:
 
         # Keywords that suggest system targeting
         action_keywords = {
-            'isolate': ['server', 'workstation', 'database', 'network'],
-            'patch': ['server', 'workstation', 'application'],
-            'reboot': ['server', 'workstation'],
-            'shutdown': ['server', 'workstation', 'application'],
-            'scan': ['network', 'server', 'workstation', 'database'],
-            'block': ['firewall', 'network'],
-            'restore': ['server', 'database', 'backup'],
+            "isolate": ["server", "workstation", "database", "network"],
+            "patch": ["server", "workstation", "application"],
+            "reboot": ["server", "workstation"],
+            "shutdown": ["server", "workstation", "application"],
+            "scan": ["network", "server", "workstation", "database"],
+            "block": ["firewall", "network"],
+            "restore": ["server", "database", "backup"],
         }
 
         for dept in game_state.organization.departments:
@@ -161,11 +154,7 @@ class SystemStateManager:
 
         return affected_systems
 
-    def calculate_system_health(
-        self,
-        system: System,
-        game_state: GameState
-    ) -> int:
+    def calculate_system_health(self, system: System, game_state: GameState) -> int:
         """
         Calculate overall system health based on current state and timeline events.
 
@@ -185,24 +174,14 @@ class SystemStateManager:
         health = system_state.health
 
         # Adjust based on status
-        status_modifiers = {
-            "online": 0,
-            "recovering": -10,
-            "patched": 0,
-            "compromised": -30,
-            "offline": -50
-        }
+        status_modifiers = {"online": 0, "recovering": -10, "patched": 0, "compromised": -30, "offline": -50}
 
         health += status_modifiers.get(system_state.status, 0)
 
         # Ensure bounds
         return max(0, min(100, health))
 
-    def check_system_availability(
-        self,
-        system_id: str,
-        game_state: GameState
-    ) -> bool:
+    def check_system_availability(self, system_id: str, game_state: GameState) -> bool:
         """
         Check if a system is available for use.
 
@@ -223,12 +202,9 @@ class SystemStateManager:
             return False
 
         # Systems with very low health are unavailable
-        if system_state.health < 10:
-            return False
+        return not system_state.health < 10
 
-        return True
-
-    def get_compromised_systems(self, game_state: GameState) -> List[str]:
+    def get_compromised_systems(self, game_state: GameState) -> list[str]:
         """
         Get list of all compromised system IDs.
 
@@ -245,7 +221,7 @@ class SystemStateManager:
 
         return compromised
 
-    def get_critical_systems_at_risk(self, game_state: GameState) -> List[str]:
+    def get_critical_systems_at_risk(self, game_state: GameState) -> list[str]:
         """
         Get list of critical systems that are compromised or offline.
 
@@ -259,20 +235,14 @@ class SystemStateManager:
 
         for dept in game_state.organization.departments:
             for system in dept.systems:
-                if system.criticality in ["critical", "high"]:
-                    if system.id in game_state.system_states:
-                        state = game_state.system_states[system.id]
-                        if state.status in ["compromised", "offline"] or state.health < 50:
-                            at_risk.append(system.id)
+                if system.criticality in ["critical", "high"] and system.id in game_state.system_states:
+                    state = game_state.system_states[system.id]
+                    if state.status in ["compromised", "offline"] or state.health < 50:
+                        at_risk.append(system.id)
 
         return at_risk
 
-    def apply_compromise(
-        self,
-        game_state: GameState,
-        system_id: str,
-        severity: str = "high"
-    ) -> SystemState:
+    def apply_compromise(self, game_state: GameState, system_id: str, severity: str = "high") -> SystemState:
         """
         Mark a system as compromised and adjust health based on severity.
 
@@ -285,12 +255,7 @@ class SystemStateManager:
             Updated SystemState
         """
         # Health impact based on severity
-        health_impact = {
-            "low": -20,
-            "medium": -35,
-            "high": -50,
-            "critical": -70
-        }
+        health_impact = {"low": -20, "medium": -35, "high": -50, "critical": -70}
 
         impact = health_impact.get(severity, -50)
 
@@ -299,15 +264,10 @@ class SystemStateManager:
             system_id=system_id,
             new_status="compromised",
             health_change=impact,
-            reason=f"System compromised ({severity} severity)"
+            reason=f"System compromised ({severity} severity)",
         )
 
-    def apply_recovery(
-        self,
-        game_state: GameState,
-        system_id: str,
-        recovery_level: str = "partial"
-    ) -> SystemState:
+    def apply_recovery(self, game_state: GameState, system_id: str, recovery_level: str = "partial") -> SystemState:
         """
         Apply recovery actions to a system.
 
@@ -325,7 +285,7 @@ class SystemStateManager:
                 system_id=system_id,
                 new_status="online",
                 health_change=100,  # Set to full health
-                reason="System fully recovered and restored"
+                reason="System fully recovered and restored",
             )
         else:
             return self.update_system_state(
@@ -333,10 +293,10 @@ class SystemStateManager:
                 system_id=system_id,
                 new_status="recovering",
                 health_change=30,
-                reason="System partially recovered, still being restored"
+                reason="System partially recovered, still being restored",
             )
 
-    def _find_system(self, organization: Organization, system_id: str) -> Optional[System]:
+    def _find_system(self, organization: Organization, system_id: str) -> System | None:
         """Find a system by ID in the organization."""
         for dept in organization.departments:
             for system in dept.systems:
@@ -344,7 +304,7 @@ class SystemStateManager:
                     return system
         return None
 
-    def get_system_status_summary(self, game_state: GameState) -> Dict[str, int]:
+    def get_system_status_summary(self, game_state: GameState) -> dict[str, int]:
         """
         Get a summary of system statuses.
 
@@ -354,14 +314,7 @@ class SystemStateManager:
         Returns:
             Dictionary with counts of systems in each status
         """
-        summary = {
-            "online": 0,
-            "offline": 0,
-            "compromised": 0,
-            "recovering": 0,
-            "patched": 0,
-            "total": 0
-        }
+        summary = {"online": 0, "offline": 0, "compromised": 0, "recovering": 0, "patched": 0, "total": 0}
 
         # Count all systems
         for dept in game_state.organization.departments:

@@ -12,10 +12,11 @@ OpenTelemetry instrumentation middleware for FastAPI.
 Provides request metrics, custom application metrics, and distributed tracing
 with a graceful no-op fallback when OpenTelemetry packages are not installed.
 """
+
 from __future__ import annotations
 
 import time
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -27,33 +28,21 @@ logger = setup_logger(__name__)
 try:
     from opentelemetry import metrics, trace
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry.sdk.metrics import MeterProvider
-    from opentelemetry.sdk.trace import TracerProvider
 
     meter = metrics.get_meter("ai_tabletop_world_builder")
     tracer = trace.get_tracer("ai_tabletop_world_builder")
 
     # Standard HTTP metrics
-    request_count = meter.create_counter(
-        "http_requests_total", description="Total HTTP requests"
-    )
+    request_count = meter.create_counter("http_requests_total", description="Total HTTP requests")
     request_duration = meter.create_histogram(
         "http_request_duration_seconds", description="Request duration in seconds"
     )
-    active_requests = meter.create_up_down_counter(
-        "http_active_requests", description="Currently active requests"
-    )
-    error_count = meter.create_counter(
-        "http_errors_total", description="Total HTTP error responses"
-    )
+    active_requests = meter.create_up_down_counter("http_active_requests", description="Currently active requests")
+    error_count = meter.create_counter("http_errors_total", description="Total HTTP error responses")
 
     # Domain-specific metrics
-    llm_calls_total = meter.create_counter(
-        "llm_calls_total", description="Total LLM API calls"
-    )
-    game_actions_total = meter.create_counter(
-        "game_actions_total", description="Total in-game actions processed"
-    )
+    llm_calls_total = meter.create_counter("llm_calls_total", description="Total LLM API calls")
+    game_actions_total = meter.create_counter("game_actions_total", description="Total in-game actions processed")
     aar_generated_total = meter.create_counter(
         "aar_generated_total", description="Total after-action reports generated"
     )
@@ -107,15 +96,13 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
 # Convenience helpers for domain-specific metrics
 # ---------------------------------------------------------------------------
 
-def record_llm_call(
-    provider: str, model: str, duration: float
-) -> None:
+
+def record_llm_call(provider: str, model: str, duration: float) -> None:
     """Record an LLM API call with provider, model, and duration."""
     if not OTEL_AVAILABLE:
         return
     llm_calls_total.add(1, {"provider": provider, "model": model})
-    logger.debug("LLM call recorded: provider=%s model=%s duration=%.3fs",
-                 provider, model, duration)
+    logger.debug("LLM call recorded: provider=%s model=%s duration=%.3fs", provider, model, duration)
 
 
 def record_game_action(session_id: str, action_type: str) -> None:

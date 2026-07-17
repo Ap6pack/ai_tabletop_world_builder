@@ -12,11 +12,12 @@ Structured JSON request/response logging middleware.
 Logs method, path, status code, duration, client IP, and user-agent
 for every request except health-check endpoints.
 """
+
 from __future__ import annotations
 
 import json
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware

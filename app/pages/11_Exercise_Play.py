@@ -12,11 +12,13 @@ Streamlit Exercise Play Page - Multi-team tabletop exercise interface.
 Supports team-specific views with 3-5 second polling for state updates.
 Facilitators get full control panel; team members get filtered views.
 """
-import streamlit as st
-import requests
-import time
-import sys
+
 import os
+import sys
+import time
+
+import requests
+import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import API_BASE_URL, DEFAULT_TIMEOUT
@@ -128,8 +130,11 @@ current_round = state.get("current_round", 0)
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     phase_colors = {
-        "setup": "🟡", "active": "🟢", "paused": "🟠",
-        "debrief": "🔵", "completed": "⚪",
+        "setup": "🟡",
+        "active": "🟢",
+        "paused": "🟠",
+        "debrief": "🔵",
+        "completed": "⚪",
     }
     st.metric("Phase", f"{phase_colors.get(phase, '')} {phase.title()}")
 with col2:
@@ -169,21 +174,19 @@ if st.session_state.is_facilitator:
                     if resp.status_code == 200:
                         st.rerun()
         with fc2:
-            if phase == "active":
-                if st.button("⏸️ Pause"):
-                    requests.post(
-                        f"{API_BASE_URL}/exercise/{exercise_id}/pause",
-                        timeout=DEFAULT_TIMEOUT,
-                    )
-                    st.rerun()
+            if phase == "active" and st.button("⏸️ Pause"):
+                requests.post(
+                    f"{API_BASE_URL}/exercise/{exercise_id}/pause",
+                    timeout=DEFAULT_TIMEOUT,
+                )
+                st.rerun()
         with fc3:
-            if phase not in ("completed",):
-                if st.button("🛑 End Exercise"):
-                    requests.post(
-                        f"{API_BASE_URL}/exercise/{exercise_id}/end",
-                        timeout=DEFAULT_TIMEOUT,
-                    )
-                    st.rerun()
+            if phase not in ("completed",) and st.button("🛑 End Exercise"):
+                requests.post(
+                    f"{API_BASE_URL}/exercise/{exercise_id}/end",
+                    timeout=DEFAULT_TIMEOUT,
+                )
+                st.rerun()
 
         # Inject controls
         st.markdown("#### Fire Inject")
@@ -193,10 +196,16 @@ if st.session_state.is_facilitator:
             inject_type = st.selectbox(
                 "Type",
                 [
-                    "news_article", "social_media", "regulator_call",
-                    "ceo_demand", "vendor_alert", "media_inquiry",
-                    "customer_complaint", "law_enforcement",
-                    "insider_threat", "technical_failure",
+                    "news_article",
+                    "social_media",
+                    "regulator_call",
+                    "ceo_demand",
+                    "vendor_alert",
+                    "media_inquiry",
+                    "customer_complaint",
+                    "law_enforcement",
+                    "insider_threat",
+                    "technical_failure",
                 ],
             )
         with ic2:
@@ -300,8 +309,11 @@ with sidebar_col:
         for event in reversed(events[-15:]):
             etype = event.get("event_type", "")
             icon = {
-                "team_action": "💬", "inject": "🚨", "facilitator": "🎛️",
-                "system": "⚙️", "round_change": "🔄",
+                "team_action": "💬",
+                "inject": "🚨",
+                "facilitator": "🎛️",
+                "system": "⚙️",
+                "round_change": "🔄",
             }.get(etype, "📌")
             st.markdown(f"{icon} R{event.get('round_number', 0)}: {event.get('description', '')}")
     else:

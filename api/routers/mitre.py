@@ -7,11 +7,11 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """MITRE ATT&CK API endpoints."""
-from fastapi import APIRouter, HTTPException
-from typing import Optional, List
 
-from api.services.mitre_attack_service import MITREAttackService
+from fastapi import APIRouter, HTTPException
+
 from api.services.game_session_service import GameSessionService
+from api.services.mitre_attack_service import MITREAttackService
 from api.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -24,8 +24,8 @@ session_service = GameSessionService()
 
 @router.get("/techniques")
 async def list_techniques(
-    tactic: Optional[str] = None,
-    search: Optional[str] = None,
+    tactic: str | None = None,
+    search: str | None = None,
     limit: int = 50,
 ):
     """List ATT&CK techniques, optionally filtered by tactic or search term."""
@@ -73,8 +73,5 @@ async def map_ttp(ttp: str):
     techniques = attack_service.map_ttp_to_attack(ttp)
     return {
         "input": ttp,
-        "techniques": [
-            {"technique_id": t.technique_id, "name": t.name, "tactic": t.tactic}
-            for t in techniques
-        ],
+        "techniques": [{"technique_id": t.technique_id, "name": t.name, "tactic": t.tactic} for t in techniques],
     }

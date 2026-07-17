@@ -9,9 +9,9 @@
 """
 LLM service for managing LLM interactions.
 """
-from typing import Optional, Dict, Any
-from api.providers import LLMProviderFactory, ProviderType
+
 from api.models import LLMRequest, LLMResponse
+from api.providers import LLMProviderFactory
 
 
 class LLMService:
@@ -53,7 +53,7 @@ class LLMService:
         )
 
     @staticmethod
-    async def check_providers() -> Dict[str, bool]:
+    async def check_providers() -> dict[str, bool]:
         """
         Check availability of all configured providers.
 

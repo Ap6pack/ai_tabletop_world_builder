@@ -9,8 +9,11 @@
 """
 Ollama LLM provider implementation (local models).
 """
-from typing import Optional, Dict, Any
+
+from typing import Any
+
 import httpx
+
 from .base import BaseLLMProvider
 
 
@@ -19,17 +22,17 @@ class OllamaProvider(BaseLLMProvider):
 
     def __init__(self, base_url: str = "http://localhost:11434", model: str = "llama3", **kwargs):
         super().__init__(api_key=None, **kwargs)
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.model = model
 
     async def complete(
         self,
         prompt: str,
-        system_message: Optional[str] = None,
+        system_message: str | None = None,
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
+        max_tokens: int | None = None,
+        **kwargs,
+    ) -> dict[str, Any]:
         """Generate completion using Ollama API."""
         messages = []
 
@@ -44,17 +47,14 @@ class OllamaProvider(BaseLLMProvider):
             "stream": False,
             "options": {
                 "temperature": temperature,
-            }
+            },
         }
 
         if max_tokens:
             payload["options"]["num_predict"] = max_tokens
 
         async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                f"{self.base_url}/api/chat",
-                json=payload
-            )
+            response = await client.post(f"{self.base_url}/api/chat", json=payload)
             response.raise_for_status()
             data = response.json()
 

@@ -34,15 +34,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "connect-src 'self'"
         )
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = (
-            "camera=(), microphone=(), geolocation=()"
-        )
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
 
         host = request.headers.get("host", "")
         if "localhost" not in host and "127.0.0.1" not in host:
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         logger.debug("Security headers applied for %s", request.url.path)
         return response
