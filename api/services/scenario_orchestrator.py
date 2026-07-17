@@ -34,15 +34,31 @@ class ScenarioOrchestrator:
     """
 
     def __init__(self, llm_provider=None):
-        """Initialize the scenario orchestrator with all generators."""
-        self.llm_provider = llm_provider or LLMProviderFactory.create_provider()
+        """Initialize the scenario orchestrator with all generators.
 
-        # Initialize all generators with shared LLM provider
-        self.org_generator = OrganizationGenerator(self.llm_provider)
-        self.dept_generator = DepartmentGenerator(self.llm_provider)
-        self.system_generator = SystemGenerator(self.llm_provider)
-        self.vuln_generator = VulnerabilityGenerator(self.llm_provider)
-        self.threat_generator = ThreatActorGenerator(self.llm_provider)
+        The LLM provider is created lazily by each generator on first use, so
+        constructing the orchestrator does not require an API key.
+        """
+        self._llm_provider = llm_provider
+
+        # Share the (possibly None) provider with all generators; each will
+        # lazily create a default provider on first use if none was supplied.
+        self.org_generator = OrganizationGenerator(llm_provider)
+        self.dept_generator = DepartmentGenerator(llm_provider)
+        self.system_generator = SystemGenerator(llm_provider)
+        self.vuln_generator = VulnerabilityGenerator(llm_provider)
+        self.threat_generator = ThreatActorGenerator(llm_provider)
+
+    @property
+    def llm_provider(self):
+        """Lazily instantiate the LLM provider so construction needs no API key."""
+        if self._llm_provider is None:
+            self._llm_provider = LLMProviderFactory.create_provider()
+        return self._llm_provider
+
+    @llm_provider.setter
+    def llm_provider(self, value):
+        self._llm_provider = value
 
     async def generate_complete_scenario(
         self,
