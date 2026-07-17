@@ -35,7 +35,7 @@ except Exception:
 
 provider = st.selectbox(
     "Select LLM Provider",
-    ["OpenAI", "Anthropic", "Ollama (Local)"],
+    ["OpenAI", "Anthropic", "Together", "Ollama (Local)"],
     help="Choose which AI provider to use for scenario generation and game narration",
 )
 
@@ -129,6 +129,54 @@ elif provider == "Anthropic":
         temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
         max_tokens = st.number_input("Max Tokens", 100, 8000, 4096, 100)
 
+elif provider == "Together":
+    with col1:
+        # Show current status
+        is_configured = current_providers.get("together", False)
+        if is_configured:
+            st.success("✅ API Key Configured")
+            if st.button("🗑️ Clear API Key", key="clear_together", help="Remove Together API key"):
+                if "confirm_clear_together" not in st.session_state:
+                    st.session_state.confirm_clear_together = True
+                    st.warning("⚠️ Click again to confirm removal")
+                    st.rerun()
+                else:
+                    try:
+                        response = requests.delete(
+                            f"{API_BASE_URL}/settings/provider/together/key", timeout=DEFAULT_TIMEOUT
+                        )
+                        if response.status_code == 200:
+                            st.success("✅ Together API key removed")
+                            st.session_state.confirm_clear_together = False
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Failed: {response.json().get('detail', 'Unknown error')}")
+                            st.session_state.confirm_clear_together = False
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
+                        st.session_state.confirm_clear_together = False
+            api_key = st.text_input(
+                "Together API Key",
+                type="password",
+                placeholder="Currently configured",
+                help="Get your API key from api.together.xyz",
+            )
+        else:
+            st.info("ℹ️ No API Key Configured")
+            api_key = st.text_input("Together API Key", type="password", help="Get your API key from api.together.xyz")
+
+        model = st.selectbox(
+            "Model",
+            [
+                "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+                "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+                "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            ],
+        )
+    with col2:
+        temperature = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1)
+        max_tokens = st.number_input("Max Tokens", 100, 8000, 2000, 100)
+
 elif provider == "Ollama (Local)":
     with col1:
         base_url = st.text_input("Ollama Base URL", "http://localhost:11434", help="URL where Ollama is running")
@@ -151,7 +199,7 @@ if st.button("🔍 Test Connection", type="primary"):
             }
 
             # Add provider-specific config if entered
-            if provider == "OpenAI" and api_key or provider == "Anthropic" and api_key:
+            if provider in ("OpenAI", "Anthropic", "Together") and api_key:
                 test_payload["api_key"] = api_key
                 test_payload["model"] = model
             elif provider == "Ollama (Local)":

@@ -26,7 +26,7 @@ class SettingsUpdate(BaseModel):
     """Model for updating settings."""
 
     # LLM Provider
-    default_llm_provider: Literal["openai", "anthropic", "ollama"] | None = None
+    default_llm_provider: Literal["openai", "anthropic", "together", "ollama"] | None = None
 
     # OpenAI
     openai_api_key: str | None = None
@@ -37,6 +37,11 @@ class SettingsUpdate(BaseModel):
     anthropic_api_key: str | None = None
     anthropic_model: str | None = None
     anthropic_temperature: float | None = None
+
+    # Together AI
+    together_api_key: str | None = None
+    together_model: str | None = None
+    together_temperature: float | None = None
 
     # Ollama
     ollama_base_url: str | None = None
@@ -75,6 +80,9 @@ async def get_current_settings():
         "anthropic_model": settings.anthropic_model,
         "anthropic_temperature": settings.anthropic_temperature,
         "anthropic_api_key_configured": bool(settings.anthropic_api_key and settings.anthropic_api_key.strip()),
+        "together_model": settings.together_model,
+        "together_temperature": settings.together_temperature,
+        "together_api_key_configured": bool(settings.together_api_key and settings.together_api_key.strip()),
         "ollama_base_url": settings.ollama_base_url,
         "ollama_model": settings.ollama_model,
         "ollama_temperature": settings.ollama_temperature,
@@ -187,6 +195,11 @@ async def export_config():
                 "model": settings.anthropic_model,
                 "temperature": settings.anthropic_temperature,
                 "api_key_configured": bool(settings.anthropic_api_key),
+            },
+            "together": {
+                "model": settings.together_model,
+                "temperature": settings.together_temperature,
+                "api_key_configured": bool(settings.together_api_key),
             },
             "ollama": {
                 "base_url": settings.ollama_base_url,
@@ -311,14 +324,14 @@ async def reset_to_defaults():
 
 
 @router.delete("/provider/{provider}/key")
-async def clear_provider_key(provider: Literal["openai", "anthropic", "ollama"]):
+async def clear_provider_key(provider: Literal["openai", "anthropic", "together", "ollama"]):
     """
     Clear API key for a specific LLM provider.
 
     This removes the API key from the .env file and runtime configuration.
 
     Args:
-        provider: Provider name (openai, anthropic, or ollama)
+        provider: Provider name (openai, anthropic, together, or ollama)
 
     Returns:
         Confirmation message
@@ -327,6 +340,7 @@ async def clear_provider_key(provider: Literal["openai", "anthropic", "ollama"])
     key_mapping = {
         "openai": "OPENAI_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
+        "together": "TOGETHER_API_KEY",
         "ollama": None,  # Ollama doesn't use API keys
     }
 
@@ -368,6 +382,8 @@ async def clear_provider_key(provider: Literal["openai", "anthropic", "ollama"])
         settings.openai_api_key = None
     elif provider == "anthropic":
         settings.anthropic_api_key = None
+    elif provider == "together":
+        settings.together_api_key = None
 
     return {
         "message": f"API key for {provider} has been removed",

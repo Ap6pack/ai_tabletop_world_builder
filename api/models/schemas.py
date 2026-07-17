@@ -27,7 +27,7 @@ class LLMRequest(BaseModel):
     prompt: str = Field(
         ..., description="The prompt to send to the LLM", examples=["Explain what a SIEM is in cybersecurity"]
     )
-    provider: Literal["openai", "anthropic", "ollama"] | None = Field(
+    provider: Literal["openai", "anthropic", "together", "ollama"] | None = Field(
         None, description="LLM provider to use. If not specified, uses default from settings.", examples=["openai"]
     )
     model: str | None = Field(
