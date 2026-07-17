@@ -18,8 +18,9 @@ from .anthropic_provider import AnthropicProvider
 from .base import BaseLLMProvider
 from .ollama_provider import OllamaProvider
 from .openai_provider import OpenAIProvider
+from .together_provider import TogetherProvider
 
-ProviderType = Literal["openai", "anthropic", "ollama"]
+ProviderType = Literal["openai", "anthropic", "together", "ollama"]
 
 
 class LLMProviderFactory:
@@ -77,6 +78,25 @@ class LLMProviderFactory:
                 temperature = settings.anthropic_temperature
 
             return AnthropicProvider(
+                api_key=api_key,
+                model=model,
+                temperature=temperature,
+            )
+
+        elif provider_type == "together":
+            api_key = kwargs.get("api_key") or settings.together_api_key
+            if not api_key:
+                raise ValueError("Together API key is required")
+
+            model = kwargs.get("model")
+            if model is None:
+                model = settings.together_model
+
+            temperature = kwargs.get("temperature")
+            if temperature is None:
+                temperature = settings.together_temperature
+
+            return TogetherProvider(
                 api_key=api_key,
                 model=model,
                 temperature=temperature,
@@ -153,6 +173,16 @@ class LLMProviderFactory:
                 availability["anthropic"] = False
         except Exception:
             availability["anthropic"] = False
+
+        # Check Together - validate key looks real before attempting health check
+        try:
+            if LLMProviderFactory._is_valid_api_key(settings.together_api_key):
+                provider = LLMProviderFactory.create_provider("together")
+                availability["together"] = await provider.health_check()
+            else:
+                availability["together"] = False
+        except Exception:
+            availability["together"] = False
 
         # Check Ollama - doesn't need API key validation
         try:

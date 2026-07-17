@@ -13,12 +13,14 @@ from .base import BaseLLMProvider
 from .factory import LLMProviderFactory, ProviderType
 from .ollama_provider import OllamaProvider
 from .openai_provider import OpenAIProvider
+from .together_provider import TogetherProvider
 
 __all__ = [
     "BaseLLMProvider",
     "OpenAIProvider",
     "AnthropicProvider",
     "OllamaProvider",
+    "TogetherProvider",
     "LLMProviderFactory",
     "ProviderType",
 ]
