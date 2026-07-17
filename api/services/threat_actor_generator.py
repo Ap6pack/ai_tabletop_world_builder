@@ -21,7 +21,18 @@ class ThreatActorGenerator:
 
     def __init__(self, llm_provider=None):
         """Initialize the threat actor generator."""
-        self.llm_provider = llm_provider or LLMProviderFactory.create_provider()
+        self._llm_provider = llm_provider
+
+    @property
+    def llm_provider(self):
+        """Lazily instantiate the LLM provider so construction needs no API key."""
+        if self._llm_provider is None:
+            self._llm_provider = LLMProviderFactory.create_provider()
+        return self._llm_provider
+
+    @llm_provider.setter
+    def llm_provider(self, value):
+        self._llm_provider = value
 
     async def generate_threat_actors(
         self,

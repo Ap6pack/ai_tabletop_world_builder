@@ -9,6 +9,7 @@
 """Root conftest for pytest — shared fixtures and collection config."""
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -34,6 +35,34 @@ from api.models.exercise_models import (
     InjectTrigger,
     InjectType,
 )
+
+
+# ============================================================================
+# Hermeticity guard
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def _no_real_llm(monkeypatch):
+    """Prevent any test from constructing a real LLM provider.
+
+    Services build their provider lazily via ``LLMProviderFactory.create_provider``.
+    Patching it here guarantees the suite never needs an API key or network:
+    tests that exercise LLM calls should still mock the specific service method,
+    but if one is missed it gets this deterministic fake instead of a
+    ``ValueError`` (no key) or a real network call.
+    """
+    fake_provider = MagicMock(name="FakeLLMProvider")
+    fake_provider.complete = AsyncMock(return_value={"content": "{}", "model": "fake"})
+    fake_provider.health_check = AsyncMock(return_value=True)
+    fake_provider.get_model_name = MagicMock(return_value="fake")
+    fake_provider.get_provider_name = MagicMock(return_value="fake")
+
+    monkeypatch.setattr(
+        "api.providers.factory.LLMProviderFactory.create_provider",
+        lambda *args, **kwargs: fake_provider,
+    )
+    return fake_provider
 
 
 # ============================================================================

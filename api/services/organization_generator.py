@@ -97,8 +97,19 @@ class OrganizationGenerator:
             llm_provider: Optional LLM provider instance. If None, creates default.
             content_policy: Optional content policy. If None, uses educational policy.
         """
-        self.llm_provider = llm_provider or LLMProviderFactory.create_provider()
+        self._llm_provider = llm_provider
         self.content_policy = content_policy or ContentPolicyService.get_policy("educational")
+
+    @property
+    def llm_provider(self):
+        """Lazily instantiate the LLM provider so construction needs no API key."""
+        if self._llm_provider is None:
+            self._llm_provider = LLMProviderFactory.create_provider()
+        return self._llm_provider
+
+    @llm_provider.setter
+    def llm_provider(self, value):
+        self._llm_provider = value
 
     async def generate_organization(
         self,
