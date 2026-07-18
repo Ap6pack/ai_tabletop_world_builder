@@ -50,6 +50,10 @@ scenarios/generated/*.json
 data/*.db
 data/*.sqlite
 data/sessions/*.json
+# Runtime user records (contain password hashes) and audit logs
+data/users/*.json
+data/test_users/*.json
+data/audit_logs/*.jsonl
 *.log
 
 # Testing
