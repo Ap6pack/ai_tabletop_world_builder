@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Patched 23 known dependency vulnerabilities** flagged by `pip-audit` (the
+  Security workflow). Bumped `python-multipart`, `streamlit`/`pyarrow`,
+  `requests`, `python-dotenv`, `pytest`/`pytest-asyncio`, and `fastapi`/`starlette`
+  to fixed releases.
+- **Replaced `python-jose` with `PyJWT`.** `python-jose` is effectively
+  unmaintained and pulled in a vulnerable `ecdsa` (no-fix advisory
+  PYSEC-2026-1325); PyJWT (HS256) removes that dependency entirely. Auth token
+  encode/decode behavior is unchanged.
+
 ### Fixed
 
 - **Boot without an API key**: services now construct their LLM provider lazily,
