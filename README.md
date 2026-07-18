@@ -445,7 +445,7 @@ For issues and questions:
 state (users, sessions, exercises, API keys, webhooks) is stored via SQLAlchemy
 (SQLite by default, Postgres-ready via `DATABASE_URL`). Authentication is
 enforced when `REQUIRE_AUTH=true` (product endpoints need a token; admin
-endpoints need the `admin` role) — see AUDIT.md for remaining hardening.
+endpoints need the `admin` role) — see [DEPLOY.md](DEPLOY.md) for production setup.
 **Last Updated**: 2026-07-18
 
 See [CHANGELOG.md](CHANGELOG.md) for complete details.
