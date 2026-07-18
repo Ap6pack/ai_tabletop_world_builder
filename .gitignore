@@ -75,3 +75,6 @@ htmlcov/
 
 # Generated artifacts (SBOM is produced by scripts/generate_sbom.py / CI)
 sbom.json
+
+# Claude Code local tooling (not needed in the repo)
+.claude/
