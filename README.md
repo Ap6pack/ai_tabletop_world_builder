@@ -163,10 +163,32 @@ streamlit run Home.py
 # Web UI will open at http://localhost:8501
 ```
 
-**Option 2: Docker**
+**Option 2: Docker (Postgres-backed)**
 ```bash
 docker-compose up
 ```
+The Compose stack runs the API against the bundled **PostgreSQL** and Redis
+services automatically (it sets `DATABASE_URL`/`REDIS_URL` for you). Override the
+database credentials with `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
+
+## Database
+
+Mutable application state — users, game sessions, exercises, API keys, and
+webhooks — is stored via SQLAlchemy. The backend is chosen entirely by the
+`DATABASE_URL` environment variable, so the same code runs on either:
+
+- **Local development (default): SQLite** — zero setup, a file at `./data/app.db`.
+- **Production: PostgreSQL** (recommended). Point at a managed instance:
+  ```bash
+  DATABASE_URL=postgresql+psycopg://user:password@host:5432/dbname
+  ```
+  The `psycopg` driver is already in `requirements.txt`. Tables are created
+  automatically on startup. The API is stateless, so you can run multiple
+  instances behind a load balancer against one Postgres.
+
+**Redis (optional):** live multi-team exercises can use Redis as a low-latency
+fast-path — set `REDIS_URL=redis://host:6379/0`. Without it, exercise state is
+served from the database. Audit logs are append-only JSONL by design.
 
 ## Usage Guide
 
