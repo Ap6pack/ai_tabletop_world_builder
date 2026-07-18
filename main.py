@@ -12,10 +12,11 @@ FastAPI main application entry point.
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.db import init_db
+from api.middleware.auth import get_current_user
 from api.middleware.cors import get_cors_origins
 from api.middleware.request_logging import RequestLoggingMiddleware
 from api.middleware.security import SecurityHeadersMiddleware
@@ -67,19 +68,23 @@ app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(TelemetryMiddleware)
 TelemetryMiddleware.setup_telemetry(app)
 
-# Include routers
-app.include_router(llm_router)
-app.include_router(content_policy_router)
-app.include_router(scenarios_router)
-app.include_router(game_router)
-app.include_router(settings_router)
-app.include_router(audit_router)
-app.include_router(analytics_router)
+# Product routers require authentication when REQUIRE_AUTH is enabled. With auth
+# disabled (the local/dev default) get_current_user returns None and requests
+# pass through unchanged. The auth router is intentionally left open so users can
+# register and log in.
+auth_required = [Depends(get_current_user)]
+app.include_router(llm_router, dependencies=auth_required)
+app.include_router(content_policy_router, dependencies=auth_required)
+app.include_router(scenarios_router, dependencies=auth_required)
+app.include_router(game_router, dependencies=auth_required)
+app.include_router(settings_router, dependencies=auth_required)
+app.include_router(audit_router, dependencies=auth_required)
+app.include_router(analytics_router, dependencies=auth_required)
 app.include_router(auth_router)
-app.include_router(library_router)
-app.include_router(integrations_router)
-app.include_router(mitre_router)
-app.include_router(exercise_router)
+app.include_router(library_router, dependencies=auth_required)
+app.include_router(integrations_router, dependencies=auth_required)
+app.include_router(mitre_router, dependencies=auth_required)
+app.include_router(exercise_router, dependencies=auth_required)
 
 
 @app.get("/")
