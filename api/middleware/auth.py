@@ -71,6 +71,27 @@ async def require_auth(
     return user
 
 
+async def require_admin(
+    user: dict | None = Depends(get_current_user),
+) -> dict | None:
+    """Authorize admin-only endpoints (e.g. destructive settings operations).
+
+    When ``settings.require_auth`` is enabled, requires an authenticated user
+    with the ``admin`` role. When auth is disabled (local/dev), access is
+    allowed — production must set ``REQUIRE_AUTH=true`` (which also enforces a
+    real ``JWT_SECRET_KEY``; see config.settings), at which point these
+    endpoints become admin-only.
+    """
+    if not settings.require_auth:
+        return None
+    if user is None or user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required",
+        )
+    return user
+
+
 def require_role(required_role: str):
     """Return a dependency that checks whether the user has the required role."""
 
