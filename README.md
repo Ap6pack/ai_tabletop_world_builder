@@ -365,8 +365,13 @@ pytest --tb=short -q
 - **Content Policy**: Set appropriate policy for your team's skill level
 - **Data Privacy**: Scenarios and game data stored locally
 - **Audit Logging**: All actions logged with SHA256 hashing for compliance
-- **Auth**: JWT-based authentication with Argon2id password hashing
-- **Rate Limiting**: Configurable per-endpoint rate limits
+- **Auth**: JWT-based authentication with Argon2id password hashing. Set
+  `REQUIRE_AUTH=true` (and a strong `JWT_SECRET_KEY`) to enforce it: product
+  endpoints then require a valid bearer token and destructive admin operations
+  (`/settings/data/clear`, `/settings/update`, config writes) require the
+  `admin` role. With auth disabled (the local/dev default) endpoints are open.
+  Note: the Streamlit UI does not yet attach tokens, so run it against an
+  auth-disabled API or behind an authenticating gateway.
 
 ## Contributing
 
@@ -427,8 +432,9 @@ For issues and questions:
 **Version**: 1.0.0
 **Status**: Active development — core platform functional and CI green. Mutable
 state (users, sessions, exercises, API keys, webhooks) is stored via SQLAlchemy
-(SQLite by default, Postgres-ready via `DATABASE_URL`). Auth is not yet enforced
-on product endpoints — see AUDIT.md.
+(SQLite by default, Postgres-ready via `DATABASE_URL`). Authentication is
+enforced when `REQUIRE_AUTH=true` (product endpoints need a token; admin
+endpoints need the `admin` role) — see AUDIT.md for remaining hardening.
 **Last Updated**: 2026-07-18
 
 See [CHANGELOG.md](CHANGELOG.md) for complete details.

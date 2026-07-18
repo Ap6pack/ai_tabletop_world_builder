@@ -7,8 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **PostgreSQL CI job.** CI now runs the full test suite against a real
+  PostgreSQL service in addition to SQLite, so backend-specific behavior is
+  verified automatically. The `_fresh_db` test fixture honors `TEST_DATABASE_URL`
+  (drops/recreates the schema per test) and falls back to a throwaway SQLite
+  file locally.
+
 ### Security
 
+- **Authentication is now enforced on product endpoints when `REQUIRE_AUTH=true`.**
+  Previously the auth stack existed but no product router used it, so enabling
+  the flag protected nothing. All product routers now require a valid bearer
+  token when auth is enabled (the auth router stays open for register/login);
+  with auth disabled (the dev default) behavior is unchanged.
+- **Destructive/admin settings endpoints are gated behind an `admin` role.**
+  `/settings/data/clear`, `/settings/update`, `/settings/reset/defaults`,
+  `/settings/export`, and `/settings/provider/{provider}/key` now require an
+  authenticated admin when auth is enabled (via a new `require_admin` dependency).
 - **Patched 23 known dependency vulnerabilities** flagged by `pip-audit` (the
   Security workflow). Bumped `python-multipart`, `streamlit`/`pyarrow`,
   `requests`, `python-dotenv`, `pytest`/`pytest-asyncio`, and `fastapi`/`starlette`

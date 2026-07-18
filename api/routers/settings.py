@@ -14,9 +14,10 @@ import contextlib
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from api.middleware.auth import require_admin
 from config import settings
 
 router = APIRouter(prefix="/settings", tags=["settings"])
@@ -95,7 +96,7 @@ async def get_current_settings():
 
 
 @router.post("/update")
-async def update_settings(updates: SettingsUpdate):
+async def update_settings(updates: SettingsUpdate, _admin: dict | None = Depends(require_admin)):
     """
     Update application settings and persist to .env file.
 
@@ -181,7 +182,7 @@ async def get_storage_stats() -> StorageStats:
 
 
 @router.post("/export")
-async def export_config():
+async def export_config(_admin: dict | None = Depends(require_admin)):
     """Export current configuration as JSON."""
     config_data = {
         "llm_providers": {
@@ -216,7 +217,7 @@ async def export_config():
 
 
 @router.delete("/data/clear")
-async def clear_all_data():
+async def clear_all_data(_admin: dict | None = Depends(require_admin)):
     """
     Clear all saved scenarios and game data.
 
@@ -258,7 +259,7 @@ async def clear_all_data():
 
 
 @router.post("/reset/defaults")
-async def reset_to_defaults():
+async def reset_to_defaults(_admin: dict | None = Depends(require_admin)):
     """
     Reset all settings to default values.
 
@@ -324,7 +325,10 @@ async def reset_to_defaults():
 
 
 @router.delete("/provider/{provider}/key")
-async def clear_provider_key(provider: Literal["openai", "anthropic", "together", "ollama"]):
+async def clear_provider_key(
+    provider: Literal["openai", "anthropic", "together", "ollama"],
+    _admin: dict | None = Depends(require_admin),
+):
     """
     Clear API key for a specific LLM provider.
 
