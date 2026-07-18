@@ -1,6 +1,6 @@
 # Cybersecurity War Gaming Platform
 
-An AI-powered tabletop war gaming platform for IT/Security team training. Generate realistic cybersecurity scenarios and practice incident response, threat detection, and defensive security operations.
+An **open-source** (Apache-2.0), AI-powered tabletop war-gaming platform for IT/security team training. Generate realistic cybersecurity scenarios, run AI game-master incident simulations, and produce after-action reports — MITRE ATT&CK-aware, on a FastAPI + Streamlit stack with PostgreSQL storage.
 
 ## Overview
 
