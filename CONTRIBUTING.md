@@ -650,33 +650,13 @@ Contributors will be:
 
 ## 📄 License and Contributions
 
-**Important**: This project uses a **proprietary license** with specific terms for contributors.
+This project is licensed under the **Apache License, Version 2.0** (see the
+[LICENSE](LICENSE) file). By contributing, you agree that your contributions are
+licensed under the same Apache-2.0 terms. You retain the copyright to your work;
+Apache-2.0 includes an explicit patent grant from contributors.
 
-By contributing to this project, you agree that:
-
-1. **You retain copyright** to your contributions
-2. **You grant the project owner** a perpetual, worldwide, non-exclusive, royalty-free, irrevocable license to:
-   - Use your contributions in both open-source and commercial versions
-   - Modify, distribute, and sublicense your contributions
-   - Include your contributions in paid/commercial offerings
-3. **Attribution**: You will be credited in open-source releases, but attribution is not required in commercial versions
-4. **No compensation**: Contributions are voluntary and do not entitle you to compensation from commercial use
-
-**Why this matters**:
-- The project aims to monetize as a SaaS platform
-- Your contributions help build a sustainable business that funds ongoing development
-- You get recognition in the community and can showcase your work
-- The code remains open for learning and transparency
-
-**What you get**:
-- Recognition in README, CHANGELOG, and release notes
-- Experience with production-grade security training platform
-- Portfolio-worthy contributions
-- Potential opportunities if the business grows
-
-If you have concerns about these terms, please reach out before contributing.
-
-See the full [LICENSE](LICENSE) file for complete details.
+You'll be credited in the project's history (Git commits, and release notes /
+CHANGELOG where relevant). Contributions are voluntary.
 
 ---
 
