@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.db import init_db
 from api.middleware.auth import get_current_user
-from api.middleware.cors import get_cors_origins
+from api.middleware.cors import allow_credentials, get_cors_origins
 from api.middleware.rate_limit import rate_limit
 from api.middleware.request_logging import RequestLoggingMiddleware
 from api.middleware.security import SecurityHeadersMiddleware
@@ -54,11 +54,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure CORS
+# Configure CORS. Credentials cannot be combined with a wildcard origin (the
+# browser rejects it and it is a security footgun), so only allow credentials
+# when the origins are an explicit allowlist.
+cors_origins = get_cors_origins()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_cors_origins(),
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=allow_credentials(cors_origins),
     allow_methods=["*"],
     allow_headers=["*"],
 )
