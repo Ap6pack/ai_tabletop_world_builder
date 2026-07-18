@@ -8,16 +8,17 @@
 # For inquiries, contact: contact@veritasandaequitas.com
 """
 API key service for generating, verifying, and managing API keys
-used by external integrations.
+used by external integrations. Backed by the application database.
 """
 
 import hashlib
-import json
-import os
 import secrets
 import uuid
 from datetime import UTC, datetime
 
+from sqlalchemy import select
+
+from api.db import ApiKeyRow, init_db, session_scope
 from api.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -29,11 +30,9 @@ class APIKeyService:
     """Service for managing API key lifecycle."""
 
     def __init__(self, storage_dir: str = "data/api_keys") -> None:
-        self.storage_dir = storage_dir
-        os.makedirs(self.storage_dir, exist_ok=True)
-
-    def _path(self, key_id: str) -> str:
-        return os.path.join(self.storage_dir, f"{key_id}.json")
+        # storage_dir is retained for backward compatibility; storage is now
+        # the application database.
+        init_db()
 
     @staticmethod
     def _hash_key(raw_key: str) -> str:
@@ -54,81 +53,54 @@ class APIKeyService:
         raw_key = "wg_" + secrets.token_hex(32)
         key_id = str(uuid.uuid4())
 
-        key_data = {
-            "id": key_id,
-            "user_id": user_id,
-            "name": name,
-            "hashed_key": self._hash_key(raw_key),
-            "prefix": raw_key[:10],
-            "scopes": scopes,
-            "created_at": datetime.now(UTC).isoformat(),
-            "revoked": False,
-        }
-        with open(self._path(key_id), "w") as f:
-            json.dump(key_data, f, indent=2)
+        row = ApiKeyRow(
+            id=key_id,
+            user_id=user_id,
+            name=name,
+            hashed_key=self._hash_key(raw_key),
+            prefix=raw_key[:10],
+            scopes=scopes,
+            created_at=datetime.now(UTC).isoformat(),
+            revoked=False,
+        )
+        with session_scope() as db:
+            db.add(row)
+            db.flush()
+            result = row.to_dict()
 
         logger.info("Created API key %s for user %s", key_id, user_id)
-        return {**key_data, "raw_key": raw_key}
+        return {**result, "raw_key": raw_key}
 
     def verify_key(self, raw_key: str) -> dict | None:
         """Verify a raw API key and return its metadata if valid."""
         hashed = self._hash_key(raw_key)
-        for fname in os.listdir(self.storage_dir):
-            if not fname.endswith(".json"):
-                continue
-            try:
-                with open(os.path.join(self.storage_dir, fname)) as f:
-                    data = json.load(f)
-                if data.get("hashed_key") == hashed and not data.get("revoked"):
-                    safe = {k: v for k, v in data.items() if k != "hashed_key"}
-                    return safe
-            except (OSError, json.JSONDecodeError):
-                continue
-        return None
+        with session_scope() as db:
+            row = db.scalar(select(ApiKeyRow).where(ApiKeyRow.hashed_key == hashed))
+            if row is None or row.revoked:
+                return None
+            return row.to_dict()
 
     def revoke_key(self, key_id: str) -> bool:
         """Mark an API key as revoked."""
-        key_data = self._load(key_id)
-        if key_data is None:
-            return False
-        key_data["revoked"] = True
-        key_data["revoked_at"] = datetime.now(UTC).isoformat()
-        with open(self._path(key_id), "w") as f:
-            json.dump(key_data, f, indent=2)
+        with session_scope() as db:
+            row = db.get(ApiKeyRow, key_id)
+            if row is None:
+                return False
+            row.revoked = True
+            row.revoked_at = datetime.now(UTC).isoformat()
         logger.info("Revoked API key %s", key_id)
         return True
 
     def list_keys(self, user_id: str) -> list[dict]:
         """List a user's API keys with masked values."""
-        keys: list[dict] = []
-        for fname in os.listdir(self.storage_dir):
-            if not fname.endswith(".json"):
-                continue
-            try:
-                with open(os.path.join(self.storage_dir, fname)) as f:
-                    data = json.load(f)
-                if data.get("user_id") == user_id:
-                    safe = {k: v for k, v in data.items() if k != "hashed_key"}
-                    keys.append(safe)
-            except (OSError, json.JSONDecodeError):
-                continue
-        return keys
+        with session_scope() as db:
+            rows = db.scalars(select(ApiKeyRow).where(ApiKeyRow.user_id == user_id)).all()
+            return [row.to_dict() for row in rows]
 
     def get_key(self, key_id: str) -> dict | None:
         """Get key metadata by ID (excludes the hashed key)."""
-        data = self._load(key_id)
-        if data is None:
-            return None
-        return {k: v for k, v in data.items() if k != "hashed_key"}
-
-    def _load(self, key_id: str) -> dict | None:
-        """Load raw key data from disk."""
-        path = self._path(key_id)
-        if not os.path.exists(path):
-            return None
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except (OSError, json.JSONDecodeError) as exc:
-            logger.error("Failed to load API key %s: %s", key_id, exc)
-            return None
+        with session_scope() as db:
+            row = db.get(ApiKeyRow, key_id)
+            if row is None:
+                return None
+            return row.to_dict()
