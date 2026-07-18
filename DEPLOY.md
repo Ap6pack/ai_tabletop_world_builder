@@ -96,6 +96,18 @@ together (the API points at the bundled Postgres by default). Override
 `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` as needed. For production,
 prefer a managed Postgres over the bundled container.
 
+### Prebuilt container images
+
+Each version tag publishes images to the GitHub Container Registry, so you can
+pull instead of building:
+
+```bash
+docker pull ghcr.io/ap6pack/ai-tabletop-api:latest
+docker pull ghcr.io/ap6pack/ai-tabletop-frontend:latest
+```
+
+Pin a release by version instead of `latest` (e.g. `:1.0.0`, `:1.0`, `:1`).
+
 ## 6. Health & scaling
 
 - Health check: `GET /health` → `{"status": "healthy"}`.
