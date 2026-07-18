@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Relicensed the project as open source under Apache-2.0.** Replaced the
+  proprietary license and per-file proprietary headers with Apache-2.0
+  (SPDX headers), removed `COMMERCIAL_LICENSE.md`, and added a `NOTICE` file.
+  Copyright: Adam Rhys Heaton (Ap6pack) and contributors.
+
 ### Added
 
 - **Alembic schema migrations.** Database schema changes are now managed with

@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 Veritas Aequitas Holdings LLC. All rights reserved.
-# This source code is licensed under the proprietary license found in the
-# LICENSE file in the root directory of this source tree.
-#
-# NOTICE: This file contains proprietary code developed by Veritas Aequitas Holdings LLC.
-# Unauthorized use, reproduction, or distribution is strictly prohibited.
-# For inquiries, contact: contact@veritasandaequitas.com
+# Copyright 2026 Adam Rhys Heaton (Ap6pack) and contributors
+# SPDX-License-Identifier: Apache-2.0
 """
 Streamlit Home Page - Main entry point for the war gaming platform.
 """
