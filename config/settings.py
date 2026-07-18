@@ -60,16 +60,23 @@ class Settings(BaseSettings):
     max_context_length: int = 4000
 
     # Authentication
-    # NOTE: auth is opt-in. When require_auth is False (the default), the API
-    # endpoints are NOT protected — see api/middleware/auth.py. Product routers
-    # do not yet declare an auth dependency, so enabling require_auth only
-    # guards the /auth router today. Treat this as development-grade until auth
-    # is wired onto the product endpoints.
+    # Auth is opt-in. When require_auth is False (the default), product endpoints
+    # are open (development mode). When True, product routers require a valid
+    # bearer token and admin operations require the admin role — see
+    # api/middleware/auth.py. Enabling auth also requires a real JWT_SECRET_KEY
+    # (enforced below).
     require_auth: bool = False
     jwt_secret_key: str = DEFAULT_JWT_SECRET
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
+
+    # Rate limiting (fixed-window, keyed per authenticated user or client IP).
+    # Protects LLM-backed endpoints from abuse. Uses Redis when REDIS_URL is set
+    # (shared across instances), otherwise an in-process counter.
+    rate_limit_enabled: bool = True
+    rate_limit_requests: int = 120
+    rate_limit_window_seconds: int = 60
 
     # CORS
     cors_origins: str = ""
