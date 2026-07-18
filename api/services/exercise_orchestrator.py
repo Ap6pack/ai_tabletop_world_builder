@@ -13,14 +13,21 @@ Manages the lifecycle of collaborative tabletop exercises with multiple
 teams, round-based play, and facilitator controls. Wraps the single-player
 GameOrchestrator for action processing.
 """
-from datetime import datetime, timezone
-from typing import Optional, List, Dict
 
-from api.models.schemas import GameState, IncidentEvent
+from datetime import UTC, datetime
+
 from api.models.exercise_models import (
-    ExerciseConfig, ExerciseState, ExerciseTeam, ExerciseEvent,
-    TeamMember, TeamAction, TeamActionResult, TeamGameView, Inject,
+    ExerciseConfig,
+    ExerciseEvent,
+    ExerciseState,
+    ExerciseTeam,
+    Inject,
+    TeamAction,
+    TeamActionResult,
+    TeamGameView,
+    TeamMember,
 )
+from api.models.schemas import IncidentEvent
 from api.services.exercise_store import ExerciseStore
 from api.services.game_orchestrator import GameOrchestrator
 from api.services.scenario_orchestrator import ScenarioOrchestrator
@@ -43,13 +50,9 @@ class ExerciseOrchestrator:
 
         # Load scenario
         try:
-            organization = await self.scenario_orchestrator.load_scenario(
-                config.scenario_filename
-            )
+            organization = await self.scenario_orchestrator.load_scenario(config.scenario_filename)
         except FileNotFoundError:
-            raise FileNotFoundError(
-                f"Scenario file not found: {config.scenario_filename}"
-            )
+            raise FileNotFoundError(f"Scenario file not found: {config.scenario_filename}") from None
 
         # Initialize game state via the single-player engine
         game_response = await self.game_orchestrator.start_new_game(
@@ -105,19 +108,19 @@ class ExerciseOrchestrator:
         )
 
         # Log creation event
-        state.exercise_log.append(ExerciseEvent(
-            event_type="facilitator",
-            description=f"Exercise '{config.name}' created with {len(teams)} teams",
-            visibility="all",
-        ))
+        state.exercise_log.append(
+            ExerciseEvent(
+                event_type="facilitator",
+                description=f"Exercise '{config.name}' created with {len(teams)} teams",
+                visibility="all",
+            )
+        )
 
         self.store.save_exercise(state)
         logger.info("Exercise %s created with %d teams", state.exercise_id, len(teams))
         return state
 
-    async def join_exercise(
-        self, exercise_id: str, member: TeamMember
-    ) -> ExerciseState:
+    async def join_exercise(self, exercise_id: str, member: TeamMember) -> ExerciseState:
         """Add a member to a team in the exercise."""
         state = self.store.get_exercise(exercise_id)
         if not state:
@@ -140,12 +143,14 @@ class ExerciseOrchestrator:
 
         target_team.members.append(member)
 
-        state.exercise_log.append(ExerciseEvent(
-            event_type="system",
-            source_team_id=member.team_id,
-            description=f"{member.display_name} joined {target_team.name} as {member.role}",
-            visibility="all",
-        ))
+        state.exercise_log.append(
+            ExerciseEvent(
+                event_type="system",
+                source_team_id=member.team_id,
+                description=f"{member.display_name} joined {target_team.name} as {member.role}",
+                visibility="all",
+            )
+        )
 
         self.store.save_exercise(state)
         logger.info("%s joined exercise %s", member.display_name, exercise_id)
@@ -185,9 +190,7 @@ class ExerciseOrchestrator:
 
         # Process through the game engine
         try:
-            game_response = await self.game_orchestrator.process_player_action(
-                state.game_state.session_id, action_text
-            )
+            game_response = await self.game_orchestrator.process_player_action(state.game_state.session_id, action_text)
             team_action.result = game_response.narrative
             team_action.processed = True
             state.game_state = game_response.game_state
@@ -223,9 +226,7 @@ class ExerciseOrchestrator:
             events_generated=[event],
         )
 
-    async def advance_round(
-        self, exercise_id: str, facilitator_id: str
-    ) -> ExerciseState:
+    async def advance_round(self, exercise_id: str, facilitator_id: str) -> ExerciseState:
         """Advance to the next round. Facilitator only."""
         state = self.store.get_exercise(exercise_id)
         if not state:
@@ -238,58 +239,64 @@ class ExerciseOrchestrator:
         # Start exercise if in setup
         if state.phase == "setup":
             state.phase = "active"
-            state.started_at = datetime.now(timezone.utc)
+            state.started_at = datetime.now(UTC)
             state.current_round = 1
-            state.round_started_at = datetime.now(timezone.utc)
+            state.round_started_at = datetime.now(UTC)
 
-            state.exercise_log.append(ExerciseEvent(
-                event_type="round_change",
-                description="Exercise started - Round 1",
-                visibility="all",
-                round_number=1,
-            ))
+            state.exercise_log.append(
+                ExerciseEvent(
+                    event_type="round_change",
+                    description="Exercise started - Round 1",
+                    visibility="all",
+                    round_number=1,
+                )
+            )
         elif state.phase == "active":
             # Check max rounds
             if state.max_rounds and state.current_round >= state.max_rounds:
                 state.phase = "debrief"
-                state.exercise_log.append(ExerciseEvent(
-                    event_type="round_change",
-                    description=f"Final round ({state.current_round}) completed. Entering debrief.",
-                    visibility="all",
-                    round_number=state.current_round,
-                ))
+                state.exercise_log.append(
+                    ExerciseEvent(
+                        event_type="round_change",
+                        description=f"Final round ({state.current_round}) completed. Entering debrief.",
+                        visibility="all",
+                        round_number=state.current_round,
+                    )
+                )
             else:
                 state.current_round += 1
-                state.round_started_at = datetime.now(timezone.utc)
-                state.exercise_log.append(ExerciseEvent(
-                    event_type="round_change",
-                    description=f"Round {state.current_round} started",
-                    visibility="all",
-                    round_number=state.current_round,
-                ))
+                state.round_started_at = datetime.now(UTC)
+                state.exercise_log.append(
+                    ExerciseEvent(
+                        event_type="round_change",
+                        description=f"Round {state.current_round} started",
+                        visibility="all",
+                        round_number=state.current_round,
+                    )
+                )
         elif state.phase == "paused":
             state.phase = "active"
-            state.exercise_log.append(ExerciseEvent(
-                event_type="facilitator",
-                description="Exercise resumed",
-                visibility="all",
-                round_number=state.current_round,
-            ))
+            state.exercise_log.append(
+                ExerciseEvent(
+                    event_type="facilitator",
+                    description="Exercise resumed",
+                    visibility="all",
+                    round_number=state.current_round,
+                )
+            )
 
         self.store.save_exercise(state)
         logger.info("Exercise %s advanced to round %d", exercise_id, state.current_round)
         return state
 
-    async def inject_event(
-        self, exercise_id: str, inject: Inject
-    ) -> ExerciseState:
+    async def inject_event(self, exercise_id: str, inject: Inject) -> ExerciseState:
         """Deliver a crisis inject to the exercise."""
         state = self.store.get_exercise(exercise_id)
         if not state:
             raise FileNotFoundError(f"Exercise {exercise_id} not found")
 
         inject.delivered = True
-        inject.delivered_at = datetime.now(timezone.utc)
+        inject.delivered_at = datetime.now(UTC)
         state.injects.append(inject)
 
         # Determine target description
@@ -304,32 +311,34 @@ class ExerciseOrchestrator:
 
         # Add to exercise log
         visibility = "team_only" if inject.target_teams else "all"
-        state.exercise_log.append(ExerciseEvent(
-            event_type="inject",
-            description=f"[INJECT] {inject.title} (to {target_desc})",
-            visibility=visibility,
-            round_number=state.current_round,
-        ))
+        state.exercise_log.append(
+            ExerciseEvent(
+                event_type="inject",
+                description=f"[INJECT] {inject.title} (to {target_desc})",
+                visibility=visibility,
+                round_number=state.current_round,
+            )
+        )
 
         # Also add to game timeline for narrative continuity
         if state.game_state:
-            state.game_state.incident_timeline.append(IncidentEvent(
-                timestamp=datetime.now(timezone.utc),
-                event_type="consequence",
-                description=f"[Crisis Inject] {inject.title}: {inject.content[:200]}",
-                severity=inject.severity if inject.severity in (
-                    "critical", "high", "medium", "low", "info"
-                ) else "medium",
-                actor="system",
-            ))
+            state.game_state.incident_timeline.append(
+                IncidentEvent(
+                    timestamp=datetime.now(UTC),
+                    event_type="consequence",
+                    description=f"[Crisis Inject] {inject.title}: {inject.content[:200]}",
+                    severity=inject.severity
+                    if inject.severity in ("critical", "high", "medium", "low", "info")
+                    else "medium",
+                    actor="system",
+                )
+            )
 
         self.store.save_exercise(state)
         logger.info("Inject '%s' delivered to exercise %s", inject.title, exercise_id)
         return state
 
-    async def get_team_view(
-        self, exercise_id: str, team_id: str
-    ) -> Optional[TeamGameView]:
+    async def get_team_view(self, exercise_id: str, team_id: str) -> TeamGameView | None:
         """Get a team-filtered view of the exercise state."""
         state = self.store.get_exercise(exercise_id)
         if not state:
@@ -344,21 +353,20 @@ class ExerciseOrchestrator:
         # Filter events by visibility
         visible_events = []
         for event in state.exercise_log:
-            if event.visibility == "all":
-                visible_events.append(event)
-            elif event.visibility == "team_only" and event.source_team_id == team_id:
-                visible_events.append(event)
-            elif event.visibility == "facilitator_only" and is_facilitator:
+            if (
+                event.visibility == "all"
+                or event.visibility == "team_only"
+                and event.source_team_id == team_id
+                or event.visibility == "facilitator_only"
+                and is_facilitator
+            ):
                 visible_events.append(event)
 
         # Filter injects visible to this team
         active_injects = []
         for inject in state.injects:
-            if inject.delivered:
-                if not inject.target_teams or team_id in inject.target_teams:
-                    active_injects.append(inject)
-                elif is_facilitator:
-                    active_injects.append(inject)
+            if inject.delivered and (not inject.target_teams or team_id in inject.target_teams or is_facilitator):
+                active_injects.append(inject)
 
         return TeamGameView(
             exercise_id=exercise_id,
@@ -378,12 +386,14 @@ class ExerciseOrchestrator:
             raise FileNotFoundError(f"Exercise {exercise_id} not found")
 
         state.phase = "paused"
-        state.exercise_log.append(ExerciseEvent(
-            event_type="facilitator",
-            description="Exercise paused",
-            visibility="all",
-            round_number=state.current_round,
-        ))
+        state.exercise_log.append(
+            ExerciseEvent(
+                event_type="facilitator",
+                description="Exercise paused",
+                visibility="all",
+                round_number=state.current_round,
+            )
+        )
 
         self.store.save_exercise(state)
         return state
@@ -395,21 +405,21 @@ class ExerciseOrchestrator:
             raise FileNotFoundError(f"Exercise {exercise_id} not found")
 
         state.phase = "completed"
-        state.ended_at = datetime.now(timezone.utc)
+        state.ended_at = datetime.now(UTC)
 
-        state.exercise_log.append(ExerciseEvent(
-            event_type="facilitator",
-            description=f"Exercise completed after {state.current_round} rounds",
-            visibility="all",
-            round_number=state.current_round,
-        ))
+        state.exercise_log.append(
+            ExerciseEvent(
+                event_type="facilitator",
+                description=f"Exercise completed after {state.current_round} rounds",
+                visibility="all",
+                round_number=state.current_round,
+            )
+        )
 
         # End the underlying game session
         if state.game_state:
             try:
-                await self.game_orchestrator.end_game(
-                    state.game_state.session_id, "completed"
-                )
+                await self.game_orchestrator.end_game(state.game_state.session_id, "completed")
             except Exception as e:
                 logger.warning("Failed to end game session: %s", e)
 
@@ -427,18 +437,14 @@ class ExerciseOrchestrator:
     # Private helpers
     # -----------------------------------------------------------------------
 
-    def _find_team(
-        self, state: ExerciseState, team_id: str
-    ) -> Optional[ExerciseTeam]:
+    def _find_team(self, state: ExerciseState, team_id: str) -> ExerciseTeam | None:
         """Find a team by ID."""
         for team in state.teams:
             if team.team_id == team_id:
                 return team
         return None
 
-    def _find_member(
-        self, team: ExerciseTeam, member_id: str
-    ) -> Optional[TeamMember]:
+    def _find_member(self, team: ExerciseTeam, member_id: str) -> TeamMember | None:
         """Find a member by ID on a team."""
         for member in team.members:
             if member.member_id == member_id:
@@ -460,7 +466,4 @@ class ExerciseOrchestrator:
 
     def _is_facilitator_team(self, state: ExerciseState, team_id: str) -> bool:
         """Check if a team is a facilitator/white team."""
-        for team in state.teams:
-            if team.team_id == team_id and team.team_type == "white":
-                return True
-        return False
+        return any(team.team_id == team_id and team.team_type == "white" for team in state.teams)

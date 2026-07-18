@@ -12,10 +12,11 @@ PDF and CSV Report Generator for After Action Review exports.
 Generates formatted PDF reports from AAR data using fpdf2, and CSV exports
 from game session timelines for downstream analysis.
 """
+
 import csv
 import io
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any
 
 from fpdf import FPDF
 
@@ -35,8 +36,8 @@ class ReportGenerator:
 
     def generate_pdf(
         self,
-        aar_report: Dict[str, Any],
-        game_state: Optional[Dict[str, Any]] = None,
+        aar_report: dict[str, Any],
+        game_state: dict[str, Any] | None = None,
     ) -> bytes:
         """Generate a PDF report from AAR data.
 
@@ -47,9 +48,7 @@ class ReportGenerator:
         Returns:
             PDF file contents as bytes.
         """
-        logger.info(
-            f"Generating PDF report for session {aar_report.get('session_id', 'unknown')}"
-        )
+        logger.info(f"Generating PDF report for session {aar_report.get('session_id', 'unknown')}")
 
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
@@ -96,12 +95,14 @@ class ReportGenerator:
                 action = decision.get("action", "")
                 if len(action) > 60:
                     action = action[:57] + "..."
-                rows.append([
-                    action,
-                    decision.get("category", ""),
-                    str(decision.get("quality_score", "")),
-                    decision.get("impact", ""),
-                ])
+                rows.append(
+                    [
+                        action,
+                        decision.get("category", ""),
+                        str(decision.get("quality_score", "")),
+                        decision.get("impact", ""),
+                    ]
+                )
             self._add_table(pdf, headers, rows)
             pdf.ln(4)
 
@@ -146,22 +147,21 @@ class ReportGenerator:
             rows = []
             for name, data in metrics.items():
                 if isinstance(data, dict):
-                    rows.append([
-                        name.replace("_", " ").title(),
-                        str(data.get("value", "")),
-                        str(data.get("benchmark", "N/A")),
-                        f"{data.get('percentile', 'N/A')}th" if data.get("percentile") is not None else "N/A",
-                    ])
+                    rows.append(
+                        [
+                            name.replace("_", " ").title(),
+                            str(data.get("value", "")),
+                            str(data.get("benchmark", "N/A")),
+                            f"{data.get('percentile', 'N/A')}th" if data.get("percentile") is not None else "N/A",
+                        ]
+                    )
             self._add_table(pdf, headers, rows)
 
         pdf_bytes = pdf.output()
-        logger.info(
-            f"PDF generated: {len(pdf_bytes)} bytes for session "
-            f"{aar_report.get('session_id', 'unknown')}"
-        )
+        logger.info(f"PDF generated: {len(pdf_bytes)} bytes for session {aar_report.get('session_id', 'unknown')}")
         return bytes(pdf_bytes)
 
-    def generate_csv(self, game_state: Dict[str, Any]) -> str:
+    def generate_csv(self, game_state: dict[str, Any]) -> str:
         """Generate a CSV string from the game state incident timeline.
 
         Args:
@@ -170,9 +170,7 @@ class ReportGenerator:
         Returns:
             CSV-formatted string with timeline events.
         """
-        logger.info(
-            f"Generating CSV for session {game_state.get('session_id', 'unknown')}"
-        )
+        logger.info(f"Generating CSV for session {game_state.get('session_id', 'unknown')}")
         output = io.StringIO()
         fieldnames = ["timestamp", "event_type", "description", "severity", "actor"]
         writer = csv.DictWriter(output, fieldnames=fieldnames)
@@ -182,13 +180,15 @@ class ReportGenerator:
             timestamp = event.get("timestamp", "")
             if isinstance(timestamp, datetime):
                 timestamp = timestamp.isoformat()
-            writer.writerow({
-                "timestamp": timestamp,
-                "event_type": event.get("event_type", ""),
-                "description": event.get("description", ""),
-                "severity": event.get("severity", ""),
-                "actor": event.get("actor", ""),
-            })
+            writer.writerow(
+                {
+                    "timestamp": timestamp,
+                    "event_type": event.get("event_type", ""),
+                    "description": event.get("description", ""),
+                    "severity": event.get("severity", ""),
+                    "actor": event.get("actor", ""),
+                }
+            )
 
         csv_str = output.getvalue()
         output.close()
@@ -215,7 +215,7 @@ class ReportGenerator:
         pdf.cell(0, 9, title, new_x="LMARGIN", new_y="NEXT")
         pdf.set_text_color(0, 0, 0)
 
-    def _add_table(self, pdf: FPDF, headers: List[str], rows: List[List[str]]) -> None:
+    def _add_table(self, pdf: FPDF, headers: list[str], rows: list[list[str]]) -> None:
         """Add a simple table with headers and rows."""
         num_cols = len(headers)
         col_width = self.PAGE_WIDTH / num_cols
@@ -235,7 +235,7 @@ class ReportGenerator:
             pdf.ln()
 
     @staticmethod
-    def _grade_color(grade: str) -> Tuple[int, int, int]:
+    def _grade_color(grade: str) -> tuple[int, int, int]:
         """Return an RGB tuple for the given letter grade.
 
         A = green, B = blue, C = yellow, D = orange, F = red.

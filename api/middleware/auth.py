@@ -9,7 +9,6 @@
 """
 FastAPI dependency functions for authentication and authorization.
 """
-from typing import Dict, Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -22,8 +21,8 @@ auth_service = AuthService()
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-) -> Optional[Dict]:
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> dict | None:
     """
     Extract and validate the current user from a Bearer token.
 
@@ -60,8 +59,8 @@ async def get_current_user(
 
 
 async def require_auth(
-    user: Optional[Dict] = Depends(get_current_user),
-) -> Dict:
+    user: dict | None = Depends(get_current_user),
+) -> dict:
     """Ensure a valid user is present. Raises 401 if user is None."""
     if user is None:
         raise HTTPException(
@@ -75,7 +74,7 @@ async def require_auth(
 def require_role(required_role: str):
     """Return a dependency that checks whether the user has the required role."""
 
-    async def _check_role(user: Dict = Depends(require_auth)) -> Dict:
+    async def _check_role(user: dict = Depends(require_auth)) -> dict:
         user_role = user.get("role", "")
         if user_role == "admin" or user_role == required_role:
             return user

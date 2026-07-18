@@ -9,16 +9,13 @@
 """
 Streamlit Session Manager Page - View and manage game sessions.
 """
-import streamlit as st
+
 import requests
-from datetime import datetime
+import streamlit as st
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
-st.set_page_config(
-    page_title="Session Manager",
-    page_icon="📊",
-    layout="wide"
-)
+st.set_page_config(page_title="Session Manager", page_icon="📊", layout="wide")
 
 st.title("📊 Session Manager")
 st.markdown("View and manage your war gaming sessions")
@@ -60,30 +57,19 @@ try:
             # Filter options
             col1, col2, col3 = st.columns(3)
             with col1:
-                filter_status = st.selectbox(
-                    "Filter by Status",
-                    ["All", "In Progress", "Completed", "Failed"]
-                )
+                filter_status = st.selectbox("Filter by Status", ["All", "In Progress", "Completed", "Failed"])
             with col2:
                 filter_role = st.selectbox(
-                    "Filter by Role",
-                    ["All"] + list(set(s.get("player_role", "unknown") for s in sessions))
+                    "Filter by Role", ["All"] + list(set(s.get("player_role", "unknown") for s in sessions))
                 )
             with col3:
-                sort_by = st.selectbox(
-                    "Sort by",
-                    ["Most Recent", "Highest Score", "Lowest Score", "Duration"]
-                )
+                sort_by = st.selectbox("Sort by", ["Most Recent", "Highest Score", "Lowest Score", "Duration"])
 
             # Apply filters
             filtered_sessions = sessions
 
             if filter_status != "All":
-                status_map = {
-                    "In Progress": "in_progress",
-                    "Completed": "completed",
-                    "Failed": "failed"
-                }
+                status_map = {"In Progress": "in_progress", "Completed": "completed", "Failed": "failed"}
                 filtered_sessions = [s for s in filtered_sessions if s.get("status") == status_map[filter_status]]
 
             if filter_role != "All":
@@ -111,12 +97,8 @@ try:
                         st.caption(f"Session ID: {session.get('session_id', 'unknown')[:16]}...")
 
                         # Status badge
-                        status = session.get('status', 'unknown')
-                        status_emoji = {
-                            "in_progress": "🟢",
-                            "completed": "✅",
-                            "failed": "❌"
-                        }.get(status, "⚪")
+                        status = session.get("status", "unknown")
+                        status_emoji = {"in_progress": "🟢", "completed": "✅", "failed": "❌"}.get(status, "⚪")
                         st.markdown(f"{status_emoji} **{status.replace('_', ' ').title()}**")
 
                     with col2:
@@ -133,13 +115,12 @@ try:
                         # Load session button
                         if st.button("📂 Load", key=f"load_{session['session_id']}", use_container_width=True):
                             # Store session ID and switch to war game page
-                            st.session_state.game_session_id = session['session_id']
+                            st.session_state.game_session_id = session["session_id"]
 
                             # Load full state
                             try:
                                 state_response = requests.get(
-                                    f"{API_BASE_URL}/game/state/{session['session_id']}",
-                                    timeout=DEFAULT_TIMEOUT
+                                    f"{API_BASE_URL}/game/state/{session['session_id']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if state_response.status_code == 200:
                                     game_data = state_response.json()
@@ -151,15 +132,13 @@ try:
                                     timeline = game_data.get("incident_timeline", [])
                                     for event in timeline:
                                         if event.get("event_type") == "action":
-                                            st.session_state.chat_history.append({
-                                                "role": "user",
-                                                "content": event.get("description", "")
-                                            })
+                                            st.session_state.chat_history.append(
+                                                {"role": "user", "content": event.get("description", "")}
+                                            )
                                         elif event.get("event_type") in ["detection", "consequence"]:
-                                            st.session_state.chat_history.append({
-                                                "role": "assistant",
-                                                "content": event.get("description", "")
-                                            })
+                                            st.session_state.chat_history.append(
+                                                {"role": "assistant", "content": event.get("description", "")}
+                                            )
 
                                     # Load scenario
                                     st.session_state.active_scenario = game_data.get("organization", {})
@@ -170,21 +149,20 @@ try:
 
                         # View details
                         if st.button("📊 Details", key=f"details_{session['session_id']}", use_container_width=True):
-                            st.session_state.selected_session_id = session['session_id']
+                            st.session_state.selected_session_id = session["session_id"]
                             st.rerun()
 
                         # Delete session - allow for any status
                         if st.button("🗑️ Delete", key=f"delete_{session['session_id']}", use_container_width=True):
                             try:
                                 delete_response = requests.delete(
-                                    f"{API_BASE_URL}/game/sessions/{session['session_id']}",
-                                    timeout=DEFAULT_TIMEOUT
+                                    f"{API_BASE_URL}/game/sessions/{session['session_id']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if delete_response.status_code == 200:
                                     st.success("✅ Session deleted")
                                     st.rerun()
                                 else:
-                                    error_msg = delete_response.json().get('detail', 'Unknown error')
+                                    error_msg = delete_response.json().get("detail", "Unknown error")
                                     st.error(f"Failed to delete: {error_msg}")
                             except Exception as e:
                                 st.error(f"Error: {str(e)}")
@@ -197,8 +175,7 @@ try:
                         # Get full session state
                         try:
                             state_response = requests.get(
-                                f"{API_BASE_URL}/game/state/{session['session_id']}",
-                                timeout=DEFAULT_TIMEOUT
+                                f"{API_BASE_URL}/game/state/{session['session_id']}", timeout=DEFAULT_TIMEOUT
                             )
                             if state_response.status_code == 200:
                                 full_state = state_response.json()
@@ -215,7 +192,7 @@ try:
                                             "detection": "🚨",
                                             "action": "⚡",
                                             "consequence": "📍",
-                                            "escalation": "⚠️"
+                                            "escalation": "⚠️",
                                         }.get(event_type, "📌")
 
                                         severity = event.get("severity", "info")
@@ -224,10 +201,12 @@ try:
                                             "high": "🟠",
                                             "medium": "🟡",
                                             "low": "🟢",
-                                            "info": "⚪"
+                                            "info": "⚪",
                                         }.get(severity, "⚪")
 
-                                        st.markdown(f"{event_emoji} {severity_color} {event.get('description', 'Event')}")
+                                        st.markdown(
+                                            f"{event_emoji} {severity_color} {event.get('description', 'Event')}"
+                                        )
                                         st.caption(f"_{event.get('actor', 'system')} - {event.get('timestamp', '')}s_")
 
                                 with tab2:
@@ -245,7 +224,7 @@ try:
                                     st.markdown("**Tools:**")
                                     tools = inventory.get("tools", {})
                                     if tools:
-                                        for tool_name in tools.keys():
+                                        for tool_name in tools:
                                             st.markdown(f"✅ {tool_name}")
                                     else:
                                         st.info("No tools")

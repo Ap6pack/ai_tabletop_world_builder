@@ -7,7 +7,6 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Tests for SystemStateManager — system health and status tracking."""
-from datetime import datetime, timezone
 
 import pytest
 
@@ -17,19 +16,22 @@ from api.models.schemas import (
     Inventory,
     Organization,
     System,
-    SystemState,
 )
 from api.services.system_state_manager import SystemStateManager
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_system(sid="sys-1", name="Web Server", criticality="critical"):
     return System(
-        id=sid, name=name, description=name,
-        type="server", os="Linux", services=["nginx"],
+        id=sid,
+        name=name,
+        description=name,
+        type="server",
+        os="Linux",
+        services=["nginx"],
         criticality=criticality,
     )
 
@@ -38,14 +40,23 @@ def _make_org(systems=None):
     if systems is None:
         systems = [_make_system()]
     return Organization(
-        id="org-1", name="Test Corp", description="Test",
-        industry="Technology", size="medium",
-        departments=[Department(
-            id="d1", name="IT", description="IT",
-            business_function="Tech", systems=systems,
-            data_classification="internal",
-        )],
-        threat_actors=[], security_posture="developing",
+        id="org-1",
+        name="Test Corp",
+        description="Test",
+        industry="Technology",
+        size="medium",
+        departments=[
+            Department(
+                id="d1",
+                name="IT",
+                description="IT",
+                business_function="Tech",
+                systems=systems,
+                data_classification="internal",
+            )
+        ],
+        threat_actors=[],
+        security_posture="developing",
         compliance_frameworks=[],
     )
 
@@ -53,9 +64,12 @@ def _make_org(systems=None):
 def _make_game_state(systems=None, **overrides):
     org = _make_org(systems)
     defaults = dict(
-        session_id="s1", organization=org,
-        current_scenario="test", player_role="mixed",
-        inventory=Inventory(), status="in-progress",
+        session_id="s1",
+        organization=org,
+        current_scenario="test",
+        player_role="mixed",
+        inventory=Inventory(),
+        status="in-progress",
     )
     defaults.update(overrides)
     return GameState(**defaults)
@@ -65,13 +79,14 @@ def _make_game_state(systems=None, **overrides):
 # initialize_system_states
 # ---------------------------------------------------------------------------
 
+
 class TestInitialize:
     def test_initialize_all_online(self):
         mgr = SystemStateManager()
         org = _make_org([_make_system("s1"), _make_system("s2", "DB Server")])
         states = mgr.initialize_system_states(org)
         assert len(states) == 2
-        for sid, state in states.items():
+        for _sid, state in states.items():
             assert state.status == "online"
             assert state.health == 100
 
@@ -86,6 +101,7 @@ class TestInitialize:
 # update_system_state
 # ---------------------------------------------------------------------------
 
+
 class TestUpdateState:
     def test_update_status_and_health(self):
         mgr = SystemStateManager()
@@ -93,7 +109,10 @@ class TestUpdateState:
         gs.system_states = mgr.initialize_system_states(gs.organization)
 
         result = mgr.update_system_state(
-            gs, "sys-1", "compromised", health_change=-40,
+            gs,
+            "sys-1",
+            "compromised",
+            health_change=-40,
             reason="Malware detected",
         )
         assert result.status == "compromised"
@@ -121,7 +140,9 @@ class TestUpdateState:
         gs.system_states = mgr.initialize_system_states(gs.organization)
 
         mgr.update_system_state(
-            gs, "sys-1", "compromised",
+            gs,
+            "sys-1",
+            "compromised",
             affected_services=["web", "api"],
         )
         assert gs.system_states["sys-1"].affected_services == ["web", "api"]
@@ -138,12 +159,16 @@ class TestUpdateState:
 # get_compromised_systems / get_critical_systems_at_risk
 # ---------------------------------------------------------------------------
 
+
 class TestQuerySystems:
     def test_get_compromised_systems(self):
         mgr = SystemStateManager()
-        gs = _make_game_state([
-            _make_system("s1"), _make_system("s2", "DB"),
-        ])
+        gs = _make_game_state(
+            [
+                _make_system("s1"),
+                _make_system("s2", "DB"),
+            ]
+        )
         gs.system_states = mgr.initialize_system_states(gs.organization)
         mgr.apply_compromise(gs, "s1", "high")
 
@@ -153,10 +178,12 @@ class TestQuerySystems:
 
     def test_get_critical_systems_at_risk(self):
         mgr = SystemStateManager()
-        gs = _make_game_state([
-            _make_system("s1", "Critical Server", "critical"),
-            _make_system("s2", "Low Server", "low"),
-        ])
+        gs = _make_game_state(
+            [
+                _make_system("s1", "Critical Server", "critical"),
+                _make_system("s2", "Low Server", "low"),
+            ]
+        )
         gs.system_states = mgr.initialize_system_states(gs.organization)
         mgr.apply_compromise(gs, "s1", "critical")
 
@@ -169,13 +196,17 @@ class TestQuerySystems:
 # apply_compromise / apply_recovery
 # ---------------------------------------------------------------------------
 
+
 class TestCompromiseRecovery:
-    @pytest.mark.parametrize("severity,expected_max_health", [
-        ("low", 80),
-        ("medium", 65),
-        ("high", 50),
-        ("critical", 30),
-    ])
+    @pytest.mark.parametrize(
+        "severity,expected_max_health",
+        [
+            ("low", 80),
+            ("medium", 65),
+            ("high", 50),
+            ("critical", 30),
+        ],
+    )
     def test_apply_compromise_severity(self, severity, expected_max_health):
         mgr = SystemStateManager()
         gs = _make_game_state()
@@ -210,13 +241,17 @@ class TestCompromiseRecovery:
 # get_system_status_summary / check_system_availability
 # ---------------------------------------------------------------------------
 
+
 class TestSummaryAndAvailability:
     def test_status_summary(self):
         mgr = SystemStateManager()
-        gs = _make_game_state([
-            _make_system("s1"), _make_system("s2", "DB"),
-            _make_system("s3", "Mail"),
-        ])
+        gs = _make_game_state(
+            [
+                _make_system("s1"),
+                _make_system("s2", "DB"),
+                _make_system("s3", "Mail"),
+            ]
+        )
         gs.system_states = mgr.initialize_system_states(gs.organization)
         mgr.apply_compromise(gs, "s1", "high")
 

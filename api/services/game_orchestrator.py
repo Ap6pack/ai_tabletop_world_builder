@@ -9,18 +9,18 @@
 """
 Game orchestrator service that coordinates game sessions and the AI game master.
 """
-from typing import Optional
-from datetime import datetime, timezone
-from api.models import GameState, GameResponse, Organization
-from api.services.game_session_service import GameSessionService
+
+from datetime import UTC, datetime
+
+from api.models import GameResponse, GameState, Organization
+from api.services.business_impact_service import BusinessImpactService
 from api.services.game_master_service import GameMasterService
+from api.services.game_session_service import GameSessionService
 from api.services.objective_generator import ObjectiveGenerator
+from api.services.resource_manager import ResourceManager
 from api.services.system_state_manager import SystemStateManager
 from api.services.threat_response_engine import ThreatResponseEngine
-from api.services.business_impact_service import BusinessImpactService
 from api.services.time_pressure_service import TimePressureService
-from api.services.resource_manager import ResourceManager
-from api.providers import LLMProviderFactory
 
 
 class GameOrchestrator:
@@ -44,7 +44,7 @@ class GameOrchestrator:
         organization: Organization,
         scenario_type: str = "incident-response",
         player_role: str = "soc-analyst",
-        difficulty: str = "intermediate"
+        difficulty: str = "intermediate",
     ) -> GameResponse:
         """
         Start a new war game session.
@@ -60,18 +60,12 @@ class GameOrchestrator:
         """
         # Create new session
         game_state = self.session_service.create_session(
-            organization=organization,
-            scenario_type=scenario_type,
-            player_role=player_role,
-            difficulty=difficulty
+            organization=organization, scenario_type=scenario_type, player_role=player_role, difficulty=difficulty
         )
 
         # Generate objectives automatically
         objectives = self.objective_generator.generate_objectives_from_scenario(
-            organization=organization,
-            scenario_type=scenario_type,
-            difficulty=difficulty,
-            player_role=player_role
+            organization=organization, scenario_type=scenario_type, difficulty=difficulty, player_role=player_role
         )
         game_state.objectives = objectives
 
@@ -85,7 +79,7 @@ class GameOrchestrator:
 
         # Phase 5B: Initialize business impact tracking
         game_state.business_impact = self.business_impact_service.initialize_business_impact(organization)
-        game_state.game_started_at = datetime.now(timezone.utc)
+        game_state.game_started_at = datetime.now(UTC)
 
         # Phase 5B: Initialize resource pool
         game_state.resource_pool = self.resource_manager.initialize_resource_pool(difficulty)
@@ -127,7 +121,7 @@ class GameOrchestrator:
             event_type="detection",
             description="Initial security alert detected",
             severity="high",
-            actor="system"
+            actor="system",
         )
 
         return GameResponse(
@@ -135,14 +129,10 @@ class GameOrchestrator:
             game_state=game_state,
             inventory_changes=None,
             new_events=game_state.incident_timeline,
-            hints=["Investigate the alert details", "Check what systems are affected"]
+            hints=["Investigate the alert details", "Check what systems are affected"],
         )
 
-    async def process_player_action(
-        self,
-        session_id: str,
-        action: str
-    ) -> GameResponse:
+    async def process_player_action(self, session_id: str, action: str) -> GameResponse:
         """
         Process a player action in an ongoing game.
 
@@ -184,7 +174,11 @@ class GameOrchestrator:
                     game_state=game_state,
                     inventory_changes=None,
                     new_events=[],
-                    hints=["Check your resource status", "Try less expensive actions", "Wait for action points to regenerate"]
+                    hints=[
+                        "Check your resource status",
+                        "Try less expensive actions",
+                        "Wait for action points to regenerate",
+                    ],
                 )
 
             # Spend resources for the action
@@ -194,9 +188,7 @@ class GameOrchestrator:
         # Phase 5B: Update timers and check for expiries
         timer_messages = []
         if game_state.timers:
-            game_state, timer_messages = self.time_pressure_service.update_timers(
-                game_state, game_state.time_elapsed
-            )
+            game_state, timer_messages = self.time_pressure_service.update_timers(game_state, game_state.time_elapsed)
 
         # Phase 5B: Check escalation rules
         escalation_messages = []
@@ -215,7 +207,7 @@ class GameOrchestrator:
             event_type="action",
             description=f"Player action: {action}",
             severity="info",
-            actor="player"
+            actor="player",
         )
 
         # Add consequence events
@@ -225,16 +217,13 @@ class GameOrchestrator:
                 event_type=event.event_type,
                 description=event.description,
                 severity=event.severity,
-                actor=event.actor
+                actor=event.actor,
             )
 
         # Update inventory if needed
         inv_changes = gm_response.get("inventory_changes", {})
         if inv_changes:
-            game_state = self.session_service.update_inventory(
-                session_id=session_id,
-                tool_changes=inv_changes
-            )
+            game_state = self.session_service.update_inventory(session_id=session_id, tool_changes=inv_changes)
 
         # Update score if needed
         score_change = gm_response.get("score_change", {})
@@ -242,7 +231,7 @@ class GameOrchestrator:
             game_state = self.session_service.update_score(
                 session_id=session_id,
                 points=score_change["points"],
-                reason=score_change.get("reason", "Action performed")
+                reason=score_change.get("reason", "Action performed"),
             )
 
         # Phase 5B: Append resource, timer, and escalation messages to narrative
@@ -259,7 +248,7 @@ class GameOrchestrator:
             game_state=game_state,
             inventory_changes=inv_changes if inv_changes else None,
             new_events=gm_response.get("new_events", []),
-            hints=gm_response.get("hints")
+            hints=gm_response.get("hints"),
         )
 
     async def get_hint(self, session_id: str) -> str:
@@ -285,12 +274,12 @@ class GameOrchestrator:
             event_type="action",
             description="Player requested a hint",
             severity="info",
-            actor="player"
+            actor="player",
         )
 
         return hint
 
-    def get_session_state(self, session_id: str) -> Optional[GameState]:
+    def get_session_state(self, session_id: str) -> GameState | None:
         """
         Get current game state.
 
@@ -320,7 +309,7 @@ class GameOrchestrator:
 
         return game_state
 
-    def list_sessions(self, status_filter: Optional[str] = None) -> list:
+    def list_sessions(self, status_filter: str | None = None) -> list:
         """
         List all game sessions.
 
@@ -347,12 +336,7 @@ class GameOrchestrator:
         """
         return self.session_service.delete_session(session_id)
 
-    def complete_objective(
-        self,
-        session_id: str,
-        objective: str,
-        success: bool = True
-    ) -> GameState:
+    def complete_objective(self, session_id: str, objective: str, success: bool = True) -> GameState:
         """
         Mark an objective as completed or failed.
 
@@ -375,10 +359,10 @@ class GameOrchestrator:
         self,
         session_id: str,
         event_type: str,
-        system_id: Optional[str] = None,
-        hours: Optional[float] = None,
-        records: Optional[int] = None,
-        department: Optional[str] = None,
+        system_id: str | None = None,
+        hours: float | None = None,
+        records: int | None = None,
+        department: str | None = None,
         severity: str = "medium",
     ) -> GameState:
         """
@@ -469,7 +453,7 @@ class GameOrchestrator:
 
         return self.time_pressure_service.get_active_timers_summary(game_state)
 
-    def get_next_escalation(self, session_id: str) -> Optional[dict]:
+    def get_next_escalation(self, session_id: str) -> dict | None:
         """
         Get next scheduled escalation for a session (Phase 5B).
 
@@ -484,6 +468,4 @@ class GameOrchestrator:
         if game_state is None:
             raise ValueError(f"Session {session_id} not found")
 
-        return self.time_pressure_service.get_next_escalation(
-            game_state, game_state.time_elapsed
-        )
+        return self.time_pressure_service.get_next_escalation(game_state, game_state.time_elapsed)

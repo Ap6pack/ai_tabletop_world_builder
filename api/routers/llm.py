@@ -9,7 +9,9 @@
 """
 LLM API router.
 """
+
 from fastapi import APIRouter, HTTPException
+
 from api.models import LLMRequest, LLMResponse
 from api.services import LLMService
 
@@ -33,9 +35,9 @@ async def generate_completion(request: LLMRequest):
     try:
         return await LLMService.generate_completion(request)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"LLM generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"LLM generation failed: {str(e)}") from e
 
 
 @router.get("/providers")
@@ -49,4 +51,4 @@ async def check_providers():
     try:
         return await LLMService.check_providers()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Provider check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Provider check failed: {str(e)}") from e

@@ -12,8 +12,8 @@ Alternative Path Service for suggesting alternative actions at key decision poin
 Analyzes incident timelines and game state to identify consequential player
 choices and suggest better alternatives for after-action review.
 """
-from datetime import datetime, timezone
-from typing import Dict, List, Optional
+
+from datetime import datetime
 
 from api.models import (
     AlternativePath,
@@ -29,7 +29,7 @@ class AlternativePathService:
     """Service for suggesting alternative actions at key decision points."""
 
     # Rule-based alternative suggestions keyed by scenario pattern
-    ALTERNATIVE_RULES: Dict[str, Dict] = {
+    ALTERNATIVE_RULES: dict[str, dict] = {
         "investigation_during_active_threat": {
             "condition_description": "Player investigated while threat was active",
             "suggested_action": "Initiate containment procedures on affected systems",
@@ -79,7 +79,7 @@ class AlternativePathService:
     }
 
     # Action categories used for classifying player actions
-    ACTION_CATEGORIES: Dict[str, List[str]] = {
+    ACTION_CATEGORIES: dict[str, list[str]] = {
         "investigation": ["investigate", "analyze", "check_logs", "examine", "review", "forensic", "inspect"],
         "detection": ["scan", "monitor", "detect", "alert", "search", "hunt"],
         "containment": ["isolate", "block", "quarantine", "contain", "segment", "disconnect", "disable"],
@@ -91,10 +91,10 @@ class AlternativePathService:
         """Initialize the alternative path service."""
         pass
 
-    def suggest_alternatives(self, game_state: GameState) -> List[AlternativePath]:
+    def suggest_alternatives(self, game_state: GameState) -> list[AlternativePath]:
         """Identify key decision points and suggest better alternatives."""
         logger.info(f"Generating alternative path suggestions for session {game_state.session_id}")
-        alternatives: List[AlternativePath] = []
+        alternatives: list[AlternativePath] = []
 
         decision_points = self.identify_decision_points(game_state.incident_timeline)
         logger.debug(f"Found {len(decision_points)} decision points")
@@ -116,7 +116,7 @@ class AlternativePathService:
         logger.info(f"Generated {len(alternatives)} alternative path suggestions")
         return alternatives
 
-    def identify_decision_points(self, timeline: List[IncidentEvent]) -> List[Dict]:
+    def identify_decision_points(self, timeline: list[IncidentEvent]) -> list[dict]:
         """
         Find moments where the player made consequential choices.
 
@@ -124,7 +124,7 @@ class AlternativePathService:
         player actions during high-severity situations, and the first action
         of each category type.
         """
-        decision_points: List[Dict] = []
+        decision_points: list[dict] = []
         seen_categories: set = set()
 
         for i, event in enumerate(timeline):
@@ -152,19 +152,19 @@ class AlternativePathService:
                 reason = reason or f"First {category} action"
 
             if is_decision_point:
-                decision_points.append({
-                    "event": event,
-                    "index": i,
-                    "reason": reason,
-                    "category": category,
-                    "timestamp": event.timestamp,
-                })
+                decision_points.append(
+                    {
+                        "event": event,
+                        "index": i,
+                        "reason": reason,
+                        "category": category,
+                        "timestamp": event.timestamp,
+                    }
+                )
 
         return decision_points
 
-    def _generate_alternative(
-        self, event: IncidentEvent, game_state: GameState
-    ) -> Optional[AlternativePath]:
+    def _generate_alternative(self, event: IncidentEvent, game_state: GameState) -> AlternativePath | None:
         """Generate a specific alternative for a decision point using rule-based suggestions."""
         category = self._categorize_action(event.description)
         decision_label = f"Turn at {event.timestamp.strftime('%H:%M:%S')}: {event.description}"
@@ -193,10 +193,10 @@ class AlternativePathService:
 
         return None
 
-    def _check_early_detection(self, game_state: GameState) -> Optional[AlternativePath]:
+    def _check_early_detection(self, game_state: GameState) -> AlternativePath | None:
         """Check if the player ran detection actions in the first 5 minutes."""
         early_detection_found = False
-        first_event_time: Optional[datetime] = None
+        first_event_time: datetime | None = None
 
         for event in game_state.incident_timeline:
             if first_event_time is None:
@@ -219,10 +219,11 @@ class AlternativePathService:
             )
         return None
 
-    def _check_critical_systems(self, game_state: GameState) -> Optional[AlternativePath]:
+    def _check_critical_systems(self, game_state: GameState) -> AlternativePath | None:
         """Check if compromised/offline critical systems were addressed by the player."""
         neglected_critical = [
-            sid for sid, state in game_state.system_states.items()
+            sid
+            for sid, state in game_state.system_states.items()
             if state.status in ("compromised", "offline") and state.health < 50
         ]
         if not neglected_critical:
@@ -250,17 +251,14 @@ class AlternativePathService:
             )
         return None
 
-    def _check_budget_usage(self, game_state: GameState) -> Optional[AlternativePath]:
+    def _check_budget_usage(self, game_state: GameState) -> AlternativePath | None:
         """Check if budget was exhausted while critical systems remain unresolved."""
         if game_state.resource_pool is None or game_state.resource_pool.budget_total == 0:
             return None
 
         pool = game_state.resource_pool
         budget_spent_pct = ((pool.budget_total - pool.budget_remaining) / pool.budget_total) * 100
-        has_unresolved = any(
-            state.status in ("compromised", "offline")
-            for state in game_state.system_states.values()
-        )
+        has_unresolved = any(state.status in ("compromised", "offline") for state in game_state.system_states.values())
 
         if budget_spent_pct > 70 and has_unresolved:
             rule = self.ALTERNATIVE_RULES["budget_exhausted_non_critical"]
@@ -286,7 +284,7 @@ class AlternativePathService:
         """Return True if any threat actor has 'active' status."""
         return any(ts.status == "active" for ts in game_state.threat_states.values())
 
-    def _followed_by_escalation(self, event: IncidentEvent, timeline: List[IncidentEvent]) -> bool:
+    def _followed_by_escalation(self, event: IncidentEvent, timeline: list[IncidentEvent]) -> bool:
         """Return True if the given event is immediately followed by an escalation."""
         for i, e in enumerate(timeline):
             if e is event and i + 1 < len(timeline):

@@ -9,9 +9,9 @@
 """
 API endpoints for the scenario library: browsing, rating, sharing, and forking.
 """
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
-from typing import Optional
 
 from api.services.scenario_library_service import ScenarioLibraryService
 
@@ -22,12 +22,14 @@ library_service = ScenarioLibraryService()
 
 class RateRequest(BaseModel):
     """Request body for rating a scenario."""
+
     rating: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
     user_id: str = "anonymous"
 
 
 class ShareRequest(BaseModel):
     """Request body for setting scenario visibility."""
+
     visibility: str = Field(
         default="public",
         description="Visibility: public, private, or unlisted",
@@ -36,11 +38,13 @@ class ShareRequest(BaseModel):
 
 class ForkRequest(BaseModel):
     """Request body for forking a scenario."""
+
     user_id: str = "anonymous"
 
 
 class AddScenarioRequest(BaseModel):
     """Request body for adding a scenario to the library."""
+
     name: str
     description: str = ""
     industry: str = "general"
@@ -53,14 +57,12 @@ class AddScenarioRequest(BaseModel):
 
 @router.get("/scenarios")
 async def list_scenarios(
-    category: Optional[str] = Query(None, description="Filter by category"),
-    difficulty: Optional[str] = Query(None, description="Filter by difficulty"),
+    category: str | None = Query(None, description="Filter by category"),
+    difficulty: str | None = Query(None, description="Filter by difficulty"),
     sort_by: str = Query("rating", description="Sort field"),
 ):
     """List library scenarios with optional filters."""
-    scenarios = library_service.list_scenarios(
-        category=category, difficulty=difficulty, sort_by=sort_by
-    )
+    scenarios = library_service.list_scenarios(category=category, difficulty=difficulty, sort_by=sort_by)
     return {"scenarios": scenarios, "total": len(scenarios)}
 
 
@@ -85,9 +87,7 @@ async def add_scenario(request: AddScenarioRequest):
 @router.post("/scenarios/{scenario_id}/rate")
 async def rate_scenario(scenario_id: str, request: RateRequest):
     """Rate a scenario from 1 to 5."""
-    result = library_service.rate_scenario(
-        scenario_id, request.rating, request.user_id
-    )
+    result = library_service.rate_scenario(scenario_id, request.rating, request.user_id)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result

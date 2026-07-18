@@ -7,57 +7,62 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Tests for the InjectService — crisis inject engine."""
-import json
-from datetime import datetime, timezone
-from pathlib import Path
-from unittest.mock import patch
 
-import pytest
+from datetime import UTC, datetime
 
 from api.models.exercise_models import (
     ExerciseEvent,
     ExerciseState,
-    ExerciseTeam,
     Inject,
     InjectTrigger,
     InjectType,
 )
 from api.models.schemas import (
     BusinessImpact,
+    Department,
     GameState,
-    IncidentEvent,
     Inventory,
     Organization,
-    Department,
-    System,
     ThreatActorState,
 )
 from api.services.inject_service import InjectService
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_org():
     return Organization(
-        id="org-1", name="Test Corp", description="Test",
-        industry="Technology", size="medium",
-        departments=[Department(
-            id="d1", name="IT", description="IT",
-            business_function="Tech", systems=[],
-            data_classification="internal",
-        )],
-        threat_actors=[], security_posture="developing",
+        id="org-1",
+        name="Test Corp",
+        description="Test",
+        industry="Technology",
+        size="medium",
+        departments=[
+            Department(
+                id="d1",
+                name="IT",
+                description="IT",
+                business_function="Tech",
+                systems=[],
+                data_classification="internal",
+            )
+        ],
+        threat_actors=[],
+        security_posture="developing",
         compliance_frameworks=[],
     )
 
 
 def _make_game_state(**overrides):
     defaults = dict(
-        session_id="s1", organization=_make_org(),
-        current_scenario="test", player_role="mixed",
-        inventory=Inventory(), status="in-progress",
+        session_id="s1",
+        organization=_make_org(),
+        current_scenario="test",
+        player_role="mixed",
+        inventory=Inventory(),
+        status="in-progress",
     )
     defaults.update(overrides)
     return GameState(**defaults)
@@ -77,6 +82,7 @@ def _make_exercise_state(**overrides):
 # ---------------------------------------------------------------------------
 # Template Loading
 # ---------------------------------------------------------------------------
+
 
 class TestTemplateLoading:
     def test_templates_loaded_from_data_dir(self):
@@ -99,6 +105,7 @@ class TestTemplateLoading:
 # ---------------------------------------------------------------------------
 # create_inject
 # ---------------------------------------------------------------------------
+
 
 class TestCreateInject:
     def test_create_inject_valid_type(self):
@@ -150,6 +157,7 @@ class TestCreateInject:
 # create_inject_from_template
 # ---------------------------------------------------------------------------
 
+
 class TestCreateInjectFromTemplate:
     def test_from_template_basic(self):
         svc = InjectService()
@@ -174,7 +182,9 @@ class TestCreateInjectFromTemplate:
             "suggested_trigger_type": "round",
         }
         inject = svc.create_inject_from_template(
-            template, trigger_type="time", trigger_value=15,
+            template,
+            trigger_type="time",
+            trigger_value=15,
         )
         assert inject.trigger.trigger_type == "time"
         assert inject.trigger.trigger_value == 15
@@ -183,6 +193,7 @@ class TestCreateInjectFromTemplate:
 # ---------------------------------------------------------------------------
 # evaluate_triggers
 # ---------------------------------------------------------------------------
+
 
 class TestEvaluateTriggers:
     def _make_pending_inject(self, trigger_type, trigger_value=None):
@@ -271,13 +282,17 @@ class TestEvaluateTriggers:
 # suggest_inject — heuristic-based suggestions
 # ---------------------------------------------------------------------------
 
+
 class TestSuggestInject:
     def test_heuristic_media_inquiry(self):
         """Heuristic 1: downtime > 0.5h => media inquiry."""
         svc = InjectService()
-        gs = _make_game_state(business_impact=BusinessImpact(
-            downtime_hours=1.0, records_compromised=0,
-        ))
+        gs = _make_game_state(
+            business_impact=BusinessImpact(
+                downtime_hours=1.0,
+                records_compromised=0,
+            )
+        )
         es = _make_exercise_state(game_state=gs)
 
         inject = svc.suggest_inject(gs, es)
@@ -287,9 +302,12 @@ class TestSuggestInject:
     def test_heuristic_regulator(self):
         """Heuristic 2: records > 1000 => regulator call."""
         svc = InjectService()
-        gs = _make_game_state(business_impact=BusinessImpact(
-            downtime_hours=0, records_compromised=5000,
-        ))
+        gs = _make_game_state(
+            business_impact=BusinessImpact(
+                downtime_hours=0,
+                records_compromised=5000,
+            )
+        )
         es = _make_exercise_state(game_state=gs)
 
         inject = svc.suggest_inject(gs, es)
@@ -299,15 +317,19 @@ class TestSuggestInject:
     def test_heuristic_ceo_demand(self):
         """Heuristic 3: downtime > 2h => CEO demand."""
         svc = InjectService()
-        gs = _make_game_state(business_impact=BusinessImpact(
-            downtime_hours=3.0, records_compromised=0,
-        ))
+        gs = _make_game_state(
+            business_impact=BusinessImpact(
+                downtime_hours=3.0,
+                records_compromised=0,
+            )
+        )
         # Mark media inquiry as already delivered so heuristic 1 doesn't fire
         es = _make_exercise_state(game_state=gs)
         es.injects = [
             Inject(
                 inject_type=InjectType.MEDIA_INQUIRY,
-                title="Already delivered", content="x",
+                title="Already delivered",
+                content="x",
                 trigger=InjectTrigger(trigger_type="manual"),
                 delivered=True,
             ),
@@ -323,9 +345,10 @@ class TestSuggestInject:
         gs = _make_game_state(
             threat_states={
                 "ta-1": ThreatActorState(
-                    threat_actor_id="ta-1", status="active",
+                    threat_actor_id="ta-1",
+                    status="active",
                     active_techniques=["T1486"],  # ransomware
-                    last_update=datetime.now(timezone.utc),
+                    last_update=datetime.now(UTC),
                 ),
             },
         )
@@ -341,9 +364,10 @@ class TestSuggestInject:
         gs = _make_game_state(
             threat_states={
                 "ta-1": ThreatActorState(
-                    threat_actor_id="ta-1", status="active",
+                    threat_actor_id="ta-1",
+                    status="active",
                     active_techniques=["T1041"],  # exfiltration
-                    last_update=datetime.now(timezone.utc),
+                    last_update=datetime.now(UTC),
                 ),
             },
         )
@@ -377,6 +401,7 @@ class TestSuggestInject:
 # record_response / get_unresponded_injects
 # ---------------------------------------------------------------------------
 
+
 class TestResponseTracking:
     def test_record_response_success(self):
         svc = InjectService()
@@ -384,9 +409,11 @@ class TestResponseTracking:
         inject = Inject(
             inject_id="inj-1",
             inject_type=InjectType.REGULATOR_CALL,
-            title="Regulator", content="Respond now",
+            title="Regulator",
+            content="Respond now",
             trigger=InjectTrigger(trigger_type="manual"),
-            delivered=True, requires_response=True,
+            delivered=True,
+            requires_response=True,
         )
         es.injects = [inject]
 
@@ -406,9 +433,11 @@ class TestResponseTracking:
         inject = Inject(
             inject_id="inj-2",
             inject_type=InjectType.CEO_DEMAND,
-            title="CEO", content="Brief me",
+            title="CEO",
+            content="Brief me",
             trigger=InjectTrigger(trigger_type="manual"),
-            delivered=True, requires_response=True,
+            delivered=True,
+            requires_response=True,
         )
         es.injects = [inject]
 
@@ -422,9 +451,11 @@ class TestResponseTracking:
         inject = Inject(
             inject_id="inj-3",
             inject_type=InjectType.CEO_DEMAND,
-            title="CEO", content="Brief me",
+            title="CEO",
+            content="Brief me",
             trigger=InjectTrigger(trigger_type="manual"),
-            delivered=True, requires_response=True,
+            delivered=True,
+            requires_response=True,
             target_teams=["red-1"],
         )
         es.injects = [inject]

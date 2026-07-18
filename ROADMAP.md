@@ -156,7 +156,7 @@ This document outlines the implementation phases for the Cybersecurity War Gamin
 - [x] Generator test suites (all 6 generators)
 - [x] API boot and smoke tests
 - [x] Bug fixes: inject_service heuristics, game_session stale-state
-- [x] 128 new tests (240 total passing, 1 skipped, 0 failures)
+- [x] 128 new tests (244 total passing, 1 skipped) — hermetic, no API key required
 - [x] All 37 services exported and importable
 - [x] All 12 pages navigable from Home
 - [x] API boots cleanly with 81 routes
@@ -174,7 +174,7 @@ This document outlines the implementation phases for the Cybersecurity War Gamin
 | API Routers | 12 |
 | UI Pages | 12 |
 | Test Files | 24 |
-| Tests | 241 (240 passed, 1 skipped) |
+| Tests | 245 (244 passed, 1 skipped) |
 | Industries | 8 |
 | Player Roles | 4 |
 | MITRE Techniques | 93 |
@@ -206,7 +206,7 @@ This document outlines the implementation phases for the Cybersecurity War Gamin
 - 2-5 second AI response time
 - Content policy system operational (4 tiers)
 - 81 API routes fully functional
-- 240/241 tests passing
+- 244/245 tests passing (hermetic)
 - Full MITRE ATT&CK integration
 - Multi-team exercise support
 - Compliance scoring for 3 frameworks

@@ -7,6 +7,7 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Configuration module."""
+
 from .settings import settings
 
 __all__ = ["settings"]

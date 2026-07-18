@@ -15,9 +15,10 @@ This service manages:
 - Tool cooldowns (preventing spam)
 - Staff availability (concurrent action limits)
 """
-from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional, Tuple
-from api.models import GameState, ResourcePool, ActionCost
+
+from datetime import UTC, datetime, timedelta
+
+from api.models import ActionCost, ResourcePool
 from api.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -34,25 +35,20 @@ class ResourceManager:
         "investigate": ActionCost(points=1, budget=0, cooldown_seconds=0, requires_staff=1),
         "analyze": ActionCost(points=1, budget=0, cooldown_seconds=0, requires_staff=1),
         "check_logs": ActionCost(points=1, budget=0, cooldown_seconds=0, requires_staff=1),
-
         # Detection actions (low-medium cost)
         "scan": ActionCost(points=2, budget=500, cooldown_seconds=300, requires_staff=1),
         "monitor": ActionCost(points=1, budget=0, cooldown_seconds=0, requires_staff=1),
-
         # Containment actions (medium cost)
         "isolate": ActionCost(points=3, budget=0, cooldown_seconds=600, requires_staff=2),
         "block": ActionCost(points=2, budget=0, cooldown_seconds=300, requires_staff=1),
         "quarantine": ActionCost(points=3, budget=1000, cooldown_seconds=600, requires_staff=2),
-
         # Mitigation actions (high cost)
         "patch": ActionCost(points=4, budget=5000, cooldown_seconds=1800, requires_staff=3),
         "restore": ActionCost(points=5, budget=10000, cooldown_seconds=3600, requires_staff=3),
         "rebuild": ActionCost(points=6, budget=25000, cooldown_seconds=3600, requires_staff=4),
-
         # External help (very high cost, no cooldown)
         "call_vendor": ActionCost(points=2, budget=50000, cooldown_seconds=0, requires_staff=1),
         "hire_consultant": ActionCost(points=2, budget=75000, cooldown_seconds=0, requires_staff=0),
-
         # Communication actions (free)
         "notify": ActionCost(points=1, budget=0, cooldown_seconds=0, requires_staff=1),
         "report": ActionCost(points=1, budget=0, cooldown_seconds=0, requires_staff=1),
@@ -121,7 +117,7 @@ class ResourceManager:
             budget_total=defaults["budget_total"],
             staff_available=defaults["staff_available"],
             tools_on_cooldown={},
-            last_regeneration=datetime.now(timezone.utc),
+            last_regeneration=datetime.now(UTC),
         )
 
     def get_action_cost(self, action_description: str) -> ActionCost:
@@ -148,8 +144,8 @@ class ResourceManager:
         self,
         resource_pool: ResourcePool,
         action_cost: ActionCost,
-        tool_name: Optional[str] = None,
-    ) -> Tuple[bool, Optional[str]]:
+        tool_name: str | None = None,
+    ) -> tuple[bool, str | None]:
         """
         Check if the player can afford an action.
 
@@ -167,17 +163,23 @@ class ResourceManager:
 
         # Check budget
         if resource_pool.budget_remaining < action_cost.budget:
-            return False, f"Insufficient budget (need ${action_cost.budget:,.0f}, have ${resource_pool.budget_remaining:,.0f})"
+            return (
+                False,
+                f"Insufficient budget (need ${action_cost.budget:,.0f}, have ${resource_pool.budget_remaining:,.0f})",
+            )
 
         # Check staff availability
         if resource_pool.staff_available < action_cost.requires_staff:
-            return False, f"Not enough staff available (need {action_cost.requires_staff}, have {resource_pool.staff_available})"
+            return (
+                False,
+                f"Not enough staff available (need {action_cost.requires_staff}, have {resource_pool.staff_available})",
+            )
 
         # Check tool cooldown
         if tool_name and tool_name in resource_pool.tools_on_cooldown:
             cooldown_until = resource_pool.tools_on_cooldown[tool_name]
-            if datetime.now(timezone.utc) < cooldown_until:
-                remaining = (cooldown_until - datetime.now(timezone.utc)).total_seconds()
+            if datetime.now(UTC) < cooldown_until:
+                remaining = (cooldown_until - datetime.now(UTC)).total_seconds()
                 minutes = int(remaining // 60)
                 seconds = int(remaining % 60)
                 return False, f"Tool on cooldown ({minutes}m {seconds}s remaining)"
@@ -188,7 +190,7 @@ class ResourceManager:
         self,
         resource_pool: ResourcePool,
         action_cost: ActionCost,
-        tool_name: Optional[str] = None,
+        tool_name: str | None = None,
     ) -> ResourcePool:
         """
         Spend resources for an action.
@@ -201,7 +203,9 @@ class ResourceManager:
         Returns:
             Updated resource pool
         """
-        logger.info(f"Spending resources: AP={action_cost.points}, Budget=${action_cost.budget}, Staff={action_cost.requires_staff}")
+        logger.info(
+            f"Spending resources: AP={action_cost.points}, Budget=${action_cost.budget}, Staff={action_cost.requires_staff}"
+        )
 
         # Deduct action points
         resource_pool.action_points -= action_cost.points
@@ -211,7 +215,7 @@ class ResourceManager:
 
         # Set tool cooldown if applicable
         if tool_name and action_cost.cooldown_seconds > 0:
-            cooldown_until = datetime.now(timezone.utc) + timedelta(seconds=action_cost.cooldown_seconds)
+            cooldown_until = datetime.now(UTC) + timedelta(seconds=action_cost.cooldown_seconds)
             resource_pool.tools_on_cooldown[tool_name] = cooldown_until
             logger.debug(f"Tool cooldown set: {tool_name} until {cooldown_until}")
 
@@ -221,7 +225,7 @@ class ResourceManager:
         self,
         resource_pool: ResourcePool,
         minutes_elapsed: int,
-    ) -> Tuple[ResourcePool, int]:
+    ) -> tuple[ResourcePool, int]:
         """
         Regenerate action points based on time elapsed.
 
@@ -233,7 +237,7 @@ class ResourceManager:
             Tuple of (updated resource pool, points regenerated)
         """
         # Calculate time since last regeneration
-        time_since_last = (datetime.now(timezone.utc) - resource_pool.last_regeneration).total_seconds() / 60.0
+        time_since_last = (datetime.now(UTC) - resource_pool.last_regeneration).total_seconds() / 60.0
 
         # Calculate points to regenerate
         points_to_add = int(time_since_last * resource_pool.points_per_minute)
@@ -241,10 +245,9 @@ class ResourceManager:
         if points_to_add > 0:
             old_points = resource_pool.action_points
             resource_pool.action_points = min(
-                resource_pool.max_action_points,
-                resource_pool.action_points + points_to_add
+                resource_pool.max_action_points, resource_pool.action_points + points_to_add
             )
-            resource_pool.last_regeneration = datetime.now(timezone.utc)
+            resource_pool.last_regeneration = datetime.now(UTC)
             points_added = resource_pool.action_points - old_points
             return resource_pool, points_added
 
@@ -260,10 +263,9 @@ class ResourceManager:
         Returns:
             Updated resource pool
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expired_tools = [
-            tool for tool, cooldown_until in resource_pool.tools_on_cooldown.items()
-            if now >= cooldown_until
+            tool for tool, cooldown_until in resource_pool.tools_on_cooldown.items() if now >= cooldown_until
         ]
 
         for tool in expired_tools:
@@ -271,7 +273,7 @@ class ResourceManager:
 
         return resource_pool
 
-    def get_resource_status(self, resource_pool: ResourcePool) -> Dict[str, any]:
+    def get_resource_status(self, resource_pool: ResourcePool) -> dict[str, any]:
         """
         Get a human-readable status of resources.
 
@@ -380,15 +382,17 @@ class ResourceManager:
         for action_type, cost in self.DEFAULT_ACTION_COSTS.items():
             can_afford, _ = self.can_afford_action(resource_pool, cost)
             if can_afford:
-                affordable.append({
-                    "action": action_type,
-                    "cost": {
-                        "points": cost.points,
-                        "budget": cost.budget,
-                        "staff": cost.requires_staff,
-                        "cooldown": cost.cooldown_seconds,
+                affordable.append(
+                    {
+                        "action": action_type,
+                        "cost": {
+                            "points": cost.points,
+                            "budget": cost.budget,
+                            "staff": cost.requires_staff,
+                            "cooldown": cost.cooldown_seconds,
+                        },
                     }
-                })
+                )
 
         return affordable
 

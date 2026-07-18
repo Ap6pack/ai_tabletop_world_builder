@@ -9,22 +9,21 @@
 """
 Streamlit War Game Page - Interactive cybersecurity incident response.
 """
-import streamlit as st
-import requests
-from datetime import datetime
-import sys
+
 import os
+import sys
+from datetime import UTC, datetime
+
+import requests
+import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from constants import PLAYER_ROLES_DISPLAY, DIFFICULTY_LEVELS_DISPLAY
+from constants import DIFFICULTY_LEVELS_DISPLAY, PLAYER_ROLES_DISPLAY
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT, LONG_OPERATION_TIMEOUT
 
-st.set_page_config(
-    page_title="War Game",
-    page_icon="🎮",
-    layout="wide"
-)
+st.set_page_config(page_title="War Game", page_icon="🎮", layout="wide")
 
 # Initialize session state
 if "game_session_id" not in st.session_state:
@@ -121,21 +120,15 @@ else:
 
             if user_action:
                 # Add user message to chat
-                st.session_state.chat_history.append({
-                    "role": "user",
-                    "content": user_action
-                })
+                st.session_state.chat_history.append({"role": "user", "content": user_action})
 
                 # Process action via API
                 with st.spinner("🤖 Processing your action..."):
                     try:
                         response = requests.post(
                             f"{API_BASE_URL}/game/action",
-                            json={
-                                "session_id": st.session_state.game_session_id,
-                                "action": user_action
-                            },
-                            timeout=LONG_OPERATION_TIMEOUT
+                            json={"session_id": st.session_state.game_session_id, "action": user_action},
+                            timeout=LONG_OPERATION_TIMEOUT,
                         )
 
                         if response.status_code == 200:
@@ -146,22 +139,15 @@ else:
                             st.session_state.game_state = result.get("game_state")
 
                             # Add AI response to chat
-                            st.session_state.chat_history.append({
-                                "role": "assistant",
-                                "content": narrative
-                            })
+                            st.session_state.chat_history.append({"role": "assistant", "content": narrative})
 
                         else:
-                            st.session_state.chat_history.append({
-                                "role": "assistant",
-                                "content": f"❌ Error processing action: {response.status_code}"
-                            })
+                            st.session_state.chat_history.append(
+                                {"role": "assistant", "content": f"❌ Error processing action: {response.status_code}"}
+                            )
 
                     except Exception as e:
-                        st.session_state.chat_history.append({
-                            "role": "assistant",
-                            "content": f"❌ Error: {str(e)}"
-                        })
+                        st.session_state.chat_history.append({"role": "assistant", "content": f"❌ Error: {str(e)}"})
 
                 st.rerun()
 
@@ -170,125 +156,122 @@ else:
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            if not st.session_state.game_active:
-                if st.button("▶️ Start Incident", use_container_width=True, type="primary"):
-                    # Start game via API
-                    with st.spinner("🎬 Starting incident scenario..."):
+            if not st.session_state.game_active and st.button(
+                "▶️ Start Incident", use_container_width=True, type="primary"
+            ):
+                # Start game via API
+                with st.spinner("🎬 Starting incident scenario..."):
+                    try:
+                        # Determine scenario filename from loaded scenario
+                        scenario_filename = None
+
+                        # Try to get from saved scenarios list
                         try:
-                            # Determine scenario filename from loaded scenario
-                            scenario_filename = None
+                            list_response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
+                            if list_response.status_code == 200:
+                                scenarios = list_response.json()
+                                # Find matching scenario by name
+                                for s in scenarios:
+                                    if s["name"] == scenario.get("name"):
+                                        scenario_filename = s["filename"]
+                                        break
+                        except requests.exceptions.RequestException:
+                            pass
 
-                            # Try to get from saved scenarios list
-                            try:
-                                list_response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
-                                if list_response.status_code == 200:
-                                    scenarios = list_response.json()
-                                    # Find matching scenario by name
-                                    for s in scenarios:
-                                        if s['name'] == scenario.get('name'):
-                                            scenario_filename = s['filename']
-                                            break
-                            except requests.exceptions.RequestException:
-                                pass
+                        if not scenario_filename:
+                            st.error("❌ Could not determine scenario filename. Please reload the scenario.")
+                        else:
+                            response = requests.post(
+                                f"{API_BASE_URL}/game/start",
+                                json={
+                                    "scenario_filename": scenario_filename,
+                                    "scenario_type": metadata.get("scenario_type", "incident-response")
+                                    .lower()
+                                    .replace(" ", "-"),
+                                    "player_role": metadata.get("player_role", "soc-analyst"),
+                                    "difficulty": metadata.get("difficulty", "intermediate"),
+                                },
+                                timeout=LONG_OPERATION_TIMEOUT,
+                            )
 
-                            if not scenario_filename:
-                                st.error("❌ Could not determine scenario filename. Please reload the scenario.")
+                            if response.status_code == 200:
+                                result = response.json()
+                                st.session_state.game_session_id = result["game_state"]["session_id"]
+                                st.session_state.game_state = result["game_state"]
+                                st.session_state.game_active = True
+
+                                # Add opening narrative to chat
+                                st.session_state.chat_history = [
+                                    {"role": "assistant", "content": result.get("narrative", "Game started!")}
+                                ]
+
+                                st.rerun()
                             else:
-                                response = requests.post(
-                                    f"{API_BASE_URL}/game/start",
-                                    json={
-                                        "scenario_filename": scenario_filename,
-                                        "scenario_type": metadata.get("scenario_type", "incident-response").lower().replace(" ", "-"),
-                                        "player_role": metadata.get("player_role", "soc-analyst"),
-                                        "difficulty": metadata.get("difficulty", "intermediate")
-                                    },
-                                    timeout=LONG_OPERATION_TIMEOUT
-                                )
+                                st.error(f"❌ Failed to start game: {response.status_code}")
+                                try:
+                                    error_detail = response.json()
+                                    st.error(f"Details: {error_detail.get('detail', 'Unknown error')}")
+                                except Exception:
+                                    st.error(f"Response: {response.text[:500]}")
 
-                                if response.status_code == 200:
-                                    result = response.json()
-                                    st.session_state.game_session_id = result["game_state"]["session_id"]
-                                    st.session_state.game_state = result["game_state"]
-                                    st.session_state.game_active = True
-
-                                    # Add opening narrative to chat
-                                    st.session_state.chat_history = [{
-                                        "role": "assistant",
-                                        "content": result.get("narrative", "Game started!")
-                                    }]
-
-                                    st.rerun()
-                                else:
-                                    st.error(f"❌ Failed to start game: {response.status_code}")
-                                    try:
-                                        error_detail = response.json()
-                                        st.error(f"Details: {error_detail.get('detail', 'Unknown error')}")
-                                    except Exception:
-                                        st.error(f"Response: {response.text[:500]}")
-
-                        except Exception as e:
-                            st.error(f"❌ Error starting game: {str(e)}")
+                    except Exception as e:
+                        st.error(f"❌ Error starting game: {str(e)}")
 
         with col2:
-            if st.session_state.game_active:
-                if st.button("💡 Get Hint", use_container_width=True):
-                    with st.spinner("💭 Generating hint..."):
-                        try:
-                            response = requests.post(
-                                f"{API_BASE_URL}/game/hint",
-                                params={"session_id": st.session_state.game_session_id},
-                                timeout=15
-                            )
+            if st.session_state.game_active and st.button("💡 Get Hint", use_container_width=True):
+                with st.spinner("💭 Generating hint..."):
+                    try:
+                        response = requests.post(
+                            f"{API_BASE_URL}/game/hint",
+                            params={"session_id": st.session_state.game_session_id},
+                            timeout=15,
+                        )
 
-                            if response.status_code == 200:
-                                hint = response.json().get("hint", "No hint available")
-                                st.session_state.chat_history.append({
-                                    "role": "assistant",
-                                    "content": f"💡 **Hint:** {hint}"
-                                })
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"Error getting hint: {str(e)}")
+                        if response.status_code == 200:
+                            hint = response.json().get("hint", "No hint available")
+                            st.session_state.chat_history.append(
+                                {"role": "assistant", "content": f"💡 **Hint:** {hint}"}
+                            )
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Error getting hint: {str(e)}")
 
         with col3:
-            if st.session_state.game_active:
-                if st.button("💾 Save Progress", use_container_width=True):
-                    st.success("✅ Progress auto-saved")
+            if st.session_state.game_active and st.button("💾 Save Progress", use_container_width=True):
+                st.success("✅ Progress auto-saved")
 
         with col4:
-            if st.session_state.game_active:
-                if st.button("🛑 End Game", use_container_width=True):
-                    with st.spinner("Ending game..."):
-                        try:
-                            response = requests.post(
-                                f"{API_BASE_URL}/game/end",
-                                json={
-                                    "session_id": st.session_state.game_session_id,
-                                    "status": "completed"
-                                },
-                                timeout=DEFAULT_TIMEOUT
-                            )
+            if st.session_state.game_active and st.button("🛑 End Game", use_container_width=True):
+                with st.spinner("Ending game..."):
+                    try:
+                        response = requests.post(
+                            f"{API_BASE_URL}/game/end",
+                            json={"session_id": st.session_state.game_session_id, "status": "completed"},
+                            timeout=DEFAULT_TIMEOUT,
+                        )
 
-                            if response.status_code == 200:
-                                st.session_state.game_active = False
-                                final_state = response.json()
+                        if response.status_code == 200:
+                            st.session_state.game_active = False
+                            final_state = response.json()
 
-                                # Show final summary
-                                st.session_state.chat_history.append({
+                            # Show final summary
+                            st.session_state.chat_history.append(
+                                {
                                     "role": "assistant",
                                     "content": f"""
 🎉 **Game Complete!**
 
-**Final Score:** {final_state.get('score', 0)} points
-**Time Elapsed:** {final_state.get('time_elapsed', 0)} minutes
-**Status:** {final_state.get('status', 'completed').title()}
+**Final Score:** {final_state.get("score", 0)} points
+**Time Elapsed:** {final_state.get("time_elapsed", 0)} minutes
+**Status:** {final_state.get("status", "completed").title()}
 
 Check the After Action Review for detailed analysis.
-"""
-                                })
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"Error ending game: {str(e)}")
+""",
+                                }
+                            )
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Error ending game: {str(e)}")
 
     with col_sidebar:
         # Game state info
@@ -323,12 +306,9 @@ Check the After Action Review for detailed analysis.
                     # Show most recent events first
                     for event in reversed(timeline[-10:]):  # Last 10 events
                         event_type = event.get("event_type", "info")
-                        event_emoji = {
-                            "detection": "🚨",
-                            "action": "⚡",
-                            "consequence": "📍",
-                            "escalation": "⚠️"
-                        }.get(event_type, "📌")
+                        event_emoji = {"detection": "🚨", "action": "⚡", "consequence": "📍", "escalation": "⚠️"}.get(
+                            event_type, "📌"
+                        )
 
                         severity = event.get("severity", "info")
                         severity_color = {
@@ -336,7 +316,7 @@ Check the After Action Review for detailed analysis.
                             "high": "🟠",
                             "medium": "🟡",
                             "low": "🟢",
-                            "info": "⚪"
+                            "info": "⚪",
                         }.get(severity, "⚪")
 
                         st.markdown(f"{event_emoji} {severity_color} {event.get('description', 'Event')}")
@@ -353,7 +333,7 @@ Check the After Action Review for detailed analysis.
                 tools = inventory.get("tools", {})
 
                 if tools:
-                    for tool_name, count in tools.items():
+                    for tool_name, _count in tools.items():
                         st.markdown(f"✅ {tool_name}")
                 else:
                     st.info("No tools available")
@@ -410,12 +390,14 @@ Check the After Action Review for detailed analysis.
                                 "name": sys.get("name"),
                                 "type": sys.get("type"),
                                 "criticality": sys.get("criticality"),
-                                "department": dept.get("name")
+                                "department": dept.get("name"),
                             }
 
                     # Categorize systems
                     for system_id, state in system_states.items():
-                        system_info = system_lookup.get(system_id, {"name": system_id, "type": "unknown", "criticality": "medium"})
+                        system_info = system_lookup.get(
+                            system_id, {"name": system_id, "type": "unknown", "criticality": "medium"}
+                        )
                         system_data = {**system_info, "state": state}
 
                         status = state.get("status", "online")
@@ -433,9 +415,13 @@ Check the After Action Review for detailed analysis.
                         st.markdown("**🔴 COMPROMISED:**")
                         for sys in compromised:
                             health = sys["state"].get("health", 100)
-                            criticality_badge = {"critical": "🔥", "high": "⚠️", "medium": "📌", "low": "ℹ️"}.get(sys.get("criticality", "medium"), "📌")
+                            criticality_badge = {"critical": "🔥", "high": "⚠️", "medium": "📌", "low": "ℹ️"}.get(
+                                sys.get("criticality", "medium"), "📌"
+                            )
                             st.markdown(f"{criticality_badge} **{sys.get('name', 'Unknown')}**")
-                            st.caption(f"Health: {health}% | {sys.get('type', 'system')} | {sys.get('department', 'Unknown')}")
+                            st.caption(
+                                f"Health: {health}% | {sys.get('type', 'system')} | {sys.get('department', 'Unknown')}"
+                            )
                             if sys["state"].get("notes"):
                                 st.caption(f"_{sys['state']['notes']}_")
                         st.markdown("---")
@@ -507,7 +493,7 @@ Check the After Action Review for detailed analysis.
                             "name": threat.get("name"),
                             "motivation": threat.get("motivation"),
                             "sophistication": threat.get("sophistication"),
-                            "ttps": threat.get("ttps", [])
+                            "ttps": threat.get("ttps", []),
                         }
 
                     # Group threats by status
@@ -516,7 +502,9 @@ Check the After Action Review for detailed analysis.
                     other_threats = []
 
                     for threat_id, state in threat_states.items():
-                        threat_info = threat_lookup.get(threat_id, {"name": threat_id, "motivation": "unknown", "sophistication": "unknown"})
+                        threat_info = threat_lookup.get(
+                            threat_id, {"name": threat_id, "motivation": "unknown", "sophistication": "unknown"}
+                        )
                         threat_data = {**threat_info, "state": state}
 
                         status = state.get("status", "active")
@@ -540,7 +528,7 @@ Check the After Action Review for detailed analysis.
                                 "nation-state": "🔥",
                                 "organized-crime": "⚠️",
                                 "hacktivist": "📢",
-                                "script-kiddie": "💻"
+                                "script-kiddie": "💻",
                             }.get(threat.get("sophistication", "unknown"), "❓")
 
                             st.markdown(f"{soph_badge} **{threat.get('name', 'Unknown Threat')}**")
@@ -656,17 +644,14 @@ Check the After Action Review for detailed analysis.
                                         "downtime": "⏱️",
                                         "data_loss": "🔓",
                                         "compliance": "⚖️",
-                                        "reputation": "📉"
+                                        "reputation": "📉",
                                     }
                                     icon = icon_map.get(event_type, "💰")
 
                                     # Severity color
-                                    sev_color = {
-                                        "critical": "🔴",
-                                        "high": "🟠",
-                                        "medium": "🟡",
-                                        "low": "🟢"
-                                    }.get(severity, "⚪")
+                                    sev_color = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢"}.get(
+                                        severity, "⚪"
+                                    )
 
                                     st.markdown(f"{icon} {sev_color} ${cost:,.0f}")
                                     desc = event.get("description", "Impact event")
@@ -753,7 +738,7 @@ Check the After Action Review for detailed analysis.
                                     "threat_escalate": "📈",
                                     "system_degrade": "📉",
                                     "spread": "🔄",
-                                    "alert": "🚨"
+                                    "alert": "🚨",
                                 }
                                 icon = action_icons.get(action, "⚠️")
 
@@ -868,20 +853,21 @@ Check the After Action Review for detailed analysis.
                         st.markdown("**🔧 Tools on Cooldown**")
 
                         # Convert cooldown timestamps to remaining time
-                        from datetime import datetime, timezone
-                        now = datetime.now(timezone.utc)
+                        from datetime import datetime
+
+                        now = datetime.now(UTC)
 
                         for tool_name, cooldown_until_str in tools_on_cooldown.items():
                             try:
                                 # Parse ISO format timestamp
-                                cooldown_until = datetime.fromisoformat(cooldown_until_str.replace('Z', '+00:00'))
+                                cooldown_until = datetime.fromisoformat(cooldown_until_str.replace("Z", "+00:00"))
                                 remaining = (cooldown_until - now).total_seconds()
 
                                 if remaining > 0:
                                     minutes = int(remaining // 60)
                                     seconds = int(remaining % 60)
                                     st.markdown(f"🔧 **{tool_name.title()}**: {minutes}m {seconds}s remaining")
-                            except:
+                            except Exception:
                                 st.markdown(f"🔧 **{tool_name.title()}**: On cooldown")
 
                     # Action Cost Reference
@@ -946,15 +932,21 @@ Check the After Action Review for detailed analysis.
 
                             # Emoji based on type
                             type_emoji = {
-                                "detect": "🔍", "contain": "🛡️", "mitigate": "🔧",
-                                "investigate": "🔬", "protect": "🔐", "report": "📝"
+                                "detect": "🔍",
+                                "contain": "🛡️",
+                                "mitigate": "🔧",
+                                "investigate": "🔬",
+                                "protect": "🔐",
+                                "report": "📝",
                             }.get(obj_type, "📌")
 
                             # Color badge for difficulty
                             difficulty_color = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(difficulty, "⚪")
 
                             st.markdown(f"{type_emoji} **{obj.get('description', 'Objective')}**")
-                            st.caption(f"{difficulty_color} {difficulty.title()} | {points} points | {obj.get('success_criteria', 'Complete objective')}")
+                            st.caption(
+                                f"{difficulty_color} {difficulty.title()} | {points} points | {obj.get('success_criteria', 'Complete objective')}"
+                            )
 
                             # Time limit warning
                             if obj.get("time_limit_minutes"):
@@ -968,8 +960,12 @@ Check the After Action Review for detailed analysis.
                             obj_type = obj.get("type", "task")
                             points = obj.get("points", 25)
                             type_emoji = {
-                                "detect": "🔍", "contain": "🛡️", "mitigate": "🔧",
-                                "investigate": "🔬", "protect": "🔐", "report": "📝"
+                                "detect": "🔍",
+                                "contain": "🛡️",
+                                "mitigate": "🔧",
+                                "investigate": "🔬",
+                                "protect": "🔐",
+                                "report": "📝",
                             }.get(obj_type, "📌")
 
                             st.markdown(f"{type_emoji} {obj.get('description', 'Objective')} ({points} pts)")
@@ -1019,12 +1015,11 @@ with st.sidebar:
                         st.markdown(f"**Score:** {session['score']}")
 
                         if st.button("Load Session", key=f"load_{session['session_id']}"):
-                            st.session_state.game_session_id = session['session_id']
+                            st.session_state.game_session_id = session["session_id"]
                             # Load game state
                             try:
                                 state_response = requests.get(
-                                    f"{API_BASE_URL}/game/state/{session['session_id']}",
-                                    timeout=DEFAULT_TIMEOUT
+                                    f"{API_BASE_URL}/game/state/{session['session_id']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if state_response.status_code == 200:
                                     game_data = state_response.json()
@@ -1036,15 +1031,13 @@ with st.sidebar:
                                     timeline = game_data.get("incident_timeline", [])
                                     for event in timeline:
                                         if event.get("event_type") == "action":
-                                            st.session_state.chat_history.append({
-                                                "role": "user",
-                                                "content": event.get("description", "")
-                                            })
+                                            st.session_state.chat_history.append(
+                                                {"role": "user", "content": event.get("description", "")}
+                                            )
                                         elif event.get("event_type") in ["detection", "consequence"]:
-                                            st.session_state.chat_history.append({
-                                                "role": "assistant",
-                                                "content": event.get("description", "")
-                                            })
+                                            st.session_state.chat_history.append(
+                                                {"role": "assistant", "content": event.get("description", "")}
+                                            )
 
                                     # Load scenario - always set it from game_data
                                     st.session_state.active_scenario = game_data.get("organization", {})
@@ -1073,8 +1066,8 @@ with st.sidebar:
                 st.info("💡 No game sessions yet. Click '▶️ Start Incident' to create one!")
         else:
             st.warning(f"Failed to retrieve sessions (HTTP {response.status_code})")
-    except requests.exceptions.RequestException as e:
-        st.error(f"Network error: Could not connect to game server")
+    except requests.exceptions.RequestException:
+        st.error("Network error: Could not connect to game server")
     except Exception as e:
         st.error(f"Error listing sessions: {str(e)}")
 
@@ -1091,7 +1084,9 @@ with st.sidebar:
             if scenarios_list:
                 # Create selection dropdown
                 scenario_names = [f"{s['name']} ({s['industry']})" for s in scenarios_list]
-                selected_scenario = st.selectbox("Select a scenario:", [""] + scenario_names, key="sidebar_scenario_select")
+                selected_scenario = st.selectbox(
+                    "Select a scenario:", [""] + scenario_names, key="sidebar_scenario_select"
+                )
 
                 if selected_scenario:
                     # Find selected scenario
@@ -1104,8 +1099,7 @@ with st.sidebar:
                             try:
                                 # Load scenario from API
                                 load_response = requests.get(
-                                    f"{API_BASE_URL}/scenarios/{scenario_info['filename']}",
-                                    timeout=DEFAULT_TIMEOUT
+                                    f"{API_BASE_URL}/scenarios/{scenario_info['filename']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if load_response.status_code == 200:
                                     scenario_data = load_response.json()
@@ -1118,7 +1112,7 @@ with st.sidebar:
                                         "difficulty": "intermediate",
                                         "duration_minutes": 60,
                                         "focus_areas": [],
-                                        "player_role": "soc-analyst"
+                                        "player_role": "soc-analyst",
                                     }
                                     # Clear any active game state when loading new scenario
                                     st.session_state.game_state = None
@@ -1136,8 +1130,7 @@ with st.sidebar:
                         if st.button("🗑️ Delete", use_container_width=True, key="sidebar_delete_scenario"):
                             try:
                                 delete_response = requests.delete(
-                                    f"{API_BASE_URL}/scenarios/{scenario_info['filename']}",
-                                    timeout=DEFAULT_TIMEOUT
+                                    f"{API_BASE_URL}/scenarios/{scenario_info['filename']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if delete_response.status_code == 200:
                                     st.success("✅ Scenario deleted")

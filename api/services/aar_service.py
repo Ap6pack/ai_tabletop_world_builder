@@ -12,19 +12,20 @@ After Action Review (AAR) Service for generating post-session analysis reports.
 Orchestrates the DecisionAnalyzer and AlternativePathService to produce a
 complete AAR report with metrics, grades, and training recommendations.
 """
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+
+from datetime import UTC, datetime
+from typing import Any
 
 from api.models import (
-    GameState,
     AARReport,
-    DecisionEvaluation,
     AlternativePath,
-    PerformanceMetric,
+    DecisionEvaluation,
+    GameState,
     PerformanceDashboard,
+    PerformanceMetric,
 )
-from api.services.decision_analyzer import DecisionAnalyzer
 from api.services.alternative_path_service import AlternativePathService
+from api.services.decision_analyzer import DecisionAnalyzer
 from api.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -67,11 +68,9 @@ class AARService:
         evaluations = self.decision_analyzer.analyze_timeline(game_state)
         logger.info(f"Analyzed {len(evaluations)} decisions")
 
-        alternatives: List[AlternativePath] = []
+        alternatives: list[AlternativePath] = []
         if include_alternatives:
-            alternatives = self.alternative_path_service.suggest_alternatives(
-                game_state
-            )
+            alternatives = self.alternative_path_service.suggest_alternatives(game_state)
             logger.info(f"Generated {len(alternatives)} alternative paths")
 
         metrics = self.calculate_metrics(game_state)
@@ -82,24 +81,31 @@ class AARService:
         recommendations = self.generate_recommendations(weaknesses, game_state)
         summary = self.generate_summary(game_state, overall_grade)
 
-        metrics_dict: Dict[str, Any] = {
+        metrics_dict: dict[str, Any] = {
             name: {"value": m.value, "unit": m.unit, "benchmark": m.benchmark, "percentile": m.percentile}
             for name, m in metrics.items()
         }
 
         report = AARReport(
-            session_id=game_state.session_id, generated_at=datetime.now(timezone.utc),
-            summary=summary, timeline_analysis=evaluations, alternative_paths=alternatives,
-            strengths=strengths, weaknesses=weaknesses, recommendations=recommendations,
-            overall_grade=overall_grade, score_breakdown=score_breakdown,
-            metrics=metrics_dict, ai_feedback="",
+            session_id=game_state.session_id,
+            generated_at=datetime.now(UTC),
+            summary=summary,
+            timeline_analysis=evaluations,
+            alternative_paths=alternatives,
+            strengths=strengths,
+            weaknesses=weaknesses,
+            recommendations=recommendations,
+            overall_grade=overall_grade,
+            score_breakdown=score_breakdown,
+            metrics=metrics_dict,
+            ai_feedback="",
         )
         logger.info(f"AAR generated: grade={overall_grade}, strengths={len(strengths)}, weaknesses={len(weaknesses)}")
         return report
 
-    def calculate_metrics(self, game_state: GameState) -> Dict[str, PerformanceMetric]:
+    def calculate_metrics(self, game_state: GameState) -> dict[str, PerformanceMetric]:
         """Calculate performance metrics (response_time, containment_speed, etc.) from game state."""
-        metrics: Dict[str, PerformanceMetric] = {}
+        metrics: dict[str, PerformanceMetric] = {}
         timeline = game_state.incident_timeline
 
         # response_time: average gap between threat events and player responses
@@ -121,9 +127,12 @@ class AARService:
         for event in timeline:
             if event.event_type == "detection" and first_detection is None:
                 first_detection = event.timestamp
-            if event.actor == "player" and first_containment is None:
-                if any(kw in event.description.lower() for kw in containment_kw):
-                    first_containment = event.timestamp
+            if (
+                event.actor == "player"
+                and first_containment is None
+                and any(kw in event.description.lower() for kw in containment_kw)
+            ):
+                first_containment = event.timestamp
         cont_min = 0.0
         if first_detection and first_containment and first_containment >= first_detection:
             cont_min = (first_containment - first_detection).total_seconds() / 60.0
@@ -156,7 +165,7 @@ class AARService:
 
         return metrics
 
-    def calculate_grade(self, score: int, metrics: Dict[str, PerformanceMetric]) -> str:
+    def calculate_grade(self, score: int, metrics: dict[str, PerformanceMetric]) -> str:
         """Calculate letter grade: 60% game score (normalized to 100), 40% metric quality."""
         normalized = min(100.0, score / max(1, self.MAX_EXPECTED_SCORE) * 100.0)
         percentiles = [m.percentile for m in metrics.values() if m.percentile is not None]
@@ -168,13 +177,15 @@ class AARService:
                 return grade
         return "F"
 
-    def identify_strengths(self, evaluations: List[DecisionEvaluation], metrics: Dict[str, PerformanceMetric]) -> List[str]:
+    def identify_strengths(
+        self, evaluations: list[DecisionEvaluation], metrics: dict[str, PerformanceMetric]
+    ) -> list[str]:
         """Identify what the player did well (quality_score > 70, metrics above benchmark)."""
-        strengths: List[str] = []
+        strengths: list[str] = []
 
         strong = [e for e in evaluations if e.quality_score > 70]
         if strong:
-            cats: Dict[str, List[DecisionEvaluation]] = {}
+            cats: dict[str, list[DecisionEvaluation]] = {}
             for d in strong:
                 cats.setdefault(d.category, []).append(d)
             for cat, decs in cats.items():
@@ -184,41 +195,53 @@ class AARService:
         for name, m in metrics.items():
             if m.percentile is not None and m.percentile >= 70:
                 label = name.replace("_", " ").title()
-                strengths.append(f"Excellent {label}: {m.value}{self._unit_suffix(m.unit)} "
-                                 f"(benchmark: {m.benchmark}{self._unit_suffix(m.unit)}, {m.percentile}th pctl)")
+                strengths.append(
+                    f"Excellent {label}: {m.value}{self._unit_suffix(m.unit)} "
+                    f"(benchmark: {m.benchmark}{self._unit_suffix(m.unit)}, {m.percentile}th pctl)"
+                )
 
         pos = sum(1 for e in evaluations if e.impact == "positive")
         if pos and evaluations and (pos / len(evaluations) * 100) >= 50:
-            strengths.append(f"High positive impact: {pos}/{len(evaluations)} decisions ({pos/len(evaluations)*100:.0f}%)")
+            strengths.append(
+                f"High positive impact: {pos}/{len(evaluations)} decisions ({pos / len(evaluations) * 100:.0f}%)"
+            )
 
         return strengths or ["Session completed -- continue building experience"]
 
-    def identify_weaknesses(self, evaluations: List[DecisionEvaluation], metrics: Dict[str, PerformanceMetric]) -> List[str]:
+    def identify_weaknesses(
+        self, evaluations: list[DecisionEvaluation], metrics: dict[str, PerformanceMetric]
+    ) -> list[str]:
         """Identify areas needing improvement (quality_score < 40, metrics below benchmark)."""
-        weaknesses: List[str] = []
+        weaknesses: list[str] = []
 
         weak = [e for e in evaluations if e.quality_score < 40]
         if weak:
-            cats: Dict[str, List[DecisionEvaluation]] = {}
+            cats: dict[str, list[DecisionEvaluation]] = {}
             for d in weak:
                 cats.setdefault(d.category, []).append(d)
             for cat, decs in cats.items():
                 avg = sum(d.quality_score for d in decs) / len(decs)
-                weaknesses.append(f"Needs improvement in {cat}: {len(decs)} suboptimal decision(s), avg score {avg:.0f}/100")
+                weaknesses.append(
+                    f"Needs improvement in {cat}: {len(decs)} suboptimal decision(s), avg score {avg:.0f}/100"
+                )
 
         for name, m in metrics.items():
             if m.percentile is not None and m.percentile < 40:
                 label = name.replace("_", " ").title()
-                weaknesses.append(f"Below target for {label}: {m.value}{self._unit_suffix(m.unit)} "
-                                  f"(benchmark: {m.benchmark}{self._unit_suffix(m.unit)}, {m.percentile}th pctl)")
+                weaknesses.append(
+                    f"Below target for {label}: {m.value}{self._unit_suffix(m.unit)} "
+                    f"(benchmark: {m.benchmark}{self._unit_suffix(m.unit)}, {m.percentile}th pctl)"
+                )
 
         neg = sum(1 for e in evaluations if e.impact == "negative")
         if neg and evaluations and (neg / len(evaluations) * 100) >= 30:
-            weaknesses.append(f"High negative impact: {neg}/{len(evaluations)} decisions ({neg/len(evaluations)*100:.0f}%)")
+            weaknesses.append(
+                f"High negative impact: {neg}/{len(evaluations)} decisions ({neg / len(evaluations) * 100:.0f}%)"
+            )
 
         return weaknesses
 
-    def generate_recommendations(self, weaknesses: List[str], game_state: GameState) -> List[str]:
+    def generate_recommendations(self, weaknesses: list[str], game_state: GameState) -> list[str]:
         """Turn weaknesses into actionable training recommendations."""
         rec_map = {
             "detection": "Practice threat detection: log analysis, SIEM alert triage, and IOC identification",
@@ -233,7 +256,7 @@ class AARService:
             "resource": "Optimize resource utilization: plan action sequences to conserve points and budget",
             "negative impact": "Review decision-making under pressure: study NIST/SANS incident response frameworks",
         }
-        recommendations: List[str] = []
+        recommendations: list[str] = []
         for weakness in weaknesses:
             wl = weakness.lower()
             for keyword, rec in rec_map.items():
@@ -249,13 +272,15 @@ class AARService:
 
         return recommendations or ["Good performance overall. Try a higher difficulty or different scenario type."]
 
-    def build_score_breakdown(self, game_state: GameState) -> Dict[str, int]:
+    def build_score_breakdown(self, game_state: GameState) -> dict[str, int]:
         """Break down total score by category: detection, containment, objective, penalty points."""
         bd = {"detection_points": 0, "containment_points": 0, "objective_points": 0, "penalty_points": 0}
 
         for event in game_state.incident_timeline:
             if event.event_type == "detection" and event.actor == "player":
-                bd["detection_points"] += 15 if event.severity in ("critical", "high") else (10 if event.severity == "medium" else 5)
+                bd["detection_points"] += (
+                    15 if event.severity in ("critical", "high") else (10 if event.severity == "medium" else 5)
+                )
             if event.event_type == "consequence" and event.severity in ("critical", "high"):
                 bd["penalty_points"] -= 10
 
@@ -291,7 +316,7 @@ class AARService:
         summary += f"over {game_state.time_elapsed} minutes of gameplay."
         return summary
 
-    def build_dashboard(self, session_states: List[GameState]) -> PerformanceDashboard:
+    def build_dashboard(self, session_states: list[GameState]) -> PerformanceDashboard:
         """Aggregate metrics across multiple sessions into a performance dashboard."""
         logger.info(f"Building dashboard from {len(session_states)} sessions")
         if not session_states:
@@ -302,14 +327,14 @@ class AARService:
         average_score = sum(scores) / len(scores)
 
         # Collect per-session metric values
-        all_metrics: Dict[str, List[float]] = {}
+        all_metrics: dict[str, list[float]] = {}
         for gs in session_states:
             for name, m in self.calculate_metrics(gs).items():
                 all_metrics.setdefault(name, []).append(m.value)
 
         # Build aggregated metrics and trends
-        aggregated: List[PerformanceMetric] = []
-        trends: Dict[str, List[float]] = {}
+        aggregated: list[PerformanceMetric] = []
+        trends: dict[str, list[float]] = {}
         for name, values in all_metrics.items():
             avg = sum(values) / len(values)
             bm = self.METRIC_BENCHMARKS.get(name)
@@ -318,16 +343,18 @@ class AARService:
         trends["score"] = [float(s) for s in scores]
 
         # Identify skill gaps: metrics below benchmark in 60%+ of sessions
-        skill_gaps: List[str] = []
+        skill_gaps: list[str] = []
         for name, values in all_metrics.items():
             bm = self.METRIC_BENCHMARKS.get(name)
             if bm is not None and len(values) >= 2:
                 below = sum(1 for v in values if (v > bm if name in self.LOWER_IS_BETTER else v < bm))
                 if below >= len(values) * 0.6:
-                    skill_gaps.append(f"{name.replace('_', ' ').title()}: below benchmark in {below}/{len(values)} sessions")
+                    skill_gaps.append(
+                        f"{name.replace('_', ' ').title()}: below benchmark in {below}/{len(values)} sessions"
+                    )
 
         # Cross-session recommendations
-        recommendations: List[str] = []
+        recommendations: list[str] = []
         if skill_gaps:
             recommendations.append("Focus training on: " + ", ".join(g.split(":")[0] for g in skill_gaps))
         if len(scores) >= 3:
@@ -340,9 +367,14 @@ class AARService:
             recommendations.append("Continue regular practice sessions to maintain and improve skills.")
 
         dashboard = PerformanceDashboard(
-            sessions_completed=len(session_states), average_score=round(average_score, 1),
-            best_score=max(scores), total_play_time_minutes=sum(play_times),
-            metrics=aggregated, trends=trends, skill_gaps=skill_gaps, recommendations=recommendations,
+            sessions_completed=len(session_states),
+            average_score=round(average_score, 1),
+            best_score=max(scores),
+            total_play_time_minutes=sum(play_times),
+            metrics=aggregated,
+            trends=trends,
+            skill_gaps=skill_gaps,
+            recommendations=recommendations,
         )
         logger.info(f"Dashboard built: {len(session_states)} sessions, avg={average_score:.1f}, gaps={len(skill_gaps)}")
         return dashboard
@@ -355,7 +387,10 @@ class AARService:
         """Build a PerformanceMetric with benchmark and percentile from class constants."""
         bm = self.METRIC_BENCHMARKS.get(name)
         return PerformanceMetric(
-            metric_type=name, value=round(value, 2), unit=unit, benchmark=bm,
+            metric_type=name,
+            value=round(value, 2),
+            unit=unit,
+            benchmark=bm,
             percentile=self._calculate_percentile(value, bm or 50.0, name in self.LOWER_IS_BETTER),
         )
 
@@ -363,10 +398,7 @@ class AARService:
         """Estimate percentile from value vs benchmark (benchmark = 50th percentile)."""
         if benchmark <= 0:
             return 50
-        if lower_is_better:
-            ratio = benchmark / value if value > 0 else 2.0
-        else:
-            ratio = value / benchmark
+        ratio = (benchmark / value if value > 0 else 2.0) if lower_is_better else value / benchmark
         return int(min(99, max(1, ratio * 50)))
 
     @staticmethod

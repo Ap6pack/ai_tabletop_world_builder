@@ -10,7 +10,7 @@
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -26,12 +26,14 @@ def parse_requirements(req_path: Path) -> list[dict]:
         match = pattern.match(line)
         if match:
             name, version = match.group(1), match.group(2)
-            components.append({
-                "type": "library",
-                "name": name,
-                "version": version,
-                "purl": f"pkg:pypi/{name.lower()}@{version}",
-            })
+            components.append(
+                {
+                    "type": "library",
+                    "name": name,
+                    "version": version,
+                    "purl": f"pkg:pypi/{name.lower()}@{version}",
+                }
+            )
     return components
 
 
@@ -42,7 +44,7 @@ def generate_sbom(project_root: Path) -> dict:
         raise FileNotFoundError(f"requirements.txt not found at {req_path}")
 
     components = parse_requirements(req_path)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     return {
         "bomFormat": "CycloneDX",

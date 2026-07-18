@@ -31,6 +31,8 @@ ignore = [
     "S105",  # hardcoded password (false positives in test files)
     "S106",  # hardcoded password argument
     "E501",  # line too long (handled by formatter)
+    "B008",  # function call in argument defaults — FastAPI Depends()/Query() idiom
+    "S311",  # pseudo-random generators — used for game mechanics, not security
 ]
 
 [tool.ruff.lint.per-file-ignores]

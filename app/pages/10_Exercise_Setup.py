@@ -9,10 +9,12 @@
 """
 Streamlit Exercise Setup Page - Configure multi-team tabletop exercises.
 """
-import streamlit as st
-import requests
-import sys
+
 import os
+import sys
+
+import requests
+import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import API_BASE_URL, DEFAULT_TIMEOUT, LONG_OPERATION_TIMEOUT
@@ -60,9 +62,7 @@ with col2:
         "Scenario Type",
         ["incident-response", "threat-hunting", "vulnerability-management", "compliance-audit"],
     )
-    difficulty = st.selectbox(
-        "Difficulty", ["beginner", "intermediate", "advanced", "expert"], index=1
-    )
+    difficulty = st.selectbox("Difficulty", ["beginner", "intermediate", "advanced", "expert"], index=1)
 
 # Scenario selection
 st.markdown("### Scenario")
@@ -109,26 +109,25 @@ default_roles = {
 
 for i in range(num_teams):
     col_idx = i % len(team_cols)
-    with team_cols[col_idx]:
-        with st.expander(f"Team {i + 1}", expanded=i < 3):
-            name = st.text_input(
-                "Name",
-                value=default_team_names[i] if i < len(default_team_names) else f"Team {i + 1}",
-                key=f"team_name_{i}",
-            )
-            ttype = st.selectbox(
-                "Type",
-                team_types,
-                index=min(i, len(team_types) - 1),
-                key=f"team_type_{i}",
-            )
-            roles = st.multiselect(
-                "Roles",
-                default_roles.get(ttype, default_roles["custom"]),
-                default=default_roles.get(ttype, default_roles["custom"])[:2],
-                key=f"team_roles_{i}",
-            )
-            teams.append({"name": name, "team_type": ttype, "roles": roles})
+    with team_cols[col_idx], st.expander(f"Team {i + 1}", expanded=i < 3):
+        name = st.text_input(
+            "Name",
+            value=default_team_names[i] if i < len(default_team_names) else f"Team {i + 1}",
+            key=f"team_name_{i}",
+        )
+        ttype = st.selectbox(
+            "Type",
+            team_types,
+            index=min(i, len(team_types) - 1),
+            key=f"team_type_{i}",
+        )
+        roles = st.multiselect(
+            "Roles",
+            default_roles.get(ttype, default_roles["custom"]),
+            default=default_roles.get(ttype, default_roles["custom"])[:2],
+            key=f"team_roles_{i}",
+        )
+        teams.append({"name": name, "team_type": ttype, "roles": roles})
 
 # Round settings
 st.markdown("### Round Settings")

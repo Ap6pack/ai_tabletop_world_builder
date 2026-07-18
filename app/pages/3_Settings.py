@@ -9,15 +9,13 @@
 """
 Streamlit Settings Page - Configure platform settings.
 """
-import streamlit as st
+
 import requests
+import streamlit as st
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT, HEALTH_CHECK_TIMEOUT
 
-st.set_page_config(
-    page_title="Settings",
-    page_icon="",
-    layout="wide"
-)
+st.set_page_config(page_title="Settings", page_icon="", layout="wide")
 
 st.title("Platform Settings")
 st.markdown("Configure LLM providers, content policies, and system preferences")
@@ -32,13 +30,13 @@ try:
     current_providers = {}
     if providers_response.status_code == 200:
         current_providers = providers_response.json()
-except:
+except Exception:
     current_providers = {}
 
 provider = st.selectbox(
     "Select LLM Provider",
-    ["OpenAI", "Anthropic", "Ollama (Local)"],
-    help="Choose which AI provider to use for scenario generation and game narration"
+    ["OpenAI", "Anthropic", "Together", "Ollama (Local)"],
+    help="Choose which AI provider to use for scenario generation and game narration",
 )
 
 col1, col2 = st.columns(2)
@@ -56,7 +54,9 @@ if provider == "OpenAI":
                     st.rerun()
                 else:
                     try:
-                        response = requests.delete(f"{API_BASE_URL}/settings/provider/openai/key", timeout=DEFAULT_TIMEOUT)
+                        response = requests.delete(
+                            f"{API_BASE_URL}/settings/provider/openai/key", timeout=DEFAULT_TIMEOUT
+                        )
                         if response.status_code == 200:
                             st.success("✅ OpenAI API key removed")
                             st.session_state.confirm_clear_openai = False
@@ -67,14 +67,21 @@ if provider == "OpenAI":
                     except Exception as e:
                         st.error(f"❌ Error: {str(e)}")
                         st.session_state.confirm_clear_openai = False
-            api_key = st.text_input("OpenAI API Key", type="password", placeholder="Currently configured", help="Get your API key from platform.openai.com")
+            api_key = st.text_input(
+                "OpenAI API Key",
+                type="password",
+                placeholder="Currently configured",
+                help="Get your API key from platform.openai.com",
+            )
         else:
             st.info("ℹ️ No API Key Configured")
             api_key = st.text_input("OpenAI API Key", type="password", help="Get your API key from platform.openai.com")
 
         model = st.selectbox("Model", ["gpt-4-turbo-preview", "gpt-4", "gpt-3.5-turbo"])
     with col2:
-        temperature = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1, help="Higher = more creative, Lower = more deterministic")
+        temperature = st.slider(
+            "Temperature", 0.0, 2.0, 0.7, 0.1, help="Higher = more creative, Lower = more deterministic"
+        )
         max_tokens = st.number_input("Max Tokens", 100, 8000, 2000, 100)
 
 elif provider == "Anthropic":
@@ -90,7 +97,9 @@ elif provider == "Anthropic":
                     st.rerun()
                 else:
                     try:
-                        response = requests.delete(f"{API_BASE_URL}/settings/provider/anthropic/key", timeout=DEFAULT_TIMEOUT)
+                        response = requests.delete(
+                            f"{API_BASE_URL}/settings/provider/anthropic/key", timeout=DEFAULT_TIMEOUT
+                        )
                         if response.status_code == 200:
                             st.success("✅ Anthropic API key removed")
                             st.session_state.confirm_clear_anthropic = False
@@ -101,20 +110,79 @@ elif provider == "Anthropic":
                     except Exception as e:
                         st.error(f"❌ Error: {str(e)}")
                         st.session_state.confirm_clear_anthropic = False
-            api_key = st.text_input("Anthropic API Key", type="password", placeholder="Currently configured", help="Get your API key from console.anthropic.com")
+            api_key = st.text_input(
+                "Anthropic API Key",
+                type="password",
+                placeholder="Currently configured",
+                help="Get your API key from console.anthropic.com",
+            )
         else:
             st.info("ℹ️ No API Key Configured")
-            api_key = st.text_input("Anthropic API Key", type="password", help="Get your API key from console.anthropic.com")
+            api_key = st.text_input(
+                "Anthropic API Key", type="password", help="Get your API key from console.anthropic.com"
+            )
 
-        model = st.selectbox("Model", ["claude-3-5-sonnet-20241022", "claude-3-opus-20240229", "claude-3-sonnet-20240229"])
+        model = st.selectbox(
+            "Model", ["claude-3-5-sonnet-20241022", "claude-3-opus-20240229", "claude-3-sonnet-20240229"]
+        )
     with col2:
         temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
         max_tokens = st.number_input("Max Tokens", 100, 8000, 4096, 100)
 
+elif provider == "Together":
+    with col1:
+        # Show current status
+        is_configured = current_providers.get("together", False)
+        if is_configured:
+            st.success("✅ API Key Configured")
+            if st.button("🗑️ Clear API Key", key="clear_together", help="Remove Together API key"):
+                if "confirm_clear_together" not in st.session_state:
+                    st.session_state.confirm_clear_together = True
+                    st.warning("⚠️ Click again to confirm removal")
+                    st.rerun()
+                else:
+                    try:
+                        response = requests.delete(
+                            f"{API_BASE_URL}/settings/provider/together/key", timeout=DEFAULT_TIMEOUT
+                        )
+                        if response.status_code == 200:
+                            st.success("✅ Together API key removed")
+                            st.session_state.confirm_clear_together = False
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Failed: {response.json().get('detail', 'Unknown error')}")
+                            st.session_state.confirm_clear_together = False
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
+                        st.session_state.confirm_clear_together = False
+            api_key = st.text_input(
+                "Together API Key",
+                type="password",
+                placeholder="Currently configured",
+                help="Get your API key from api.together.xyz",
+            )
+        else:
+            st.info("ℹ️ No API Key Configured")
+            api_key = st.text_input("Together API Key", type="password", help="Get your API key from api.together.xyz")
+
+        model = st.selectbox(
+            "Model",
+            [
+                "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+                "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+                "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            ],
+        )
+    with col2:
+        temperature = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1)
+        max_tokens = st.number_input("Max Tokens", 100, 8000, 2000, 100)
+
 elif provider == "Ollama (Local)":
     with col1:
         base_url = st.text_input("Ollama Base URL", "http://localhost:11434", help="URL where Ollama is running")
-        model = st.selectbox("Model", ["llama3", "llama2", "mistral", "mixtral"], help="Models must be pulled in Ollama first")
+        model = st.selectbox(
+            "Model", ["llama3", "llama2", "mistral", "mixtral"], help="Models must be pulled in Ollama first"
+        )
     with col2:
         temperature = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1)
         st.info("ℹMake sure Ollama is running and the model is pulled: `ollama pull llama3`")
@@ -127,14 +195,11 @@ if st.button("🔍 Test Connection", type="primary"):
             test_payload = {
                 "prompt": "Say 'OK' if you can read this.",
                 "provider": provider.lower().replace(" (local)", ""),
-                "max_tokens": 10
+                "max_tokens": 10,
             }
 
             # Add provider-specific config if entered
-            if provider == "OpenAI" and api_key:
-                test_payload["api_key"] = api_key
-                test_payload["model"] = model
-            elif provider == "Anthropic" and api_key:
+            if provider in ("OpenAI", "Anthropic", "Together") and api_key:
                 test_payload["api_key"] = api_key
                 test_payload["model"] = model
             elif provider == "Ollama (Local)":
@@ -142,16 +207,12 @@ if st.button("🔍 Test Connection", type="primary"):
                 test_payload["model"] = model
 
             # Call API test endpoint
-            response = requests.post(
-                f"{API_BASE_URL}/llm/complete",
-                json=test_payload,
-                timeout=10
-            )
+            response = requests.post(f"{API_BASE_URL}/llm/complete", json=test_payload, timeout=10)
 
             if response.status_code == 200:
                 st.success("✅ Connection successful! Provider is working correctly.")
             else:
-                error_detail = response.json().get('detail', 'Unknown error')
+                error_detail = response.json().get("detail", "Unknown error")
                 st.error(f"❌ Connection failed: {error_detail}")
 
         except requests.exceptions.Timeout:
@@ -170,7 +231,7 @@ policy_level = st.select_slider(
     "Content Policy Level",
     options=["Defensive", "Educational", "Advanced", "Unrestricted"],
     value="Educational",
-    help="Control the level of detail in security scenarios"
+    help="Control the level of detail in security scenarios",
 )
 
 # Display policy details
@@ -179,26 +240,26 @@ policies = {
         "description": "Defensive security only - no offensive techniques",
         "suitable_for": "Beginner teams, compliance-sensitive environments",
         "includes": ["Security monitoring", "Incident response", "Security controls"],
-        "excludes": ["Exploit code", "Offensive techniques", "Attack methods"]
+        "excludes": ["Exploit code", "Offensive techniques", "Attack methods"],
     },
     "Educational": {
         "description": "Realistic scenarios with defensive focus",
         "suitable_for": "Training security teams, SOC analysts",
         "includes": ["Vulnerability identification", "Threat modeling", "Forensics"],
-        "excludes": ["Actual exploit code", "Real credentials", "Weaponized malware"]
+        "excludes": ["Actual exploit code", "Real credentials", "Weaponized malware"],
     },
     "Advanced": {
         "description": "Realistic attack/defense scenarios for experienced professionals",
         "suitable_for": "Advanced security teams, red/blue team exercises",
         "includes": ["Red team tactics", "Exploitation techniques", "APT analysis"],
-        "excludes": ["Production-ready exploits", "Real attack coordination"]
+        "excludes": ["Production-ready exploits", "Real attack coordination"],
     },
     "Unrestricted": {
         "description": "Full realism for advanced training (use with caution)",
         "suitable_for": "Expert security researchers, controlled environments",
         "includes": ["Realistic attacks", "Detailed exploitation", "Advanced TTPs"],
-        "excludes": ["Illegal activities"]
-    }
+        "excludes": ["Illegal activities"],
+    },
 }
 
 policy = policies[policy_level]
@@ -207,14 +268,13 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown(f"**Description:** {policy['description']}")
     st.markdown(f"**Suitable For:** {policy['suitable_for']}")
-with col2:
-    with st.expander("View Policy Details"):
-        st.markdown("**Includes:**")
-        for item in policy['includes']:
-            st.markdown(f"- {item}")
-        st.markdown("**Excludes:**")
-        for item in policy['excludes']:
-            st.markdown(f"- {item}")
+with col2, st.expander("View Policy Details"):
+    st.markdown("**Includes:**")
+    for item in policy["includes"]:
+        st.markdown(f"- {item}")
+    st.markdown("**Excludes:**")
+    for item in policy["excludes"]:
+        st.markdown(f"- {item}")
 
 st.markdown("---")
 
@@ -223,11 +283,11 @@ st.markdown("### Content Policy & Safety Configuration")
 st.markdown("Advanced safety features with filtering, validation, and audit logging.")
 
 # Initialize session state for safety settings
-if 'enable_action_filtering' not in st.session_state:
+if "enable_action_filtering" not in st.session_state:
     st.session_state.enable_action_filtering = True
-if 'enable_content_validation' not in st.session_state:
+if "enable_content_validation" not in st.session_state:
     st.session_state.enable_content_validation = True
-if 'enable_audit_logging' not in st.session_state:
+if "enable_audit_logging" not in st.session_state:
     st.session_state.enable_audit_logging = True
 
 col1, col2 = st.columns(2)
@@ -237,12 +297,12 @@ with col1:
     enable_action_filtering = st.checkbox(
         "Enable Pre-Action Content Filtering",
         value=st.session_state.enable_action_filtering,
-        help="Filter player actions before processing to detect policy violations"
+        help="Filter player actions before processing to detect policy violations",
     )
     enable_content_validation = st.checkbox(
         "Enable Post-Generation Validation",
         value=st.session_state.enable_content_validation,
-        help="Validate AI-generated content before delivery to players"
+        help="Validate AI-generated content before delivery to players",
     )
 
     st.markdown("**Filter Categories**")
@@ -255,7 +315,7 @@ with col1:
         "Redaction Style",
         options=["mask", "remove", "replace"],
         index=0,
-        help="How to redact violations: mask=[REDACTED], remove=delete, replace=safe text"
+        help="How to redact violations: mask=[REDACTED], remove=delete, replace=safe text",
     )
 
 with col2:
@@ -263,7 +323,7 @@ with col2:
     enable_audit_logging = st.checkbox(
         "Enable Audit Logging",
         value=st.session_state.enable_audit_logging,
-        help="Log all policy checks, violations, and safety events for compliance"
+        help="Log all policy checks, violations, and safety events for compliance",
     )
     audit_retention_days = st.slider(
         "Audit Log Retention (days)",
@@ -271,7 +331,7 @@ with col2:
         max_value=365,
         value=90,
         step=7,
-        help="How long to keep audit logs before automatic cleanup"
+        help="How long to keep audit logs before automatic cleanup",
     )
 
     st.markdown("**Violation Handling**")
@@ -280,14 +340,14 @@ with col2:
         min_value=1,
         max_value=5,
         value=2,
-        help="Number of violations before escalating to admin review"
+        help="Number of violations before escalating to admin review",
     )
     violation_time_window = st.slider(
         "Violation Time Window (hours)",
         min_value=1,
         max_value=72,
         value=24,
-        help="Time window for counting repeat violations"
+        help="Time window for counting repeat violations",
     )
 
 # Audit Log Viewer
@@ -298,17 +358,11 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     log_event_type = st.selectbox(
-        "Event Type",
-        options=["all", "policy_check", "violation", "filter", "sanitization"],
-        index=0
+        "Event Type", options=["all", "policy_check", "violation", "filter", "sanitization"], index=0
     )
 
 with col2:
-    log_severity = st.selectbox(
-        "Severity",
-        options=["all", "info", "warning", "error", "critical"],
-        index=0
-    )
+    log_severity = st.selectbox("Severity", options=["all", "info", "warning", "error", "critical"], index=0)
 
 with col3:
     log_limit = st.number_input("Max Logs", min_value=10, max_value=500, value=50, step=10)
@@ -322,11 +376,7 @@ if st.button("Load Audit Logs", use_container_width=True):
         if log_severity != "all":
             params["severity"] = log_severity
 
-        response = requests.get(
-            f"{API_BASE_URL}/audit/logs",
-            params=params,
-            timeout=DEFAULT_TIMEOUT
-        )
+        response = requests.get(f"{API_BASE_URL}/audit/logs", params=params, timeout=DEFAULT_TIMEOUT)
 
         if response.status_code == 200:
             logs = response.json()
@@ -335,21 +385,18 @@ if st.button("Load Audit Logs", use_container_width=True):
 
                 # Display logs in a table
                 import pandas as pd
+
                 df = pd.DataFrame(logs)
 
                 # Format timestamp for display
-                if 'timestamp' in df.columns:
-                    df['timestamp'] = pd.to_datetime(df['timestamp']).dt.strftime('%Y-%m-%d %H:%M:%S')
+                if "timestamp" in df.columns:
+                    df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.strftime("%Y-%m-%d %H:%M:%S")
 
                 # Select columns to display
-                display_columns = ['timestamp', 'event_type', 'severity', 'result', 'violations']
+                display_columns = ["timestamp", "event_type", "severity", "result", "violations"]
                 available_columns = [col for col in display_columns if col in df.columns]
 
-                st.dataframe(
-                    df[available_columns],
-                    use_container_width=True,
-                    hide_index=True
-                )
+                st.dataframe(df[available_columns], use_container_width=True, hide_index=True)
             else:
                 st.info("No audit logs found matching the filters")
         else:
@@ -381,16 +428,9 @@ if st.button("Generate Compliance Report", use_container_width=True):
         st.error("❌ Start date must be before end date")
     else:
         try:
-            params = {
-                "start_date": report_start_date.isoformat(),
-                "end_date": report_end_date.isoformat()
-            }
+            params = {"start_date": report_start_date.isoformat(), "end_date": report_end_date.isoformat()}
 
-            response = requests.get(
-                f"{API_BASE_URL}/audit/compliance-report",
-                params=params,
-                timeout=DEFAULT_TIMEOUT
-            )
+            response = requests.get(f"{API_BASE_URL}/audit/compliance-report", params=params, timeout=DEFAULT_TIMEOUT)
 
             if response.status_code == 200:
                 report = response.json()
@@ -423,18 +463,14 @@ if st.button("Generate Compliance Report", use_container_width=True):
                 # Violations by type
                 if report.get("violations_by_type"):
                     st.markdown("**Violations by Type**")
-                    violations_df = pd.DataFrame(
-                        list(report["violations_by_type"].items()),
-                        columns=["Type", "Count"]
-                    )
+                    violations_df = pd.DataFrame(list(report["violations_by_type"].items()), columns=["Type", "Count"])
                     st.dataframe(violations_df, use_container_width=True, hide_index=True)
 
                 # Violations by severity
                 if report.get("violations_by_severity"):
                     st.markdown("**Violations by Severity**")
                     severity_df = pd.DataFrame(
-                        list(report["violations_by_severity"].items()),
-                        columns=["Severity", "Count"]
+                        list(report["violations_by_severity"].items()), columns=["Severity", "Count"]
                     )
                     st.dataframe(severity_df, use_container_width=True, hide_index=True)
 
@@ -446,6 +482,7 @@ if st.button("Generate Compliance Report", use_container_width=True):
 
                 # Export report
                 import json
+
                 if report_format == "json":
                     report_data = json.dumps(report, indent=2)
                     mime_type = "application/json"
@@ -467,7 +504,7 @@ if st.button("Generate Compliance Report", use_container_width=True):
                     data=report_data,
                     file_name=f"compliance_report_{report_start_date}_{report_end_date}.{file_ext}",
                     mime=mime_type,
-                    use_container_width=True
+                    use_container_width=True,
                 )
             else:
                 st.error(f"❌ Failed to generate report: {response.json().get('detail', 'Unknown error')}")
@@ -543,7 +580,7 @@ with col1:
             "redaction_style": redaction_style,
             "audit_retention_days": audit_retention_days,
             "violation_escalation_threshold": violation_escalation_threshold,
-            "violation_time_window": violation_time_window
+            "violation_time_window": violation_time_window,
         }
 
         # Add provider-specific settings
@@ -561,18 +598,14 @@ with col1:
             update_payload["ollama_temperature"] = temperature
 
         try:
-            response = requests.post(
-                f"{API_BASE_URL}/settings/update",
-                json=update_payload,
-                timeout=DEFAULT_TIMEOUT
-            )
+            response = requests.post(f"{API_BASE_URL}/settings/update", json=update_payload, timeout=DEFAULT_TIMEOUT)
 
             if response.status_code == 200:
                 result = response.json()
                 st.session_state.llm_provider = provider
                 st.session_state.content_policy = policy_level
                 st.success(f"✅ Settings saved successfully! Updated: {', '.join(result['updated_keys'])}")
-                st.info(result.get('note', ''))
+                st.info(result.get("note", ""))
             else:
                 st.error(f"❌ Failed to save settings: {response.json().get('detail', 'Unknown error')}")
         except Exception as e:
@@ -584,8 +617,8 @@ with col2:
             response = requests.post(f"{API_BASE_URL}/settings/reset/defaults", timeout=DEFAULT_TIMEOUT)
             if response.status_code == 200:
                 result = response.json()
-                st.success("✅ " + result['message'])
-                st.info(result.get('note', ''))
+                st.success("✅ " + result["message"])
+                st.info(result.get("note", ""))
                 st.rerun()
             else:
                 st.error(f"❌ Failed to reset: {response.json().get('detail', 'Unknown error')}")
@@ -599,13 +632,14 @@ with col3:
             if response.status_code == 200:
                 config_data = response.json()
                 import json
+
                 config_json = json.dumps(config_data, indent=2)
                 st.download_button(
                     label="📥 Download Config",
                     data=config_json,
                     file_name="platform_config.json",
                     mime="application/json",
-                    use_container_width=True
+                    use_container_width=True,
                 )
                 st.success("✅ Config ready for download")
             else:

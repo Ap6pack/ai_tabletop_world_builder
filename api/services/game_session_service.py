@@ -9,12 +9,15 @@
 """
 Game session service for managing war gaming sessions.
 """
-from typing import Optional, Dict, Any
-from api.models import GameState, Organization, Inventory, IncidentEvent
-from datetime import datetime
+
 import uuid
-import json
-import os
+from datetime import datetime
+from typing import Any
+
+from sqlalchemy import select
+
+from api.db import GameSessionRow, init_db, session_scope
+from api.models import GameState, IncidentEvent, Inventory, Organization
 
 
 class GameSessionService:
@@ -22,15 +25,10 @@ class GameSessionService:
 
     def __init__(self):
         """Initialize the game session service."""
-        self.sessions_dir = "data/sessions"
-        os.makedirs(self.sessions_dir, exist_ok=True)
+        init_db()
 
     def create_session(
-        self,
-        organization: Organization,
-        scenario_type: str,
-        player_role: str,
-        difficulty: str
+        self, organization: Organization, scenario_type: str, player_role: str, difficulty: str
     ) -> GameState:
         """
         Create a new game session.
@@ -61,7 +59,7 @@ class GameSessionService:
             time_elapsed=0,
             objectives_completed=[],
             objectives_failed=[],
-            status="in-progress"
+            status="in-progress",
         )
 
         # Save initial state
@@ -73,39 +71,31 @@ class GameSessionService:
         """Create initial inventory based on player role."""
 
         # Base tools available to all roles
-        base_tools = {
-            "SIEM Access": 1,
-            "Email": 1,
-            "Documentation": 1
-        }
+        base_tools = {"SIEM Access": 1, "Email": 1, "Documentation": 1}
 
         # Role-specific tools
         role_tools = {
-            "soc-analyst": {
-                "IDS/IPS": 1,
-                "Log Analysis Tools": 1,
-                "Threat Intelligence Feed": 1
-            },
+            "soc-analyst": {"IDS/IPS": 1, "Log Analysis Tools": 1, "Threat Intelligence Feed": 1},
             "incident-responder": {
                 "IDS/IPS": 1,
                 "EDR Console": 1,
                 "Forensics Toolkit": 1,
                 "Network Analyzer": 1,
-                "Incident Response Playbook": 1
+                "Incident Response Playbook": 1,
             },
             "security-engineer": {
                 "Firewall Console": 1,
                 "Vulnerability Scanner": 1,
                 "Configuration Management": 1,
                 "Network Diagram": 1,
-                "EDR Console": 1
+                "EDR Console": 1,
             },
             "ciso": {
                 "Executive Dashboard": 1,
                 "Risk Management Tools": 1,
                 "Incident Reports": 1,
-                "Board Communications": 1
-            }
+                "Board Communications": 1,
+            },
         }
 
         tools = {**base_tools, **role_tools.get(player_role, {})}
@@ -116,16 +106,12 @@ class GameSessionService:
             "incident-responder": ["user", "admin", "siem"],
             "security-engineer": ["user", "admin", "network"],
             "ciso": ["user", "admin", "executive"],
-            "mixed": ["user"]
+            "mixed": ["user"],
         }
 
-        return Inventory(
-            tools=tools,
-            access_levels=access_mapping.get(player_role, ["user"]),
-            credentials=[]
-        )
+        return Inventory(tools=tools, access_levels=access_mapping.get(player_role, ["user"]), credentials=[])
 
-    def get_session(self, session_id: str) -> Optional[GameState]:
+    def get_session(self, session_id: str) -> GameState | None:
         """
         Load a game session.
 
@@ -135,38 +121,44 @@ class GameSessionService:
         Returns:
             GameState if found, None otherwise
         """
-        filepath = os.path.join(self.sessions_dir, f"{session_id}.json")
-
-        if not os.path.exists(filepath):
-            return None
-
-        with open(filepath, 'r') as f:
-            data = json.load(f)
-
-        return GameState(**data)
+        with session_scope() as db:
+            row = db.get(GameSessionRow, session_id)
+            if row is None:
+                return None
+            return GameState(**row.data)
 
     def save_session(self, game_state: GameState) -> str:
         """
-        Save game session to disk.
+        Persist game session to the database (insert or update).
 
         Args:
             game_state: Current game state
 
         Returns:
-            Path to saved file
+            The session ID that was saved.
         """
-        filepath = os.path.join(self.sessions_dir, f"{game_state.session_id}.json")
+        timeline = game_state.incident_timeline
+        first_ts = timeline[0].timestamp.isoformat() if timeline else None
+        org_name = game_state.organization.name if game_state.organization else None
+        payload = game_state.model_dump(mode="json")
 
-        with open(filepath, 'w') as f:
-            json.dump(game_state.model_dump(), f, indent=2, default=str)
+        with session_scope() as db:
+            row = db.get(GameSessionRow, game_state.session_id)
+            if row is None:
+                row = GameSessionRow(session_id=game_state.session_id, created_at=first_ts)
+                db.add(row)
+            elif first_ts is not None:
+                row.created_at = first_ts
+            row.status = game_state.status
+            row.player_role = game_state.player_role
+            row.org_name = org_name
+            row.score = game_state.score
+            row.time_elapsed = game_state.time_elapsed
+            row.data = payload
 
-        return filepath
+        return game_state.session_id
 
-    def update_session(
-        self,
-        session_id: str,
-        updates: Dict[str, Any]
-    ) -> Optional[GameState]:
+    def update_session(self, session_id: str, updates: dict[str, Any]) -> GameState | None:
         """
         Update game session with new data.
 
@@ -193,13 +185,8 @@ class GameSessionService:
         return game_state
 
     def add_event(
-        self,
-        session_id: str,
-        event_type: str,
-        description: str,
-        severity: str,
-        actor: str = "system"
-    ) -> Optional[GameState]:
+        self, session_id: str, event_type: str, description: str, severity: str, actor: str = "system"
+    ) -> GameState | None:
         """
         Add an event to the incident timeline.
 
@@ -219,11 +206,7 @@ class GameSessionService:
             return None
 
         event = IncidentEvent(
-            timestamp=datetime.now(),
-            event_type=event_type,
-            description=description,
-            severity=severity,
-            actor=actor
+            timestamp=datetime.now(), event_type=event_type, description=description, severity=severity, actor=actor
         )
 
         game_state.incident_timeline.append(event)
@@ -236,10 +219,10 @@ class GameSessionService:
     def update_inventory(
         self,
         session_id: str,
-        tool_changes: Optional[Dict[str, int]] = None,
-        access_changes: Optional[list] = None,
-        credential_changes: Optional[list] = None
-    ) -> Optional[GameState]:
+        tool_changes: dict[str, int] | None = None,
+        access_changes: list | None = None,
+        credential_changes: list | None = None,
+    ) -> GameState | None:
         """
         Update player inventory.
 
@@ -283,12 +266,7 @@ class GameSessionService:
 
         return game_state
 
-    def update_score(
-        self,
-        session_id: str,
-        points: int,
-        reason: str
-    ) -> Optional[GameState]:
+    def update_score(self, session_id: str, points: int, reason: str) -> GameState | None:
         """
         Update player score.
 
@@ -310,24 +288,13 @@ class GameSessionService:
         # Add event for significant score changes
         if abs(points) >= 10:
             severity = "info" if points > 0 else "low"
-            self.add_event(
-                session_id,
-                "action",
-                f"Score change: {points:+d} points - {reason}",
-                severity,
-                "system"
-            )
+            self.add_event(session_id, "action", f"Score change: {points:+d} points - {reason}", severity, "system")
 
         self.save_session(game_state)
 
         return game_state
 
-    def complete_objective(
-        self,
-        session_id: str,
-        objective: str,
-        success: bool = True
-    ) -> Optional[GameState]:
+    def complete_objective(self, session_id: str, objective: str, success: bool = True) -> GameState | None:
         """
         Mark an objective as completed or failed.
 
@@ -358,11 +325,7 @@ class GameSessionService:
         # Reload to include score changes from update_score
         return self.get_session(session_id)
 
-    def end_session(
-        self,
-        session_id: str,
-        status: str = "completed"
-    ) -> Optional[GameState]:
+    def end_session(self, session_id: str, status: str = "completed") -> GameState | None:
         """
         End a game session.
 
@@ -381,19 +344,13 @@ class GameSessionService:
         game_state.status = status
 
         # Add final event
-        self.add_event(
-            session_id,
-            "action",
-            f"Session ended - Status: {status}",
-            "info",
-            "system"
-        )
+        self.add_event(session_id, "action", f"Session ended - Status: {status}", "info", "system")
 
         self.save_session(game_state)
 
         return game_state
 
-    def list_sessions(self, status_filter: Optional[str] = None) -> list:
+    def list_sessions(self, status_filter: str | None = None) -> list:
         """
         List all game sessions.
 
@@ -403,35 +360,26 @@ class GameSessionService:
         Returns:
             List of session metadata
         """
-        sessions = []
+        stmt = select(GameSessionRow)
+        if status_filter:
+            stmt = stmt.where(GameSessionRow.status == status_filter)
 
-        if not os.path.exists(self.sessions_dir):
-            return sessions
+        with session_scope() as db:
+            rows = db.scalars(stmt).all()
+            sessions = [
+                {
+                    "session_id": row.session_id,
+                    "organization": row.org_name,
+                    "player_role": row.player_role,
+                    "status": row.status,
+                    "score": row.score,
+                    "time_elapsed": row.time_elapsed,
+                    "created_at": row.created_at,
+                }
+                for row in rows
+            ]
 
-        for filename in os.listdir(self.sessions_dir):
-            if filename.endswith('.json'):
-                filepath = os.path.join(self.sessions_dir, filename)
-
-                try:
-                    with open(filepath, 'r') as f:
-                        data = json.load(f)
-
-                    if status_filter and data.get('status') != status_filter:
-                        continue
-
-                    sessions.append({
-                        "session_id": data.get("session_id"),
-                        "organization": data.get("organization", {}).get("name"),
-                        "player_role": data.get("player_role"),
-                        "status": data.get("status"),
-                        "score": data.get("score"),
-                        "time_elapsed": data.get("time_elapsed"),
-                        "created_at": data.get("incident_timeline", [{}])[0].get("timestamp") if data.get("incident_timeline") else None
-                    })
-                except Exception:
-                    continue
-
-        return sorted(sessions, key=lambda x: x.get("created_at", ""), reverse=True)
+        return sorted(sessions, key=lambda x: x.get("created_at") or "", reverse=True)
 
     def delete_session(self, session_id: str) -> bool:
         """
@@ -444,12 +392,11 @@ class GameSessionService:
             True if deleted successfully
 
         Raises:
-            FileNotFoundError: If session file doesn't exist
+            FileNotFoundError: If the session does not exist
         """
-        filepath = os.path.join(self.sessions_dir, f"{session_id}.json")
-
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"Session {session_id} not found")
-
-        os.remove(filepath)
+        with session_scope() as db:
+            row = db.get(GameSessionRow, session_id)
+            if row is None:
+                raise FileNotFoundError(f"Session {session_id} not found")
+            db.delete(row)
         return True

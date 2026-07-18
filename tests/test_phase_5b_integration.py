@@ -16,16 +16,23 @@ Tests all three Phase 5B features working together:
 
 This test simulates a complete game flow with all Phase 5B mechanics.
 """
+
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
+
 from api.models import (
-    Organization, Department, System, Vulnerability, ThreatActor,
-    GameState, Objective, ResourcePool, SystemState, ThreatActorState,
-    BusinessImpact, Timer, EscalationRule
+    Department,
+    Objective,
+    Organization,
+    System,
+    SystemState,
+    ThreatActor,
+    ThreatActorState,
+    Vulnerability,
 )
 from api.services.business_impact_service import BusinessImpactService
-from api.services.time_pressure_service import TimePressureService
 from api.services.resource_manager import ResourceManager
+from api.services.time_pressure_service import TimePressureService
 
 
 def create_test_organization():
@@ -58,7 +65,7 @@ def create_test_organization():
     )
 
     # Create vulnerability
-    vuln = Vulnerability(
+    Vulnerability(
         id="vuln-001",
         cve_id="CVE-2024-1234",
         name="SQL Injection",
@@ -109,13 +116,13 @@ def test_phase_5b_game_start():
 
     # Initialize business impact
     business_impact = business_impact_service.initialize_business_impact(org)
-    print(f"✅ Business impact initialized")
+    print("✅ Business impact initialized")
     print(f"   Industry: {org.industry}")
     print(f"   Total cost: ${business_impact.total_cost:,.2f}")
 
     # Initialize resource pool
     resource_pool = resource_manager.initialize_resource_pool("intermediate")
-    print(f"✅ Resource pool initialized")
+    print("✅ Resource pool initialized")
     print(f"   Action points: {resource_pool.action_points}/{resource_pool.max_action_points}")
     print(f"   Budget: ${resource_pool.budget_remaining:,.0f}")
     print(f"   Staff: {resource_pool.staff_available}")
@@ -130,7 +137,7 @@ def test_phase_5b_game_start():
             points=25,
             status="pending",
             time_limit_minutes=15,
-            success_criteria="Determine how attackers gained access"
+            success_criteria="Determine how attackers gained access",
         ),
         Objective(
             id="obj-002",
@@ -140,8 +147,8 @@ def test_phase_5b_game_start():
             points=50,
             status="pending",
             time_limit_minutes=30,
-            success_criteria="Isolate compromised systems"
-        )
+            success_criteria="Isolate compromised systems",
+        ),
     ]
 
     # Create timers for objectives
@@ -159,15 +166,15 @@ def test_phase_5b_game_start():
     threat_ids = [t.id for t in org.threat_actors]
     system_ids = []
     for dept in org.departments:
-        for sys in dept.systems:
-            system_ids.append(sys.id)
+        for system in dept.systems:
+            system_ids.append(system.id)
 
     escalation_rules = time_pressure_service.create_scenario_escalation_rules(
         scenario_type="incident-response",
         difficulty="intermediate",
         duration_minutes=60,
         threat_ids=threat_ids,
-        system_ids=system_ids
+        system_ids=system_ids,
     )
 
     print(f"✅ Escalation rules created: {len(escalation_rules)}")
@@ -179,7 +186,7 @@ def test_phase_5b_game_start():
     assert len(timers) == 2
     assert len(escalation_rules) > 0
 
-    print(f"✅ Test 1 passed: All Phase 5B features initialized correctly")
+    print("✅ Test 1 passed: All Phase 5B features initialized correctly")
 
     # Return value removed to avoid PytestReturnNotNoneWarning
 
@@ -191,7 +198,7 @@ def test_resource_constrained_action():
     resource_manager = ResourceManager()
     resource_pool = resource_manager.initialize_resource_pool("intermediate")
 
-    print(f"Initial resources:")
+    print("Initial resources:")
     print(f"   AP: {resource_pool.action_points}")
     print(f"   Budget: ${resource_pool.budget_remaining:,.0f}")
 
@@ -211,7 +218,7 @@ def test_resource_constrained_action():
     # Spend resources
     resource_pool = resource_manager.spend_resources(resource_pool, action_cost, tool_name="patch_tool")
 
-    print(f"\nAfter action:")
+    print("\nAfter action:")
     print(f"   AP: {resource_pool.action_points}")
     print(f"   Budget: ${resource_pool.budget_remaining:,.0f}")
     print(f"   Tools on cooldown: {len(resource_pool.tools_on_cooldown)}")
@@ -221,16 +228,14 @@ def test_resource_constrained_action():
     assert "patch_tool" in resource_pool.tools_on_cooldown
 
     # Try to use the same tool again (should fail)
-    can_afford, reason = resource_manager.can_afford_action(
-        resource_pool, action_cost, tool_name="patch_tool"
-    )
+    can_afford, reason = resource_manager.can_afford_action(resource_pool, action_cost, tool_name="patch_tool")
     print(f"\nTrying to use patch_tool again: {can_afford}")
     print(f"   Reason: {reason}")
 
     assert can_afford is False
     assert "cooldown" in reason.lower()
 
-    print(f"✅ Test 2 passed: Resource constraints work correctly")
+    print("✅ Test 2 passed: Resource constraints work correctly")
 
     # Return value removed to avoid PytestReturnNotNoneWarning
 
@@ -243,8 +248,8 @@ def test_time_pressure_and_escalation():
     time_pressure_service = TimePressureService()
 
     # Create a game state with timers and escalation rules
-    from api.models.schemas import GameState as GameStateSchema
     from api.models import Inventory
+    from api.models.schemas import GameState as GameStateSchema
 
     game_state = GameStateSchema(
         session_id="test-session",
@@ -267,7 +272,7 @@ def test_time_pressure_and_escalation():
         description="Isolate compromised systems",
         duration_minutes=10,
         is_critical=True,
-        on_expiry_event="Breach spreads to additional systems"
+        on_expiry_event="Breach spreads to additional systems",
     )
     game_state.timers.append(timer)
 
@@ -277,7 +282,7 @@ def test_time_pressure_and_escalation():
         difficulty="intermediate",
         duration_minutes=60,
         threat_ids=["threat-001"],
-        system_ids=["sys-001", "sys-002"]
+        system_ids=["sys-001", "sys-002"],
     )
     game_state.escalation_rules.extend(escalation_rules)
 
@@ -291,8 +296,8 @@ def test_time_pressure_and_escalation():
             detection_level=20,
             aggression_level=50,
             last_action="Initial access via phishing",
-            last_update=datetime.now(timezone.utc),
-            notes="Lateral movement suspected"
+            last_update=datetime.now(UTC),
+            notes="Lateral movement suspected",
         )
     }
 
@@ -302,29 +307,31 @@ def test_time_pressure_and_escalation():
             system_id="sys-001",
             status="compromised",
             health=80,
-            last_update=datetime.now(timezone.utc),
-            notes="Compromised by threat-001 via phishing"
+            last_update=datetime.now(UTC),
+            notes="Compromised by threat-001 via phishing",
         ),
         "sys-002": SystemState(
             system_id="sys-002",
             status="online",
             health=100,
-            last_update=datetime.now(timezone.utc),
-        )
+            last_update=datetime.now(UTC),
+        ),
     }
 
-    print(f"Initial state:")
+    print("Initial state:")
     print(f"   Timers: {len(game_state.timers)}")
     print(f"   Escalation rules: {len(game_state.escalation_rules)}")
     print(f"   Threat aggression: {game_state.threat_states['threat-001'].aggression_level}%")
-    print(f"   System health: sys-001={game_state.system_states['sys-001'].health}%, sys-002={game_state.system_states['sys-002'].health}%")
+    print(
+        f"   System health: sys-001={game_state.system_states['sys-001'].health}%, sys-002={game_state.system_states['sys-002'].health}%"
+    )
 
     # Simulate time passing (20 minutes)
     game_state.time_elapsed = 20
 
     # Update timers
     game_state, timer_messages = time_pressure_service.update_timers(game_state, 20)
-    print(f"\nAfter 20 minutes:")
+    print("\nAfter 20 minutes:")
     print(f"   Timer messages: {len(timer_messages)}")
     for msg in timer_messages:
         print(f"      {msg}")
@@ -343,7 +350,7 @@ def test_time_pressure_and_escalation():
     print(f"   Triggered rules: {len(triggered_rules)}")
     assert len(triggered_rules) > 0
 
-    print(f"✅ Test 3 passed: Time pressure and escalation work correctly")
+    print("✅ Test 3 passed: Time pressure and escalation work correctly")
 
 
 def test_business_impact_tracking():
@@ -354,8 +361,8 @@ def test_business_impact_tracking():
     business_impact_service = BusinessImpactService()
 
     # Initialize business impact
-    from api.models.schemas import GameState as GameStateSchema
     from api.models import Inventory
+    from api.models.schemas import GameState as GameStateSchema
 
     game_state = GameStateSchema(
         session_id="test-session",
@@ -372,7 +379,7 @@ def test_business_impact_tracking():
 
     game_state.business_impact = business_impact_service.initialize_business_impact(org)
 
-    print(f"Initial impact:")
+    print("Initial impact:")
     print(f"   Total cost: ${game_state.business_impact.total_cost:,.2f}")
 
     # System downtime
@@ -382,11 +389,11 @@ def test_business_impact_tracking():
         event_type="downtime",
         system_id="sys-002",  # Critical database
         hours=2.0,
-        severity="high"
+        severity="high",
     )
 
     downtime_cost = game_state.business_impact.total_cost
-    print(f"\nAfter 2 hours database downtime:")
+    print("\nAfter 2 hours database downtime:")
     print(f"   Total cost: ${downtime_cost:,.2f}")
     print(f"   Events: {len(game_state.impact_events)}")
 
@@ -399,11 +406,11 @@ def test_business_impact_tracking():
         event_type="data_loss",
         records=10000,
         department="IT Operations",
-        severity="critical"
+        severity="critical",
     )
 
     data_loss_cost = game_state.business_impact.total_cost
-    print(f"\nAfter 10,000 records compromised:")
+    print("\nAfter 10,000 records compromised:")
     print(f"   Total cost: ${data_loss_cost:,.2f}")
     print(f"   Cost increase: ${data_loss_cost - downtime_cost:,.2f}")
 
@@ -411,22 +418,18 @@ def test_business_impact_tracking():
 
     # Compliance violation (records must be passed for penalty calculation)
     game_state = business_impact_service.update_impact(
-        game_state=game_state,
-        organization=org,
-        event_type="compliance",
-        records=10000,
-        severity="critical"
+        game_state=game_state, organization=org, event_type="compliance", records=10000, severity="critical"
     )
 
     compliance_cost = game_state.business_impact.total_cost
-    print(f"\nAfter compliance violation:")
+    print("\nAfter compliance violation:")
     print(f"   Total cost: ${compliance_cost:,.2f}")
     print(f"   Total events: {len(game_state.impact_events)}")
 
     # Generate report
     report = business_impact_service.generate_impact_report(game_state.business_impact)
-    print(f"\n📊 Impact Report:")
-    print(f"   By category:")
+    print("\n📊 Impact Report:")
+    print("   By category:")
     for category, cost in report["by_category"].items():
         if cost > 0:
             print(f"      {category}: ${cost:,.2f}")
@@ -434,7 +437,7 @@ def test_business_impact_tracking():
     assert compliance_cost > data_loss_cost
     assert len(game_state.impact_events) == 3
 
-    print(f"✅ Test 4 passed: Business impact tracking works correctly")
+    print("✅ Test 4 passed: Business impact tracking works correctly")
 
 
 def test_integrated_game_flow():
@@ -449,8 +452,8 @@ def test_integrated_game_flow():
     resource_manager = ResourceManager()
 
     # Create game state
-    from api.models.schemas import GameState as GameStateSchema
     from api.models import Inventory
+    from api.models.schemas import GameState as GameStateSchema
 
     game_state = GameStateSchema(
         session_id="integration-test",
@@ -479,7 +482,7 @@ def test_integrated_game_flow():
             points=25,
             status="pending",
             time_limit_minutes=10,
-            success_criteria="Identify attack type"
+            success_criteria="Identify attack type",
         )
     ]
     game_state.objectives = objectives
@@ -496,18 +499,20 @@ def test_integrated_game_flow():
         difficulty="intermediate",
         duration_minutes=30,
         threat_ids=threat_ids,
-        system_ids=system_ids
+        system_ids=system_ids,
     )
     game_state.escalation_rules.extend(escalation_rules)
 
-    print(f"Game initialized:")
-    print(f"   Resources: {game_state.resource_pool.action_points} AP, ${game_state.resource_pool.budget_remaining:,.0f}")
+    print("Game initialized:")
+    print(
+        f"   Resources: {game_state.resource_pool.action_points} AP, ${game_state.resource_pool.budget_remaining:,.0f}"
+    )
     print(f"   Timers: {len(game_state.timers)}")
     print(f"   Escalations: {len(game_state.escalation_rules)}")
     print(f"   Business impact: ${game_state.business_impact.total_cost:,.2f}")
 
     # === Turn 1: Investigation ===
-    print(f"\n--- Turn 1: Investigation ---")
+    print("\n--- Turn 1: Investigation ---")
     action = "investigate the database logs"
     action_cost = resource_manager.get_action_cost(action)
 
@@ -522,7 +527,7 @@ def test_integrated_game_flow():
     print(f"   Remaining: {game_state.resource_pool.action_points} AP")
 
     # === Turn 2: Containment ===
-    print(f"\n--- Turn 2: Containment ---")
+    print("\n--- Turn 2: Containment ---")
     action = "isolate the compromised database server"
     action_cost = resource_manager.get_action_cost(action)
 
@@ -541,27 +546,20 @@ def test_integrated_game_flow():
     print(f"   Timer expired: {game_state.timers[0].is_expired}")
 
     # Check escalations
-    game_state, escalation_messages = time_pressure_service.check_escalation_rules(
-        game_state, game_state.time_elapsed
-    )
+    game_state, escalation_messages = time_pressure_service.check_escalation_rules(game_state, game_state.time_elapsed)
 
     if escalation_messages:
         print(f"   Escalations triggered: {len(escalation_messages)}")
 
     # Add business impact (system was down)
     game_state = business_impact_service.update_impact(
-        game_state=game_state,
-        organization=org,
-        event_type="downtime",
-        system_id="sys-002",
-        hours=0.5,
-        severity="high"
+        game_state=game_state, organization=org, event_type="downtime", system_id="sys-002", hours=0.5, severity="high"
     )
 
     print(f"   Business impact: ${game_state.business_impact.total_cost:,.2f}")
 
     # === Turn 3: Restore action ===
-    print(f"\n--- Turn 3: Restoration ---")
+    print("\n--- Turn 3: Restoration ---")
     action = "restore the database from backup"
     action_cost = resource_manager.get_action_cost(action)
 
@@ -585,12 +583,16 @@ def test_integrated_game_flow():
         game_state.resource_pool = resource_manager.spend_resources(game_state.resource_pool, action_cost)
         print(f"   Action: {action}")
         print(f"   Cost: {action_cost.points} AP, ${action_cost.budget:,.0f}")
-        print(f"   Remaining: {game_state.resource_pool.action_points} AP, ${game_state.resource_pool.budget_remaining:,.0f}")
+        print(
+            f"   Remaining: {game_state.resource_pool.action_points} AP, ${game_state.resource_pool.budget_remaining:,.0f}"
+        )
 
     # Final state
-    print(f"\n📊 Final Game State:")
+    print("\n📊 Final Game State:")
     print(f"   Time elapsed: {game_state.time_elapsed} minutes")
-    print(f"   Resources remaining: {game_state.resource_pool.action_points} AP, ${game_state.resource_pool.budget_remaining:,.0f}")
+    print(
+        f"   Resources remaining: {game_state.resource_pool.action_points} AP, ${game_state.resource_pool.budget_remaining:,.0f}"
+    )
     print(f"   Timers expired: {sum(1 for t in game_state.timers if t.is_expired)}")
     print(f"   Escalations triggered: {sum(1 for r in game_state.escalation_rules if r.triggered)}")
     print(f"   Total business impact: ${game_state.business_impact.total_cost:,.2f}")
@@ -601,7 +603,7 @@ def test_integrated_game_flow():
     assert game_state.timers[0].is_expired  # Timer expired
     assert game_state.business_impact.total_cost > 0  # Impact tracked
 
-    print(f"✅ Test 5 passed: Integrated game flow works correctly")
+    print("✅ Test 5 passed: Integrated game flow works correctly")
 
 
 def run_all_tests():
@@ -631,6 +633,7 @@ def run_all_tests():
         except Exception as e:
             print(f"❌ Test error: {e}")
             import traceback
+
             traceback.print_exc()
             failed += 1
 

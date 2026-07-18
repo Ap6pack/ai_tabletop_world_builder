@@ -9,14 +9,15 @@
 """
 Base LLM provider interface.
 """
+
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Any
 
 
 class BaseLLMProvider(ABC):
     """Abstract base class for LLM providers."""
 
-    def __init__(self, api_key: Optional[str] = None, **kwargs):
+    def __init__(self, api_key: str | None = None, **kwargs):
         """
         Initialize the LLM provider.
 
@@ -31,11 +32,11 @@ class BaseLLMProvider(ABC):
     async def complete(
         self,
         prompt: str,
-        system_message: Optional[str] = None,
+        system_message: str | None = None,
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        **kwargs
-    ) -> Dict[str, Any]:
+        max_tokens: int | None = None,
+        **kwargs,
+    ) -> dict[str, Any]:
         """
         Generate a completion from the LLM.
 
@@ -72,10 +73,7 @@ class BaseLLMProvider(ABC):
             True if provider is healthy, False otherwise
         """
         try:
-            response = await self.complete(
-                prompt="Say 'OK' if you can read this.",
-                max_tokens=10
-            )
+            response = await self.complete(prompt="Say 'OK' if you can read this.", max_tokens=10)
             return bool(response.get("content"))
         except Exception:
             return False

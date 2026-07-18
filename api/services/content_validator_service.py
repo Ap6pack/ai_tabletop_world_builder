@@ -10,12 +10,10 @@
 Content validator service for post-generation validation.
 Validates AI-generated content before returning to users.
 """
-from typing import Optional, List, Dict
-from datetime import datetime
+
 from api.models import Organization, ValidationResult
-from api.providers import LLMProviderFactory
-from api.utils.pattern_matcher import PatternMatcher, PatternMatch
 from api.utils.logger import setup_logger
+from api.utils.pattern_matcher import PatternMatch, PatternMatcher
 
 logger = setup_logger(__name__)
 
@@ -33,10 +31,7 @@ class ContentValidatorService:
         self.llm_provider = llm_provider
 
     async def validate_narrative(
-        self,
-        narrative: str,
-        policy_level: str = "educational",
-        context: Optional[Dict] = None
+        self, narrative: str, policy_level: str = "educational", context: dict | None = None
     ) -> ValidationResult:
         """
         Validate game narrative content.
@@ -49,20 +44,17 @@ class ContentValidatorService:
         Returns:
             ValidationResult with safety assessment
         """
-        logger.info(f"Validating narrative for policy '{policy_level}'", extra={
-            "context": context,
-            "narrative_length": len(narrative)
-        })
+        logger.info(
+            f"Validating narrative for policy '{policy_level}'",
+            extra={"context": context, "narrative_length": len(narrative)},
+        )
 
         # Find pattern matches
         matches = PatternMatcher.find_matches(narrative)
 
         if not matches:
             logger.info("Narrative validation passed - no violations")
-            return ValidationResult(
-                is_safe=True,
-                violations=[]
-            )
+            return ValidationResult(is_safe=True, violations=[])
 
         # Analyze matches
         summary = PatternMatcher.get_match_summary(matches)
@@ -72,31 +64,26 @@ class ContentValidatorService:
         is_safe = self._is_content_safe(matches, policy_level)
         can_sanitize = self._can_sanitize(matches)
 
-        violations = [
-            f"{match.category}: {match.pattern_name}"
-            for match in matches
-        ]
+        violations = [f"{match.category}: {match.pattern_name}" for match in matches]
 
         result = ValidationResult(
             is_safe=is_safe,
             can_sanitize=can_sanitize,
             violations=violations,
             severity=highest_severity,
-            reason=self._generate_validation_reason(matches, policy_level)
+            reason=self._generate_validation_reason(matches, policy_level),
         )
 
         if not is_safe:
             logger.warning(
                 f"Narrative validation failed: {result.reason}",
-                extra={"violations": violations, "severity": highest_severity}
+                extra={"violations": violations, "severity": highest_severity},
             )
 
         return result
 
     async def validate_scenario(
-        self,
-        organization: Organization,
-        policy_level: str = "educational"
+        self, organization: Organization, policy_level: str = "educational"
     ) -> ValidationResult:
         """
         Validate generated scenario content.
@@ -108,9 +95,7 @@ class ContentValidatorService:
         Returns:
             ValidationResult with safety assessment
         """
-        logger.info(f"Validating scenario for policy '{policy_level}'", extra={
-            "org_name": organization.name
-        })
+        logger.info(f"Validating scenario for policy '{policy_level}'", extra={"org_name": organization.name})
 
         # Collect all text content from scenario
         content_parts = [
@@ -155,10 +140,7 @@ class ContentValidatorService:
 
         if not matches:
             logger.info("Scenario validation passed - no violations")
-            return ValidationResult(
-                is_safe=True,
-                violations=[]
-            )
+            return ValidationResult(is_safe=True, violations=[])
 
         # Analyze matches
         summary = PatternMatcher.get_match_summary(matches)
@@ -177,23 +159,18 @@ class ContentValidatorService:
             can_sanitize=can_sanitize,
             violations=violations,
             severity=highest_severity,
-            reason=self._generate_validation_reason(matches, policy_level)
+            reason=self._generate_validation_reason(matches, policy_level),
         )
 
         if not is_safe:
             logger.warning(
                 f"Scenario validation failed: {result.reason}",
-                extra={"violations": len(violations), "severity": highest_severity}
+                extra={"violations": len(violations), "severity": highest_severity},
             )
 
         return result
 
-    def sanitize_content(
-        self,
-        content: str,
-        violations: List[str],
-        redaction_style: str = "mask"
-    ) -> str:
+    def sanitize_content(self, content: str, violations: list[str], redaction_style: str = "mask") -> str:
         """
         Sanitize content by redacting matched patterns.
 
@@ -214,18 +191,11 @@ class ContentValidatorService:
         # Redact content
         sanitized = PatternMatcher.redact_content(content, matches, redaction_style)
 
-        logger.info(
-            f"Content sanitized: {len(matches)} patterns redacted",
-            extra={"redaction_style": redaction_style}
-        )
+        logger.info(f"Content sanitized: {len(matches)} patterns redacted", extra={"redaction_style": redaction_style})
 
         return sanitized
 
-    def _is_content_safe(
-        self,
-        matches: List[PatternMatch],
-        policy_level: str
-    ) -> bool:
+    def _is_content_safe(self, matches: list[PatternMatch], policy_level: str) -> bool:
         """
         Determine if content is safe based on matches and policy.
 
@@ -259,7 +229,7 @@ class ContentValidatorService:
         # Otherwise safe (can be sanitized)
         return True
 
-    def _can_sanitize(self, matches: List[PatternMatch]) -> bool:
+    def _can_sanitize(self, matches: list[PatternMatch]) -> bool:
         """
         Check if content can be sanitized.
 
@@ -276,18 +246,10 @@ class ContentValidatorService:
         summary = PatternMatcher.get_match_summary(matches)
         highest_severity = summary["highest_severity"]
 
-        # Can't sanitize critical content - needs regeneration
-        if highest_severity == "critical":
-            return False
+        # Critical content can't be sanitized (needs regeneration); everything else can.
+        return highest_severity != "critical"
 
-        # Can sanitize everything else
-        return True
-
-    def _generate_validation_reason(
-        self,
-        matches: List[PatternMatch],
-        policy_level: str
-    ) -> str:
+    def _generate_validation_reason(self, matches: list[PatternMatch], policy_level: str) -> str:
         """
         Generate validation failure reason.
 
@@ -304,13 +266,13 @@ class ContentValidatorService:
         summary = PatternMatcher.get_match_summary(matches)
 
         category_counts = summary["by_category"]
-        total = summary["total"]
+        summary["total"]
 
         category_names = {
             "credentials": "credential",
             "pii": "PII",
             "exploits": "exploit code",
-            "sensitive": "sensitive information"
+            "sensitive": "sensitive information",
         }
 
         # Build description of violations
@@ -324,11 +286,7 @@ class ContentValidatorService:
 
         return f"Content contains {violations_desc} that violate the '{policy_level}' policy level"
 
-    def _locate_match(
-        self,
-        match: PatternMatch,
-        organization: Organization
-    ) -> str:
+    def _locate_match(self, match: PatternMatch, organization: Organization) -> str:
         """
         Locate where in the organization a match occurred.
 
@@ -345,16 +303,12 @@ class ContentValidatorService:
             "credentials": "credentials section",
             "pii": "organization details",
             "exploits": "system descriptions",
-            "sensitive": "technical details"
+            "sensitive": "technical details",
         }
 
         return categories.get(match.category, "scenario content")
 
-    async def validate_objective(
-        self,
-        objective_text: str,
-        policy_level: str = "educational"
-    ) -> ValidationResult:
+    async def validate_objective(self, objective_text: str, policy_level: str = "educational") -> ValidationResult:
         """
         Validate objective content.
 
@@ -365,17 +319,9 @@ class ContentValidatorService:
         Returns:
             ValidationResult
         """
-        return await self.validate_narrative(
-            objective_text,
-            policy_level,
-            context={"type": "objective"}
-        )
+        return await self.validate_narrative(objective_text, policy_level, context={"type": "objective"})
 
-    async def validate_hint(
-        self,
-        hint_text: str,
-        policy_level: str = "educational"
-    ) -> ValidationResult:
+    async def validate_hint(self, hint_text: str, policy_level: str = "educational") -> ValidationResult:
         """
         Validate hint content.
 
@@ -386,17 +332,10 @@ class ContentValidatorService:
         Returns:
             ValidationResult
         """
-        return await self.validate_narrative(
-            hint_text,
-            policy_level,
-            context={"type": "hint"}
-        )
+        return await self.validate_narrative(hint_text, policy_level, context={"type": "hint"})
 
     async def validate_and_sanitize(
-        self,
-        content: str,
-        policy_level: str = "educational",
-        auto_sanitize: bool = True
+        self, content: str, policy_level: str = "educational", auto_sanitize: bool = True
     ) -> tuple[bool, str]:
         """
         Validate content and optionally sanitize.

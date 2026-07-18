@@ -7,6 +7,7 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """API utilities module."""
-from .logger import setup_logger, app_logger
+
+from .logger import app_logger, setup_logger
 
 __all__ = ["setup_logger", "app_logger"]

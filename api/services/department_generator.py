@@ -9,11 +9,13 @@
 """
 Department generator service for creating business units within organizations.
 """
-from typing import List, Dict, Any
-from api.models import Department, System
-from api.providers import LLMProviderFactory
+
 import json
 import uuid
+from typing import Any
+
+from api.models import Department
+from api.providers import LLMProviderFactory
 
 
 class DepartmentGenerator:
@@ -21,15 +23,22 @@ class DepartmentGenerator:
 
     def __init__(self, llm_provider=None):
         """Initialize the department generator."""
-        self.llm_provider = llm_provider or LLMProviderFactory.create_provider()
+        self._llm_provider = llm_provider
+
+    @property
+    def llm_provider(self):
+        """Lazily instantiate the LLM provider so construction needs no API key."""
+        if self._llm_provider is None:
+            self._llm_provider = LLMProviderFactory.create_provider()
+        return self._llm_provider
+
+    @llm_provider.setter
+    def llm_provider(self, value):
+        self._llm_provider = value
 
     async def generate_departments(
-        self,
-        organization_name: str,
-        industry: str,
-        size: str,
-        num_departments: int = 3
-    ) -> List[Department]:
+        self, organization_name: str, industry: str, size: str, num_departments: int = 3
+    ) -> list[Department]:
         """
         Generate departments for an organization.
 
@@ -42,12 +51,7 @@ class DepartmentGenerator:
         Returns:
             List of Department instances
         """
-        prompt = self._build_departments_prompt(
-            organization_name,
-            industry,
-            size,
-            num_departments
-        )
+        prompt = self._build_departments_prompt(organization_name, industry, size, num_departments)
 
         dept_data = await self._generate_with_llm(prompt)
 
@@ -58,13 +62,7 @@ class DepartmentGenerator:
 
         return departments
 
-    def _build_departments_prompt(
-        self,
-        organization_name: str,
-        industry: str,
-        size: str,
-        num_departments: int
-    ) -> str:
+    def _build_departments_prompt(self, organization_name: str, industry: str, size: str, num_departments: int) -> str:
         """Build prompt for department generation."""
 
         prompt = f"""Generate {num_departments} realistic business departments for {organization_name}, a {size} {industry} organization.
@@ -96,7 +94,7 @@ IMPORTANT: Respond ONLY with valid JSON. No additional text."""
 
         return prompt
 
-    async def _generate_with_llm(self, prompt: str) -> Dict[str, Any]:
+    async def _generate_with_llm(self, prompt: str) -> dict[str, Any]:
         """Generate content using LLM and parse JSON."""
 
         system_message = """You are generating realistic business departments for cybersecurity training scenarios.
@@ -108,10 +106,7 @@ RULES:
 4. Always respond with valid JSON only"""
 
         result = await self.llm_provider.complete(
-            prompt=prompt,
-            system_message=system_message,
-            temperature=0.7,
-            max_tokens=1500
+            prompt=prompt, system_message=system_message, temperature=0.7, max_tokens=1500
         )
 
         content = result["content"].strip()
@@ -126,9 +121,9 @@ RULES:
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse department data: {e}\nOutput: {content}")
+            raise ValueError(f"Failed to parse department data: {e}\nOutput: {content}") from e
 
-    def _parse_department(self, dept_info: Dict[str, Any]) -> Department:
+    def _parse_department(self, dept_info: dict[str, Any]) -> Department:
         """Parse department data into Department model."""
 
         dept_id = f"dept_{uuid.uuid4().hex[:8]}"
@@ -140,5 +135,5 @@ RULES:
             business_function=dept_info.get("business_function", ""),
             systems=[],  # Will be populated separately
             data_classification=dept_info.get("data_classification", "internal"),
-            compliance_requirements=dept_info.get("compliance_requirements", [])
+            compliance_requirements=dept_info.get("compliance_requirements", []),
         )

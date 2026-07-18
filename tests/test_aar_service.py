@@ -16,12 +16,23 @@ Tests the complete After Action Review pipeline:
 - Performance metrics calculation
 - Performance dashboard aggregation
 """
+
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+
 from api.models import (
-    Organization, Department, System, Vulnerability, ThreatActor,
-    GameState, Objective, Inventory, IncidentEvent,
-    SystemState, ThreatActorState, BusinessImpact, ResourcePool,
+    BusinessImpact,
+    Department,
+    GameState,
+    IncidentEvent,
+    Inventory,
+    Objective,
+    Organization,
+    ResourcePool,
+    System,
+    SystemState,
+    ThreatActor,
+    ThreatActorState,
 )
 
 
@@ -41,14 +52,18 @@ def create_test_organization():
                 business_function="Technology",
                 systems=[
                     System(
-                        id="sys-001", name="Web Server",
-                        description="Primary web server", type="server",
-                        criticality="high"
+                        id="sys-001",
+                        name="Web Server",
+                        description="Primary web server",
+                        type="server",
+                        criticality="high",
                     ),
                     System(
-                        id="sys-002", name="Database",
-                        description="Production database", type="database",
-                        criticality="critical"
+                        id="sys-002",
+                        name="Database",
+                        description="Production database",
+                        type="database",
+                        criticality="critical",
                     ),
                 ],
                 data_classification="restricted",
@@ -56,12 +71,13 @@ def create_test_organization():
         ],
         threat_actors=[
             ThreatActor(
-                id="threat-001", name="APT29",
+                id="threat-001",
+                name="APT29",
                 description="Nation-state actor",
                 motivation="espionage",
                 sophistication="nation-state",
                 ttps=["phishing", "lateral-movement"],
-                targets=["sys-001", "sys-002"]
+                targets=["sys-001", "sys-002"],
             )
         ],
         security_posture="developing",
@@ -71,106 +87,138 @@ def create_test_organization():
 
 def create_test_game_state(status="completed", include_business_impact=True):
     """Create a comprehensive test game state with realistic timeline."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     org = create_test_organization()
 
     timeline = [
         IncidentEvent(
             timestamp=now - timedelta(minutes=55),
-            event_type="detection", description="SIEM alert: suspicious login from unknown IP",
-            severity="high", actor="system"
+            event_type="detection",
+            description="SIEM alert: suspicious login from unknown IP",
+            severity="high",
+            actor="system",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=50),
-            event_type="action", description="Check SIEM logs for the alert details",
-            severity="medium", actor="player"
+            event_type="action",
+            description="Check SIEM logs for the alert details",
+            severity="medium",
+            actor="player",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=45),
-            event_type="consequence", description="Alert confirmed as brute force attempt",
-            severity="info", actor="system"
+            event_type="consequence",
+            description="Alert confirmed as brute force attempt",
+            severity="info",
+            actor="system",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=40),
-            event_type="action", description="Investigate the source IP and correlate with threat intel",
-            severity="medium", actor="player"
+            event_type="action",
+            description="Investigate the source IP and correlate with threat intel",
+            severity="medium",
+            actor="player",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=35),
-            event_type="action", description="Block the malicious IP at the firewall",
-            severity="medium", actor="player"
+            event_type="action",
+            description="Block the malicious IP at the firewall",
+            severity="medium",
+            actor="player",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=30),
-            event_type="consequence", description="IP blocked successfully",
-            severity="low", actor="system"
+            event_type="consequence",
+            description="IP blocked successfully",
+            severity="low",
+            actor="system",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=25),
-            event_type="escalation", description="Threat actor pivoted to phishing campaign",
-            severity="high", actor="threat_actor"
+            event_type="escalation",
+            description="Threat actor pivoted to phishing campaign",
+            severity="high",
+            actor="threat_actor",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=20),
-            event_type="action", description="Monitor email gateway for phishing attempts",
-            severity="medium", actor="player"
+            event_type="action",
+            description="Monitor email gateway for phishing attempts",
+            severity="medium",
+            actor="player",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=15),
-            event_type="action", description="Isolate compromised workstation from network",
-            severity="high", actor="player"
+            event_type="action",
+            description="Isolate compromised workstation from network",
+            severity="high",
+            actor="player",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=10),
-            event_type="consequence", description="Workstation isolated, lateral movement stopped",
-            severity="low", actor="system"
+            event_type="consequence",
+            description="Workstation isolated, lateral movement stopped",
+            severity="low",
+            actor="system",
         ),
         IncidentEvent(
             timestamp=now - timedelta(minutes=5),
-            event_type="action", description="Notify management and escalate to CISO",
-            severity="medium", actor="player"
+            event_type="action",
+            description="Notify management and escalate to CISO",
+            severity="medium",
+            actor="player",
         ),
     ]
 
     objectives = [
         Objective(
-            id="obj-001", description="Identify attack vector",
-            type="investigate", success_criteria="Determine initial access method",
-            points=25, difficulty="easy", status="completed"
+            id="obj-001",
+            description="Identify attack vector",
+            type="investigate",
+            success_criteria="Determine initial access method",
+            points=25,
+            difficulty="easy",
+            status="completed",
         ),
         Objective(
-            id="obj-002", description="Contain the breach",
-            type="contain", success_criteria="Isolate compromised systems",
-            points=50, difficulty="medium", status="completed"
+            id="obj-002",
+            description="Contain the breach",
+            type="contain",
+            success_criteria="Isolate compromised systems",
+            points=50,
+            difficulty="medium",
+            status="completed",
         ),
         Objective(
-            id="obj-003", description="Notify stakeholders",
-            type="report", success_criteria="Alert management chain",
-            points=15, difficulty="easy", status="completed"
+            id="obj-003",
+            description="Notify stakeholders",
+            type="report",
+            success_criteria="Alert management chain",
+            points=15,
+            difficulty="easy",
+            status="completed",
         ),
         Objective(
-            id="obj-004", description="Restore affected systems",
-            type="mitigate", success_criteria="Bring systems back online",
-            points=40, difficulty="hard", status="failed"
+            id="obj-004",
+            description="Restore affected systems",
+            type="mitigate",
+            success_criteria="Bring systems back online",
+            points=40,
+            difficulty="hard",
+            status="failed",
         ),
     ]
 
     system_states = {
         "sys-001": SystemState(
-            system_id="sys-001", status="recovering", health=60,
-            last_update=now, affected_services=["web"]
+            system_id="sys-001", status="recovering", health=60, last_update=now, affected_services=["web"]
         ),
-        "sys-002": SystemState(
-            system_id="sys-002", status="online", health=95,
-            last_update=now
-        ),
+        "sys-002": SystemState(system_id="sys-002", status="online", health=95, last_update=now),
     }
 
     threat_states = {
         "threat-001": ThreatActorState(
-            threat_actor_id="threat-001", status="contained",
-            detection_level=80, aggression_level=30,
-            last_update=now
+            threat_actor_id="threat-001", status="contained", detection_level=80, aggression_level=30, last_update=now
         ),
     }
 
@@ -195,12 +243,10 @@ def create_test_game_state(status="completed", include_business_impact=True):
             downtime_cost=25000.0,
             downtime_hours=2.0,
             total_cost=35000.0,
-            impact_description="Moderate business impact from 2-hour partial outage"
+            impact_description="Moderate business impact from 2-hour partial outage",
         )
         game_state.resource_pool = ResourcePool(
-            action_points=3, max_action_points=10,
-            budget_remaining=65000.0, budget_total=100000.0,
-            staff_available=3
+            action_points=3, max_action_points=10, budget_remaining=65000.0, budget_total=100000.0, staff_available=3
         )
 
     return game_state
@@ -233,7 +279,9 @@ def test_decision_analyzer():
     assert len(evaluations) > 0, "Should have at least one evaluation"
     # We have 6 player actions in the timeline
     player_actions = [e for e in game_state.incident_timeline if e.actor == "player"]
-    assert len(evaluations) == len(player_actions), f"Expected {len(player_actions)} evaluations, got {len(evaluations)}"
+    assert len(evaluations) == len(player_actions), (
+        f"Expected {len(player_actions)} evaluations, got {len(evaluations)}"
+    )
     print(f"  PASS - Analyzed {len(evaluations)} player decisions")
 
     # Test 3: Decision scoring
@@ -288,7 +336,7 @@ def test_alternative_path_service():
         assert len(alt.suggested_action) > 0
         assert len(alt.expected_outcome) > 0
         assert alt.difficulty in ("easy", "medium", "hard")
-    print(f"  PASS - All alternatives have valid structure")
+    print("  PASS - All alternatives have valid structure")
 
     print("\n  All Alternative Path Service tests PASSED")
 
@@ -314,8 +362,7 @@ def test_aar_service():
     assert len(report.strengths) >= 0
     assert len(report.weaknesses) >= 0
     assert len(report.recommendations) >= 0
-    print(f"  PASS - AAR generated: grade={report.overall_grade}, "
-          f"{len(report.timeline_analysis)} decisions analyzed")
+    print(f"  PASS - AAR generated: grade={report.overall_grade}, {len(report.timeline_analysis)} decisions analyzed")
 
     # Test 9: Calculate metrics
     print("\nTest 9: Performance metrics calculation")
@@ -370,8 +417,10 @@ def test_aar_service():
     assert dashboard.sessions_completed == 2
     assert dashboard.average_score > 0
     assert dashboard.best_score == 90
-    print(f"  PASS - Dashboard: {dashboard.sessions_completed} sessions, "
-          f"avg={dashboard.average_score:.1f}, best={dashboard.best_score}")
+    print(
+        f"  PASS - Dashboard: {dashboard.sessions_completed} sessions, "
+        f"avg={dashboard.average_score:.1f}, best={dashboard.best_score}"
+    )
 
     print("\n  All AAR Service tests PASSED")
 
@@ -430,6 +479,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n  FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         all_passed = False
 

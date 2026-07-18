@@ -163,10 +163,32 @@ streamlit run Home.py
 # Web UI will open at http://localhost:8501
 ```
 
-**Option 2: Docker**
+**Option 2: Docker (Postgres-backed)**
 ```bash
 docker-compose up
 ```
+The Compose stack runs the API against the bundled **PostgreSQL** and Redis
+services automatically (it sets `DATABASE_URL`/`REDIS_URL` for you). Override the
+database credentials with `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
+
+## Database
+
+Mutable application state — users, game sessions, exercises, API keys, and
+webhooks — is stored via SQLAlchemy. The backend is chosen entirely by the
+`DATABASE_URL` environment variable, so the same code runs on either:
+
+- **Local development (default): SQLite** — zero setup, a file at `./data/app.db`.
+- **Production: PostgreSQL** (recommended). Point at a managed instance:
+  ```bash
+  DATABASE_URL=postgresql+psycopg://user:password@host:5432/dbname
+  ```
+  The `psycopg` driver is already in `requirements.txt`. Tables are created
+  automatically on startup. The API is stateless, so you can run multiple
+  instances behind a load balancer against one Postgres.
+
+**Redis (optional):** live multi-team exercises can use Redis as a low-latency
+fast-path — set `REDIS_URL=redis://host:6379/0`. Without it, exercise state is
+served from the database. Audit logs are append-only JSONL by design.
 
 ## Usage Guide
 
@@ -305,7 +327,7 @@ ai_tabletop_world_builder/
 ├── app/                    # Streamlit frontend
 │   ├── Home.py             # Main page
 │   └── pages/              # 12 pages
-├── tests/                  # 24 test files (241 tests)
+├── tests/                  # 25 test files (245 tests)
 ├── docs/                   # Phase completion & planning docs
 ├── scripts/                # Shell scripts and utilities
 ├── config/                 # Configuration
@@ -323,8 +345,9 @@ ai_tabletop_world_builder/
 
 ```bash
 pytest --tb=short -q
-# 240 passed, 1 skipped, 0 failed
-# Tests are in tests/ directory
+# 244 passed, 1 skipped
+# Tests are hermetic — no API key or network required (a fake LLM provider is
+# injected via tests/conftest.py). Tests are in the tests/ directory.
 ```
 
 ## Content Policy Levels
@@ -402,7 +425,10 @@ For issues and questions:
 ---
 
 **Version**: 1.0.0
-**Status**: Phase 10 Production Readiness Complete
-**Last Updated**: 2026-02-20
+**Status**: Active development — core platform functional and CI green. Mutable
+state (users, sessions, exercises, API keys, webhooks) is stored via SQLAlchemy
+(SQLite by default, Postgres-ready via `DATABASE_URL`). Auth is not yet enforced
+on product endpoints — see AUDIT.md.
+**Last Updated**: 2026-07-18
 
 See [CHANGELOG.md](CHANGELOG.md) for complete details.

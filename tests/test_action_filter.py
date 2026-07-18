@@ -10,9 +10,11 @@
 Test script for action filter service.
 Tests pre-action content checking with various policy levels and action types.
 """
+
 import asyncio
 import sys
-sys.path.insert(0, '.')
+
+sys.path.insert(0, ".")
 import pytest
 
 from api.services.action_filter_service import ActionFilterService
@@ -29,50 +31,50 @@ async def test_action_filter():
             "name": "Safe action - investigate logs",
             "action": "I want to investigate the SIEM logs for suspicious activity",
             "policy": "defensive",
-            "should_allow": True
+            "should_allow": True,
         },
         {
             "name": "Contains password - educational mode",
             "action": "Set the admin password to P@ssw0rd123 for testing",
             "policy": "educational",
-            "should_allow": False
+            "should_allow": False,
         },
         {
             "name": "Contains API key",
             "action": "Use API key sk-1234567890abcdefghijklmnopqrstuvwxyz1234567 to access the service",
             "policy": "educational",
-            "should_allow": False
+            "should_allow": False,
         },
         {
             "name": "Dangerous command - rm -rf",
             "action": "Run rm -rf / to clean up the system",
             "policy": "educational",
-            "should_allow": False
+            "should_allow": False,
         },
         {
             "name": "SQL injection pattern",
             "action": "Try input: ' OR 1=1-- to test for SQL injection",
             "policy": "educational",
-            "should_allow": False
+            "should_allow": False,
         },
         {
             "name": "Internal IP address",
             "action": "Check the internal server at 192.168.1.100 for issues",
             "policy": "defensive",
-            "should_allow": True  # Internal IPs are low severity
+            "should_allow": True,  # Internal IPs are low severity
         },
         {
             "name": "Safe educational action",
             "action": "Explain how a ransomware attack typically progresses through a network",
             "policy": "educational",
-            "should_allow": True
+            "should_allow": True,
         },
         {
             "name": "Advanced technique in advanced mode",
             "action": "Demonstrate a privilege escalation technique using sudo misconfiguration",
             "policy": "advanced",
-            "should_allow": True  # Would need LLM check
-        }
+            "should_allow": True,  # Would need LLM check
+        },
     ]
 
     print("=" * 80)
@@ -91,10 +93,10 @@ async def test_action_filter():
 
         # Test with quick check only (fast)
         result = await service.check_action(
-            action=test['action'],
-            policy_level=test['policy'],
+            action=test["action"],
+            policy_level=test["policy"],
             enable_quick_check=True,
-            enable_llm_check=False  # Disable LLM for testing
+            enable_llm_check=False,  # Disable LLM for testing
         )
 
         print(f"Result: {'ALLOWED' if result.is_allowed else 'BLOCKED'}")
@@ -108,11 +110,11 @@ async def test_action_filter():
             print(f"Pattern Matches: {len(result.matched_patterns)}")
 
         # Check if result matches expectation
-        if result.is_allowed == test['should_allow']:
+        if result.is_allowed == test["should_allow"]:
             print("✅ PASS")
             passed += 1
         else:
-            print("❌ FAIL (expected " + ("ALLOWED" if test['should_allow'] else "BLOCKED") + ")")
+            print("❌ FAIL (expected " + ("ALLOWED" if test["should_allow"] else "BLOCKED") + ")")
             failed += 1
 
         print("-" * 80)

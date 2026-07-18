@@ -7,6 +7,7 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Tests for ScenarioOrchestrator — scenario generation pipeline."""
+
 import json
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -22,17 +23,22 @@ from api.models.schemas import (
 )
 from api.services.scenario_orchestrator import ScenarioOrchestrator
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _make_org(**overrides):
     defaults = dict(
-        id="org-1", name="Test Corp", description="A test company",
-        industry="Technology", size="medium",
-        departments=[], threat_actors=[],
-        security_posture="developing", compliance_frameworks=["SOC 2"],
+        id="org-1",
+        name="Test Corp",
+        description="A test company",
+        industry="Technology",
+        size="medium",
+        departments=[],
+        threat_actors=[],
+        security_posture="developing",
+        compliance_frameworks=["SOC 2"],
     )
     defaults.update(overrides)
     return Organization(**defaults)
@@ -40,9 +46,12 @@ def _make_org(**overrides):
 
 def _make_dept(name="IT", **overrides):
     defaults = dict(
-        id="d1", name=name, description=name,
+        id="d1",
+        name=name,
+        description=name,
         business_function="Operations",
-        systems=[], data_classification="internal",
+        systems=[],
+        data_classification="internal",
     )
     defaults.update(overrides)
     return Department(**defaults)
@@ -50,8 +59,12 @@ def _make_dept(name="IT", **overrides):
 
 def _make_system(name="Web Server", **overrides):
     defaults = dict(
-        id="sys-1", name=name, description=name,
-        type="server", os="Linux", services=["nginx"],
+        id="sys-1",
+        name=name,
+        description=name,
+        type="server",
+        os="Linux",
+        services=["nginx"],
         criticality="high",
     )
     defaults.update(overrides)
@@ -60,16 +73,22 @@ def _make_system(name="Web Server", **overrides):
 
 def _make_vuln():
     return Vulnerability(
-        id="v1", name="SQLi", description="SQL injection",
-        severity="high", exploitation_complexity="moderate",
+        id="v1",
+        name="SQLi",
+        description="SQL injection",
+        severity="high",
+        exploitation_complexity="moderate",
         remediation="Parameterize queries",
     )
 
 
 def _make_threat_actor():
     return ThreatActor(
-        id="ta-1", name="TestActor", description="A test actor",
-        motivation="Financial", sophistication="organized-crime",
+        id="ta-1",
+        name="TestActor",
+        description="A test actor",
+        motivation="Financial",
+        sophistication="organized-crime",
     )
 
 
@@ -90,6 +109,7 @@ def orch(mock_provider):
 # generate_complete_scenario
 # ---------------------------------------------------------------------------
 
+
 class TestGenerateCompleteScenario:
     @pytest.mark.asyncio
     async def test_full_pipeline(self, orch):
@@ -108,7 +128,9 @@ class TestGenerateCompleteScenario:
         orch.threat_generator.generate_threat_actors = AsyncMock(return_value=[threat])
 
         result = await orch.generate_complete_scenario(
-            industry="Technology", size="medium", complexity="moderate",
+            industry="Technology",
+            size="medium",
+            complexity="moderate",
         )
         assert isinstance(result, Organization)
         assert len(result.departments) == 1
@@ -129,6 +151,7 @@ class TestGenerateCompleteScenario:
 # ---------------------------------------------------------------------------
 # save_scenario / load_scenario
 # ---------------------------------------------------------------------------
+
 
 class TestSaveLoadScenario:
     @pytest.mark.asyncio
@@ -162,6 +185,7 @@ class TestSaveLoadScenario:
 # ---------------------------------------------------------------------------
 # list_scenarios / industry support
 # ---------------------------------------------------------------------------
+
 
 class TestListAndIndustry:
     def test_list_scenarios_empty_dir(self, orch, tmp_path):

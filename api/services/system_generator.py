@@ -9,11 +9,13 @@
 """
 System/asset generator service for creating IT infrastructure components.
 """
-from typing import List, Dict, Any
-from api.models import System, Vulnerability
-from api.providers import LLMProviderFactory
+
 import json
 import uuid
+from typing import Any
+
+from api.models import System
+from api.providers import LLMProviderFactory
 
 
 class SystemGenerator:
@@ -21,7 +23,18 @@ class SystemGenerator:
 
     def __init__(self, llm_provider=None):
         """Initialize the system generator."""
-        self.llm_provider = llm_provider or LLMProviderFactory.create_provider()
+        self._llm_provider = llm_provider
+
+    @property
+    def llm_provider(self):
+        """Lazily instantiate the LLM provider so construction needs no API key."""
+        if self._llm_provider is None:
+            self._llm_provider = LLMProviderFactory.create_provider()
+        return self._llm_provider
+
+    @llm_provider.setter
+    def llm_provider(self, value):
+        self._llm_provider = value
 
     async def generate_systems(
         self,
@@ -29,8 +42,8 @@ class SystemGenerator:
         department_name: str,
         department_function: str,
         industry: str,
-        num_systems: int = 4
-    ) -> List[System]:
+        num_systems: int = 4,
+    ) -> list[System]:
         """
         Generate IT systems for a department.
 
@@ -45,11 +58,7 @@ class SystemGenerator:
             List of System instances
         """
         prompt = self._build_systems_prompt(
-            organization_name,
-            department_name,
-            department_function,
-            industry,
-            num_systems
+            organization_name, department_name, department_function, industry, num_systems
         )
 
         systems_data = await self._generate_with_llm(prompt)
@@ -62,12 +71,7 @@ class SystemGenerator:
         return systems
 
     def _build_systems_prompt(
-        self,
-        organization_name: str,
-        department_name: str,
-        department_function: str,
-        industry: str,
-        num_systems: int
+        self, organization_name: str, department_name: str, department_function: str, industry: str, num_systems: int
     ) -> str:
         """Build prompt for system generation."""
 
@@ -108,7 +112,7 @@ IMPORTANT: Respond ONLY with valid JSON. No additional text."""
 
         return prompt
 
-    async def _generate_with_llm(self, prompt: str) -> Dict[str, Any]:
+    async def _generate_with_llm(self, prompt: str) -> dict[str, Any]:
         """Generate content using LLM and parse JSON."""
 
         system_message = """You are generating realistic IT systems for cybersecurity training scenarios.
@@ -121,10 +125,7 @@ RULES:
 5. Always respond with valid JSON only"""
 
         result = await self.llm_provider.complete(
-            prompt=prompt,
-            system_message=system_message,
-            temperature=0.7,
-            max_tokens=2000
+            prompt=prompt, system_message=system_message, temperature=0.7, max_tokens=2000
         )
 
         content = result["content"].strip()
@@ -139,9 +140,9 @@ RULES:
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse system data: {e}\nOutput: {content}")
+            raise ValueError(f"Failed to parse system data: {e}\nOutput: {content}") from e
 
-    def _parse_system(self, system_info: Dict[str, Any]) -> System:
+    def _parse_system(self, system_info: dict[str, Any]) -> System:
         """Parse system data into System model."""
 
         system_id = f"sys_{uuid.uuid4().hex[:8]}"
@@ -155,5 +156,5 @@ RULES:
             services=system_info.get("services", []),
             vulnerabilities=[],  # Will be populated separately
             security_controls=system_info.get("security_controls", []),
-            criticality=system_info.get("criticality", "medium")
+            criticality=system_info.get("criticality", "medium"),
         )

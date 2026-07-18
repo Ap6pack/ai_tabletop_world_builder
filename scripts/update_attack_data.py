@@ -15,10 +15,11 @@ and builds a curated JSON file for the platform.
 Usage:
     python scripts/update_attack_data.py
 """
+
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, timezone
 
 try:
     import httpx
@@ -26,10 +27,7 @@ except ImportError:
     print("httpx required: pip install httpx")
     sys.exit(1)
 
-ATTACK_URL = (
-    "https://raw.githubusercontent.com/mitre/cti/master/"
-    "enterprise-attack/enterprise-attack.json"
-)
+ATTACK_URL = "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "data" / "mitre_attack"
 
 
@@ -95,19 +93,23 @@ def extract_techniques(stix_bundle: dict) -> list[dict]:
         if is_sub and "." in technique_id:
             parent_id = technique_id.split(".")[0]
 
-        techniques.append({
-            "technique_id": technique_id,
-            "name": obj.get("name", ""),
-            "tactic": tactic,
-            "tactic_id": tactic_id,
-            "description": (obj.get("description", "")[:200] + "...") if len(obj.get("description", "")) > 200 else obj.get("description", ""),
-            "platforms": platforms,
-            "data_sources": data_sources,
-            "detection": detection,
-            "mitigations": [],  # Would require resolving relationship objects
-            "is_subtechnique": is_sub,
-            "parent_technique_id": parent_id,
-        })
+        techniques.append(
+            {
+                "technique_id": technique_id,
+                "name": obj.get("name", ""),
+                "tactic": tactic,
+                "tactic_id": tactic_id,
+                "description": (obj.get("description", "")[:200] + "...")
+                if len(obj.get("description", "")) > 200
+                else obj.get("description", ""),
+                "platforms": platforms,
+                "data_sources": data_sources,
+                "detection": detection,
+                "mitigations": [],  # Would require resolving relationship objects
+                "is_subtechnique": is_sub,
+                "parent_technique_id": parent_id,
+            }
+        )
 
     return sorted(techniques, key=lambda t: t["technique_id"])
 
@@ -122,7 +124,7 @@ def main() -> None:
     output_path.write_text(json.dumps(techniques, indent=2) + "\n")
 
     print(f"Extracted {len(techniques)} techniques to {output_path}")
-    print(f"Updated at {datetime.now(timezone.utc).isoformat()}")
+    print(f"Updated at {datetime.now(UTC).isoformat()}")
 
     # Verify tactic coverage
     tactics = set(t["tactic"] for t in techniques)
