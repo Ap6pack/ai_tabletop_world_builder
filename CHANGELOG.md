@@ -5,6 +5,37 @@ All notable changes to the Cybersecurity War Gaming Platform will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Boot without an API key**: services now construct their LLM provider lazily,
+  so `from main import app` (and the health endpoint / OpenAPI schema) works with
+  no key configured. Previously the API failed to import unless an OpenAI key was set.
+- **Hermetic tests**: an autouse fixture injects a fake LLM provider, so the suite
+  runs with no API key or network. In a clean checkout the suite is now 244 passed /
+  1 skipped (previously 6 failed, 28 errors without a key).
+- **CI lint**: fixed all 1,368 ruff violations and applied `ruff format`, so the CI
+  `lint` job passes and the `test`/`build` jobs actually run (both prior CI runs on
+  `main` had failed at lint and skipped everything downstream).
+
+### Added
+
+- **Together AI provider**: implemented end-to-end (provider, factory, availability,
+  settings API, request schema, and Settings UI). It was previously documented but
+  unimplemented, raising `Unknown provider type` at runtime.
+- **Auth security guard**: the app now refuses to start when `REQUIRE_AUTH=true` and
+  `JWT_SECRET_KEY` is empty or the shipped placeholder. Auth/CORS env vars are now
+  documented in `.env.example`.
+- **AUDIT.md**: full project audit with findings, recommendations, and forward vision.
+
+### Changed
+
+- Stopped tracking runtime artifacts (`data/test_users/`, `data/audit_logs/`); added
+  them to `.gitignore`.
+- Corrected inflated status/metrics claims in README, PROJECT_SUMMARY, and CHANGELOG
+  to CI-verified reality.
+
 ## [1.0.0] - 2026-02-20
 
 ### Added
@@ -36,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **game_session_service.py**: `complete_objective()` had a stale-state bug where `update_score()` saved to disk but the in-memory `game_state` (with score=0) was saved over it. Fixed by saving objectives first, then calling update_score, then reloading from disk.
 
 ### Metrics
-- **Test Suite**: 240 passed, 1 skipped, 0 failed, 0 warnings
+- **Test Suite**: 244 passed, 1 skipped (hermetic — no API key or network required)
 - **Services Exported**: 37/37
 - **API Routes**: 81 across 12 routers
 - **UI Pages**: 12 (all navigable from Home)
