@@ -63,6 +63,5 @@ curl http://127.0.0.1:8000/content-policy/policies
 
 ## Need More Help?
 
-- Full examples: `test_examples.md`
-- Bug fixes: `FIXES.md`
-- Setup guide: `QUICKSTART.md`
+- Setup and running tests: [README.md](../README.md)
+- Deployment: [DEPLOY.md](../DEPLOY.md)

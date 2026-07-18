@@ -72,3 +72,6 @@ htmlcov/
 *.tmp
 *.bak
 *.cache
+
+# Generated artifacts (SBOM is produced by scripts/generate_sbom.py / CI)
+sbom.json

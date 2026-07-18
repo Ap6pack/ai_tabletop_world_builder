@@ -52,9 +52,8 @@ Before contributing, ensure you have:
 New to open source? Welcome! Here are some good starting points:
 
 1. **Read the documentation**:
-   - [README.md](README.md) - Project overview
-   - [QUICKSTART.md](QUICKSTART.md) - Setup guide
-   - [ROADMAP.md](ROADMAP.md) - Development plan
+   - [README.md](README.md) - Project overview and setup
+   - [DEPLOY.md](DEPLOY.md) - Production deployment guide
 
 2. **Look for beginner-friendly issues**:
    - Issues labeled `good-first-issue`
@@ -176,8 +175,7 @@ For feature requests, please provide:
 
 1. **Check existing issues**: Someone might already be working on it
 2. **Discuss major changes**: Open an issue first for big features
-3. **Follow the roadmap**: Align with current development phase (see [ROADMAP.md](ROADMAP.md))
-4. **One feature per PR**: Keep changes focused and reviewable
+3. **One feature per PR**: Keep changes focused and reviewable
 
 ### Commit Messages
 
@@ -266,11 +264,11 @@ ai_tabletop_world_builder/
 │       └── 3_Settings.py
 ├── config/               # Configuration
 │   └── settings.py       # Application settings
-├── scenarios/            # Generated scenarios (JSON)
-├── data/                 # Application data
+├── scenarios/            # Scenario templates (seed data)
+├── data/                 # Seed data (MITRE, compliance, inject templates)
+├── alembic/              # Database migrations
 ├── utils/                # Shared utilities
 ├── tests/                # Test suite
-├── context/              # Course reference materials
 └── main.py               # FastAPI entry point
 ```
 
