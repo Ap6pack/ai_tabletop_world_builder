@@ -19,20 +19,26 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+from sqlalchemy import select
+
+from api.db import LibraryScenarioRow, init_db, session_scope
 from api.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
 
 class ScenarioLibraryService:
-    """Service for managing the scenario library."""
+    """Service for managing the scenario library.
 
-    LIBRARY_DIR = Path("data/library")
+    User-contributed library scenarios are stored in the database; the built-in
+    templates remain static JSON seed files under ``scenarios/templates``.
+    """
+
     TEMPLATES_DIR = Path("scenarios/templates")
 
     def __init__(self):
-        """Initialize library service and create directories if needed."""
-        self.LIBRARY_DIR.mkdir(parents=True, exist_ok=True)
+        """Initialize the library service (DB-backed) and seed templates."""
+        init_db()
         self.TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
         self._initialize_templates()
 
@@ -44,10 +50,7 @@ class ScenarioLibraryService:
     ) -> list[dict]:
         """List library scenarios with optional filters and sorting."""
         scenarios = []
-        for path in self.LIBRARY_DIR.glob("*.json"):
-            scenario = self._load_scenario(path.stem)
-            if scenario is None:
-                continue
+        for scenario in self._all_scenarios():
             if category and scenario.get("category") != category:
                 continue
             if difficulty and scenario.get("difficulty") != difficulty:
@@ -172,10 +175,7 @@ class ScenarioLibraryService:
         """Search scenarios by name, description, and tags."""
         query_lower = query.lower()
         results = []
-        for path in self.LIBRARY_DIR.glob("*.json"):
-            scenario = self._load_scenario(path.stem)
-            if scenario is None:
-                continue
+        for scenario in self._all_scenarios():
             name = scenario.get("name", "").lower()
             description = scenario.get("description", "").lower()
             tags = [t.lower() for t in scenario.get("tags", [])]
@@ -183,26 +183,30 @@ class ScenarioLibraryService:
                 results.append(scenario)
         return results
 
+    def _all_scenarios(self) -> list[dict]:
+        """Return every library scenario as its stored dict."""
+        with session_scope() as db:
+            return [row.data for row in db.scalars(select(LibraryScenarioRow)).all()]
+
     def _save_scenario(self, scenario: dict) -> None:
-        """Save a scenario to a JSON file."""
-        path = self.LIBRARY_DIR / f"{scenario['id']}.json"
-        try:
-            with open(path, "w") as f:
-                json.dump(scenario, f, indent=2, default=str)
-        except OSError as exc:
-            logger.error(f"Failed to save scenario {scenario['id']}: {exc}")
+        """Insert or update a library scenario in the database."""
+        with session_scope() as db:
+            row = db.get(LibraryScenarioRow, scenario["id"])
+            if row is None:
+                row = LibraryScenarioRow(id=scenario["id"])
+                db.add(row)
+            row.category = scenario.get("category")
+            row.difficulty = scenario.get("difficulty")
+            row.rating = scenario.get("rating", 0.0)
+            row.rating_count = scenario.get("rating_count", 0)
+            row.created_at = scenario.get("created_at", datetime.now(UTC).isoformat())
+            row.data = scenario
 
     def _load_scenario(self, scenario_id: str) -> dict | None:
-        """Load a scenario from a JSON file."""
-        path = self.LIBRARY_DIR / f"{scenario_id}.json"
-        if not path.exists():
-            return None
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except (json.JSONDecodeError, OSError) as exc:
-            logger.warning(f"Failed to load scenario {scenario_id}: {exc}")
-            return None
+        """Load a library scenario dict by ID from the database."""
+        with session_scope() as db:
+            row = db.get(LibraryScenarioRow, scenario_id)
+            return row.data if row is not None else None
 
     def _initialize_templates(self) -> None:
         """Create pre-built scenario templates if they don't already exist."""

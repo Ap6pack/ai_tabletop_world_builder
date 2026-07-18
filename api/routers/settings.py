@@ -16,7 +16,15 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import delete
 
+from api.db import (
+    ExerciseRow,
+    GameSessionRow,
+    GeneratedScenarioRow,
+    LibraryScenarioRow,
+    session_scope,
+)
 from api.middleware.auth import require_admin
 from config import settings
 
@@ -219,43 +227,25 @@ async def export_config(_admin: dict | None = Depends(require_admin)):
 @router.delete("/data/clear")
 async def clear_all_data(_admin: dict | None = Depends(require_admin)):
     """
-    Clear all saved scenarios and game data.
+    Clear all saved scenarios, game sessions, exercises, and library scenarios.
 
+    User accounts, API keys, and webhooks are preserved.
     WARNING: This is destructive and cannot be undone!
     """
+    deleted = 0
+    with session_scope() as db:
+        for model in (GameSessionRow, GeneratedScenarioRow, LibraryScenarioRow, ExerciseRow):
+            result = db.execute(delete(model))
+            deleted += result.rowcount or 0
+
+    # Best-effort cleanup of any stray generated-scenario files from older versions.
     scenarios_path = Path(settings.scenarios_path)
-    data_path = Path(settings.data_path)
-
-    deleted_files = 0
-    errors = []
-
-    # Delete scenario files
     if scenarios_path.exists():
         for file in scenarios_path.glob("*.json"):
-            try:
+            with contextlib.suppress(OSError):
                 file.unlink()
-                deleted_files += 1
-            except Exception as e:
-                errors.append(f"Failed to delete {file}: {str(e)}")
 
-    # Delete data files (sessions)
-    if data_path.exists():
-        sessions_dir = data_path / "sessions"
-        if sessions_dir.exists():
-            for file in sessions_dir.glob("*.json"):
-                try:
-                    file.unlink()
-                    deleted_files += 1
-                except Exception as e:
-                    errors.append(f"Failed to delete {file}: {str(e)}")
-
-    if errors:
-        raise HTTPException(
-            status_code=500,
-            detail={"message": f"Deleted {deleted_files} files with {len(errors)} errors", "errors": errors},
-        )
-
-    return {"message": f"Successfully deleted {deleted_files} files", "deleted_files": deleted_files}
+    return {"message": f"Successfully deleted {deleted} records", "deleted_records": deleted}
 
 
 @router.post("/reset/defaults")

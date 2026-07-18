@@ -169,18 +169,13 @@ async def delete_scenario(filename: str):
     Raises:
         HTTPException: If file not found or deletion fails
     """
-    import os
-
     try:
-        filepath = os.path.join("scenarios/generated", filename)
-
-        if not os.path.exists(filepath):
-            raise HTTPException(status_code=404, detail=f"Scenario '{filename}' not found")
-
-        os.remove(filepath)
-
+        orchestrator = ScenarioOrchestrator()
+        orchestrator.delete_scenario(filename)
         return {"message": f"Scenario '{filename}' deleted successfully"}
 
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Scenario '{filename}' not found") from None
     except HTTPException:
         raise
     except Exception as e:
