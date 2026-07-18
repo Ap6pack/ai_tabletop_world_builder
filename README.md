@@ -305,7 +305,7 @@ ai_tabletop_world_builder/
 ├── app/                    # Streamlit frontend
 │   ├── Home.py             # Main page
 │   └── pages/              # 12 pages
-├── tests/                  # 24 test files (241 tests)
+├── tests/                  # 25 test files (245 tests)
 ├── docs/                   # Phase completion & planning docs
 ├── scripts/                # Shell scripts and utilities
 ├── config/                 # Configuration
@@ -323,8 +323,9 @@ ai_tabletop_world_builder/
 
 ```bash
 pytest --tb=short -q
-# 240 passed, 1 skipped, 0 failed
-# Tests are in tests/ directory
+# 244 passed, 1 skipped
+# Tests are hermetic — no API key or network required (a fake LLM provider is
+# injected via tests/conftest.py). Tests are in the tests/ directory.
 ```
 
 ## Content Policy Levels
@@ -402,7 +403,9 @@ For issues and questions:
 ---
 
 **Version**: 1.0.0
-**Status**: Phase 10 Production Readiness Complete
-**Last Updated**: 2026-02-20
+**Status**: Active development — core platform functional and CI green; not yet
+production-hardened (auth is not enforced on product endpoints and storage is
+file-based — see AUDIT.md).
+**Last Updated**: 2026-07-18
 
 See [CHANGELOG.md](CHANGELOG.md) for complete details.
