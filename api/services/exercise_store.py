@@ -6,11 +6,19 @@
 # NOTICE: This file contains proprietary code developed by Veritas Aequitas Holdings LLC.
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
-"""Redis-backed storage for multi-team exercise state with file-based fallback."""
+"""Storage for multi-team exercise state.
+
+Defaults to the application database. Redis can be enabled as a low-latency
+fast-path via ``redis_url``; a file backend remains for archival and as a
+last-resort fallback.
+"""
 
 import json
 from pathlib import Path
 
+from sqlalchemy import select
+
+from api.db import ExerciseRow, init_db, session_scope
 from api.models.exercise_models import ExerciseState
 from api.utils.logger import setup_logger
 
@@ -49,8 +57,8 @@ class ExerciseStore:
         self._storage_dir = Path("data/exercises")
         self._archive_dir = Path("data/exercises/archive")
 
-        # Ensure file-based directories exist
-        self._storage_dir.mkdir(parents=True, exist_ok=True)
+        # Ensure the database schema and the file archive directory exist.
+        init_db()
         self._archive_dir.mkdir(parents=True, exist_ok=True)
 
         # Attempt Redis connection
@@ -88,7 +96,7 @@ class ExerciseStore:
         """
         if self._use_redis:
             return self._redis_get(exercise_id)
-        return self._file_get(exercise_id)
+        return self._db_get(exercise_id)
 
     def save_exercise(self, state: ExerciseState) -> None:
         """
@@ -105,7 +113,7 @@ class ExerciseStore:
         if self._use_redis:
             self._redis_save(state)
         else:
-            self._file_save(state)
+            self._db_save(state)
 
         logger.debug(
             "Saved exercise %s (version %d, phase=%s)",
@@ -126,7 +134,7 @@ class ExerciseStore:
         """
         if self._use_redis:
             return self._redis_delete(exercise_id)
-        return self._file_delete(exercise_id)
+        return self._db_delete(exercise_id)
 
     def list_exercises(self, phase: str | None = None) -> list[dict]:
         """
@@ -139,7 +147,7 @@ class ExerciseStore:
             List of dicts with keys: exercise_id, name, phase, team_count,
             current_round, version.
         """
-        summaries = self._redis_list() if self._use_redis else self._file_list()
+        summaries = self._redis_list() if self._use_redis else self._db_list()
 
         if phase:
             summaries = [s for s in summaries if s.get("phase") == phase]
@@ -190,7 +198,61 @@ class ExerciseStore:
         """
         if self._use_redis:
             return self._redis_get_version(exercise_id)
-        return self._file_get_version(exercise_id)
+        return self._db_get_version(exercise_id)
+
+    # ------------------------------------------------------------------
+    # Database backend (default)
+    # ------------------------------------------------------------------
+
+    def _db_get(self, exercise_id: str) -> ExerciseState | None:
+        with session_scope() as db:
+            row = db.get(ExerciseRow, exercise_id)
+            if row is None:
+                return None
+            return ExerciseState.model_validate(row.data)
+
+    def _db_save(self, state: ExerciseState) -> None:
+        payload = state.model_dump(mode="json")
+        with session_scope() as db:
+            row = db.get(ExerciseRow, state.exercise_id)
+            if row is None:
+                row = ExerciseRow(exercise_id=state.exercise_id)
+                db.add(row)
+            row.name = state.name
+            row.phase = state.phase
+            row.facilitator_id = state.facilitator_id
+            row.current_round = state.current_round
+            row.team_count = len(state.teams)
+            row.version = state.version
+            row.data = payload
+
+    def _db_delete(self, exercise_id: str) -> bool:
+        with session_scope() as db:
+            row = db.get(ExerciseRow, exercise_id)
+            if row is None:
+                return False
+            db.delete(row)
+        return True
+
+    def _db_list(self) -> list[dict]:
+        with session_scope() as db:
+            rows = db.scalars(select(ExerciseRow)).all()
+            return [
+                {
+                    "exercise_id": row.exercise_id,
+                    "name": row.name,
+                    "phase": row.phase,
+                    "team_count": row.team_count,
+                    "current_round": row.current_round,
+                    "version": row.version,
+                }
+                for row in rows
+            ]
+
+    def _db_get_version(self, exercise_id: str) -> int:
+        with session_scope() as db:
+            version = db.scalar(select(ExerciseRow.version).where(ExerciseRow.exercise_id == exercise_id))
+            return version if version is not None else -1
 
     # ------------------------------------------------------------------
     # Redis backend
