@@ -393,20 +393,16 @@ Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) fo
 - Pull request process
 - Areas for contribution
 
-**Note**: By contributing, you agree to the terms in the [LICENSE](LICENSE) file, including that your contributions may be used in both open-source and commercial versions of the platform.
+**Note**: By contributing, you agree that your contributions are licensed under the project's Apache-2.0 license.
 
 ## License
 
-Copyright (c) 2026 Veritas Aequitas Holdings LLC. All Rights Reserved.
+Copyright 2026 Adam Rhys Heaton (Ap6pack) and contributors.
 
-This project is licensed under a **proprietary license** with the following key terms:
-
-- Free for evaluation, learning, and personal development
-- Open source code for transparency and community contributions
-- Commercial use requires a separate commercial license
-- Cannot be used for SaaS offerings without permission
-
-See [LICENSE](LICENSE) file for full terms or contact contact@veritasandaequitas.com for commercial inquiries.
+Licensed under the **Apache License, Version 2.0**. This is free, open-source
+software — you may use, modify, and distribute it, including for commercial
+purposes, under the terms of that license (which also includes an explicit
+patent grant). See the [LICENSE](LICENSE) file for the full text.
 
 ## Resources
 
@@ -434,9 +430,8 @@ See [LICENSE](LICENSE) file for full terms or contact contact@veritasandaequitas
 ## Support
 
 For issues and questions:
-- Open an issue on GitHub
-- Check documentation
-- Contact: contact@veritasandaequitas.com
+- Open an issue on [GitHub](https://github.com/Ap6pack/ai_tabletop_world_builder/issues)
+- Check the documentation
 
 ---
 
