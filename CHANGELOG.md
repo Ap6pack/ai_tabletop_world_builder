@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Alembic schema migrations.** Database schema changes are now managed with
+  Alembic (`alembic upgrade head`), so production schemas can evolve without
+  losing data. Includes an initial migration covering all tables; `alembic check`
+  confirms it matches the models.
+- **Generated scenarios and the scenario library moved to the database.** The
+  last mutable file stores are now DB-backed; built-in templates remain static
+  seed files. `/settings/data/clear` truncates game/scenario tables (accounts
+  preserved).
+- **Rate limiting** on all API endpoints (fixed-window, per user or client IP;
+  Redis-backed when `REDIS_URL` is set) to protect LLM endpoints from abuse.
 - **PostgreSQL CI job.** CI now runs the full test suite against a real
   PostgreSQL service in addition to SQLite, so backend-specific behavior is
   verified automatically. The `_fresh_db` test fixture honors `TEST_DATABASE_URL`

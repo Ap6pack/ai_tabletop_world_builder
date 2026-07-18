@@ -182,9 +182,15 @@ webhooks — is stored via SQLAlchemy. The backend is chosen entirely by the
   ```bash
   DATABASE_URL=postgresql+psycopg://user:password@host:5432/dbname
   ```
-  The `psycopg` driver is already in `requirements.txt`. Tables are created
-  automatically on startup. The API is stateless, so you can run multiple
-  instances behind a load balancer against one Postgres.
+  The `psycopg` driver is already in `requirements.txt`. The API is stateless,
+  so you can run multiple instances behind a load balancer against one Postgres.
+
+**Schema migrations:** managed with [Alembic](https://alembic.sqlalchemy.org).
+For a fresh database run `alembic upgrade head` before starting the app; on
+subsequent schema changes, generate a migration with
+`alembic revision --autogenerate -m "describe change"` and apply it with
+`alembic upgrade head`. (For quick local/dev use the app also creates any missing
+tables on startup.)
 
 **Redis (optional):** live multi-team exercises can use Redis as a low-latency
 fast-path — set `REDIS_URL=redis://host:6379/0`. Without it, exercise state is
@@ -372,6 +378,11 @@ pytest --tb=short -q
   `admin` role. With auth disabled (the local/dev default) endpoints are open.
   Note: the Streamlit UI does not yet attach tokens, so run it against an
   auth-disabled API or behind an authenticating gateway.
+- **Rate Limiting**: Fixed-window limits on all API endpoints, keyed per
+  authenticated user (or client IP when anonymous), to protect LLM-backed
+  endpoints from abuse. Configure via `RATE_LIMIT_ENABLED`, `RATE_LIMIT_REQUESTS`,
+  and `RATE_LIMIT_WINDOW_SECONDS`; uses Redis (`REDIS_URL`) for shared limits
+  across instances, otherwise an in-process counter.
 
 ## Contributing
 

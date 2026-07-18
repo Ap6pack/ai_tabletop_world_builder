@@ -23,3 +23,12 @@ def get_cors_origins() -> list:
     if raw and isinstance(raw, str):
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
     return DEFAULTS
+
+
+def allow_credentials(origins: list) -> bool:
+    """Whether credentialed CORS requests may be allowed.
+
+    Credentials must not be combined with a wildcard origin — browsers reject
+    it and it defeats the purpose of an allowlist.
+    """
+    return "*" not in origins
