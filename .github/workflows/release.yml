@@ -1,22 +1,29 @@
 name: Release
 
 # Publish the API and frontend container images to the GitHub Container
-# Registry (GHCR) when a version tag is pushed. Authentication uses the
-# built-in GITHUB_TOKEN, so no registry secrets need to be configured.
+# Registry (GHCR) for a version tag. Authentication uses the built-in
+# GITHUB_TOKEN, so no registry secrets need to be configured.
 #
-# Images (public once the packages are set to public in the repo settings):
+# Images (make the packages public in repo settings after the first run):
 #   ghcr.io/<owner>/ai-tabletop-api
 #   ghcr.io/<owner>/ai-tabletop-frontend
 #
-# Tags produced for a push of v1.2.3 (non-prerelease): 1.2.3, 1.2, 1, latest.
+# Tags produced for version 1.2.3: 1.2.3, 1.2, 1, latest.
 #
-# workflow_dispatch lets you backfill a tag that was released before this
-# workflow existed: run it manually and pick the tag (e.g. v1.0.0) as the ref.
+# Triggers:
+#   - push of a v* tag  -> publishes that tag's images automatically.
+#   - workflow_dispatch -> pass an existing tag (e.g. v1.0.0) to build and
+#     publish it. Use this to backfill a tag released before this workflow
+#     existed; run it from the default branch (that is where this file lives).
 
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing version tag to build and publish (e.g. v1.0.0)"
+        required: true
 
 permissions:
   contents: read
@@ -37,7 +44,27 @@ jobs:
           - image: ai-tabletop-frontend
             dockerfile: Dockerfile.frontend
     steps:
+      - name: Resolve version and ref
+        id: v
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          VER="${REF#v}"
+          if [ -z "$VER" ]; then
+            echo "::error::Could not resolve a version (ref='$REF')."
+            exit 1
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          # Only cascade major/minor/latest for a clean X.Y.Z release.
+          if echo "$VER" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "minor=${VER%.*}" >> "$GITHUB_OUTPUT"
+            echo "major=${VER%%.*}" >> "$GITHUB_OUTPUT"
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.v.outputs.ref }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -54,9 +81,10 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=raw,value=${{ steps.v.outputs.version }}
+            type=raw,value=${{ steps.v.outputs.minor }},enable=${{ steps.v.outputs.minor != '' }}
+            type=raw,value=${{ steps.v.outputs.major }},enable=${{ steps.v.outputs.major != '' }}
+            type=raw,value=latest,enable=${{ steps.v.outputs.is_release == 'true' }}
 
       - name: Build and push
         uses: docker/build-push-action@v5
