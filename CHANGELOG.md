@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **PostgreSQL CI job.** CI now runs the full test suite against a real
+  PostgreSQL service in addition to SQLite, so backend-specific behavior is
+  verified automatically. The `_fresh_db` test fixture honors `TEST_DATABASE_URL`
+  (drops/recreates the schema per test) and falls back to a throwaway SQLite
+  file locally.
+
 ### Security
 
 - **Authentication is now enforced on product endpoints when `REQUIRE_AUTH=true`.**

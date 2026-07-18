@@ -8,6 +8,7 @@
 # For inquiries, contact: contact@veritasandaequitas.com
 """Root conftest for pytest — shared fixtures and collection config."""
 
+import os
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
@@ -38,18 +39,29 @@ from api.models.schemas import (
 
 @pytest.fixture(autouse=True)
 def _fresh_db(tmp_path):
-    """Bind the DB engine to a throwaway SQLite file for each test.
+    """Give each test an isolated, empty database.
 
-    Guarantees test isolation and keeps the suite from touching the real
-    ``data/app.db``. Services read the engine from ``api.db`` at call time, so
-    rebinding here transparently redirects all storage.
+    By default binds a throwaway SQLite file per test (fast, no setup). If
+    ``TEST_DATABASE_URL`` is set (e.g. a Postgres service in CI), the suite runs
+    against that engine instead, dropping and recreating the schema around each
+    test for isolation. Services read the engine from ``api.db`` at call time,
+    so rebinding here transparently redirects all storage.
     """
     import api.db as db
 
-    db.configure_engine(f"sqlite:///{tmp_path}/test.db")
-    db.init_db()
-    yield
-    db.get_engine().dispose()
+    test_url = os.environ.get("TEST_DATABASE_URL")
+    if test_url:
+        db.configure_engine(test_url)
+        db.Base.metadata.drop_all(bind=db.get_engine())
+        db.init_db()
+        yield
+        db.Base.metadata.drop_all(bind=db.get_engine())
+        db.get_engine().dispose()
+    else:
+        db.configure_engine(f"sqlite:///{tmp_path}/test.db")
+        db.init_db()
+        yield
+        db.get_engine().dispose()
 
 
 # ============================================================================
