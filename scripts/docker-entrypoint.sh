@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
-mkdir -p /app/data/sessions /app/data/users /app/data/audit_logs /app/data/library /app/data/webhooks /app/data/api_keys /app/scenarios/generated /app/scenarios/templates
+# Users, sessions, exercises, keys, webhooks, and scenarios are database-backed.
+# Only the append-only audit log and the local SQLite dir remain file-based.
+mkdir -p /app/data/audit_logs
 
 exec "$@"
