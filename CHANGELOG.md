@@ -7,123 +7,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [1.0.0] - 2026-07-18
 
-- **Relicensed the project as open source under Apache-2.0.** Replaced the
-  proprietary license and per-file proprietary headers with Apache-2.0
-  (SPDX headers), removed `COMMERCIAL_LICENSE.md`, and added a `NOTICE` file.
-  Copyright: Adam Rhys Heaton (Ap6pack) and contributors.
+First public release — an open-source (Apache-2.0), AI-powered cybersecurity
+war-gaming and tabletop-exercise platform. This is the first tagged/released
+version; earlier `0.x` entries below document pre-release development milestones
+(they were never tagged).
 
 ### Added
 
-- **Alembic schema migrations.** Database schema changes are now managed with
-  Alembic (`alembic upgrade head`), so production schemas can evolve without
-  losing data. Includes an initial migration covering all tables; `alembic check`
-  confirms it matches the models.
-- **Generated scenarios and the scenario library moved to the database.** The
-  last mutable file stores are now DB-backed; built-in templates remain static
-  seed files. `/settings/data/clear` truncates game/scenario tables (accounts
-  preserved).
-- **Rate limiting** on all API endpoints (fixed-window, per user or client IP;
-  Redis-backed when `REDIS_URL` is set) to protect LLM endpoints from abuse.
-- **PostgreSQL CI job.** CI now runs the full test suite against a real
-  PostgreSQL service in addition to SQLite, so backend-specific behavior is
-  verified automatically. The `_fresh_db` test fixture honors `TEST_DATABASE_URL`
-  (drops/recreates the schema per test) and falls back to a throwaway SQLite
-  file locally.
+- **Scenario generation** — hierarchical, AI-generated organizations
+  (departments, systems, vulnerabilities, threat actors) across 8 industries.
+- **AI war-gaming** — an LLM "game master" runs interactive incident-response
+  simulations with objectives, scoring, an incident timeline, and hints.
+- **Multi-team exercises** — blue/red/white teams, round-based play, a crisis
+  inject engine (sector templates, multiple trigger types), and facilitator controls.
+- **Analytics & After-Action Review** — decision analysis, alternative-path
+  suggestions, AAR generation, and PDF export.
+- **MITRE ATT&CK integration** — 93 techniques across 14 tactics, wired into
+  exercises and injects.
+- **Compliance & executive reporting** — NIST CSF / PCI DSS / HIPAA scoring and
+  an executive dashboard with financial-impact metrics.
+- **Content safety** — four-tier content policy, pattern-based action filtering,
+  post-generation validation, and hash-chained audit logging.
+- **LLM providers** — OpenAI, Anthropic, Together AI, and Ollama behind a common
+  provider abstraction.
+- **Database storage layer (SQLAlchemy)** — users, sessions, exercises, API keys,
+  webhooks, and scenarios persist to a database (SQLite by default, PostgreSQL
+  for production via `DATABASE_URL`); Redis is an optional low-latency fast-path.
+- **Alembic migrations** — schema managed with `alembic upgrade head`.
+- **Rate limiting** — fixed-window limits (per authenticated user or client IP)
+  on all API endpoints.
+- **Deployment** — Dockerfiles and docker-compose (API, frontend, Postgres,
+  Redis, monitoring), `DEPLOY.md`, and admin/legacy-import scripts.
+- **CI** — lint, the test suite on both SQLite and PostgreSQL, and a Docker
+  build; plus a security workflow (pip-audit, bandit, SBOM).
+
+### Changed
+
+- **Open-sourced under Apache-2.0** (previously proprietary); per-file SPDX
+  headers, `NOTICE` file, copyright to Adam Rhys Heaton (Ap6pack) and contributors.
+- **Storage moved from loose JSON files to a database** — indexed queries and
+  transactional, concurrency-safe writes replace per-request directory scans.
+- Documentation corrected to CI-verified reality.
+
+### Removed
+
+- The proprietary/commercial license and per-file proprietary headers.
+- Stale phase-history docs, course transcripts, and committed runtime artifacts.
+
+### Fixed
+
+- **Boots without an API key** — LLM providers are constructed lazily, so the app
+  imports and serves `/health` and the OpenAPI schema with no key configured.
+- **Hermetic test suite** — an injected fake provider means no API key or network
+  is required (269 passed, 1 skipped in a clean checkout).
+- **Green CI** — fixed 1,368 `ruff` violations and applied the formatter, so the
+  lint/test/build jobs actually run (both prior CI runs had failed at lint).
+- Service bugs: inject-suggestion heuristics (dict vs. Pydantic model) and a
+  stale game-state overwrite when completing objectives.
 
 ### Security
 
-- **Authentication is now enforced on product endpoints when `REQUIRE_AUTH=true`.**
-  Previously the auth stack existed but no product router used it, so enabling
-  the flag protected nothing. All product routers now require a valid bearer
-  token when auth is enabled (the auth router stays open for register/login);
-  with auth disabled (the dev default) behavior is unchanged.
-- **Destructive/admin settings endpoints are gated behind an `admin` role.**
-  `/settings/data/clear`, `/settings/update`, `/settings/reset/defaults`,
-  `/settings/export`, and `/settings/provider/{provider}/key` now require an
-  authenticated admin when auth is enabled (via a new `require_admin` dependency).
-- **Patched 23 known dependency vulnerabilities** flagged by `pip-audit` (the
-  Security workflow). Bumped `python-multipart`, `streamlit`/`pyarrow`,
-  `requests`, `python-dotenv`, `pytest`/`pytest-asyncio`, and `fastapi`/`starlette`
-  to fixed releases.
-- **Replaced `python-jose` with `PyJWT`.** `python-jose` is effectively
-  unmaintained and pulled in a vulnerable `ecdsa` (no-fix advisory
-  PYSEC-2026-1325); PyJWT (HS256) removes that dependency entirely. Auth token
-  encode/decode behavior is unchanged.
-
-### Fixed
-
-- **Boot without an API key**: services now construct their LLM provider lazily,
-  so `from main import app` (and the health endpoint / OpenAPI schema) works with
-  no key configured. Previously the API failed to import unless an OpenAI key was set.
-- **Hermetic tests**: an autouse fixture injects a fake LLM provider, so the suite
-  runs with no API key or network. In a clean checkout the suite is now 244 passed /
-  1 skipped (previously 6 failed, 28 errors without a key).
-- **CI lint**: fixed all 1,368 ruff violations and applied `ruff format`, so the CI
-  `lint` job passes and the `test`/`build` jobs actually run (both prior CI runs on
-  `main` had failed at lint and skipped everything downstream).
-
-### Added
-
-- **Database storage layer (SQLAlchemy)**: mutable application state — users,
-  game sessions, exercises, API keys, and webhooks — now persists to a real
-  database (SQLite by default, Postgres-ready via `DATABASE_URL`) instead of
-  loose JSON files. Replaces O(n) directory scans with indexed queries and adds
-  transactional, concurrency-safe writes. Redis remains an optional low-latency
-  fast-path for live exercises; audit logs stay append-only JSONL by design.
-- **Together AI provider**: implemented end-to-end (provider, factory, availability,
-  settings API, request schema, and Settings UI). It was previously documented but
-  unimplemented, raising `Unknown provider type` at runtime.
-- **Auth security guard**: the app now refuses to start when `REQUIRE_AUTH=true` and
-  `JWT_SECRET_KEY` is empty or the shipped placeholder. Auth/CORS env vars are now
-  documented in `.env.example`.
-- **AUDIT.md**: full project audit with findings, recommendations, and forward vision.
-
-### Changed
-
-- Stopped tracking runtime artifacts (`data/test_users/`, `data/audit_logs/`); added
-  them to `.gitignore`.
-- Corrected inflated status/metrics claims in README, PROJECT_SUMMARY, and CHANGELOG
-  to CI-verified reality.
-
-## [1.0.0] - 2026-02-20
-
-### Added
-
-#### Phase 10: Production Readiness - COMPLETE
-
-**Integration Fixes**
-- Added missing `pandas>=2.1.0` dependency to `requirements.txt`
-- Updated `api/services/__init__.py` to export all 37 services (was only 11)
-- Rebuilt `app/Home.py` navigation to link all 12 pages organized by category (Build/Play/Analyze/Admin)
-
-**Shared Test Fixtures**
-- NEW: `conftest.py` with reusable pytest fixtures for Organization, GameState, ExerciseState, ThreatActor, BusinessImpact, and more
-- Eliminates duplicate model construction across test files
-
-**New Test Suites (128 new tests across 8 files)**
-- `test_inject_service.py` — 15 tests: template loading, inject creation, trigger evaluation, heuristic suggestions, response tracking
-- `test_compliance_scoring_service.py` — 12 tests: framework loading, scoring rubric, gap analysis, posture labels
-- `test_game_session_service.py` — 13 tests: session lifecycle, role-based inventory, file persistence, gameplay updates
-- `test_scenario_orchestrator.py` — 8 tests: full pipeline, complexity counts, save/load, industry support
-- `test_game_orchestrator.py` — 12 tests: game start, player actions, hints, end game, objectives
-- `test_system_state_manager.py` — 12 tests: initialization, state updates, compromise/recovery, availability
-- `test_generators.py` — 18 tests: all 6 generators (org, dept, system, vuln, threat, objective)
-- `test_api_boot.py` — 5 tests: app import, health endpoint, router registration, OpenAPI schema
-
-### Fixed
-
-- **inject_service.py**: `suggest_inject()` heuristics never triggered because `business_impact` was treated as a dict but Pydantic v2 coerces it to a `BusinessImpact` model. Fixed to handle both types.
-- **game_session_service.py**: `complete_objective()` had a stale-state bug where `update_score()` saved to disk but the in-memory `game_state` (with score=0) was saved over it. Fixed by saving objectives first, then calling update_score, then reloading from disk.
-
-### Metrics
-- **Test Suite**: 244 passed, 1 skipped (hermetic — no API key or network required)
-- **Services Exported**: 37/37
-- **API Routes**: 81 across 12 routers
-- **UI Pages**: 12 (all navigable from Home)
+- **Authentication enforced** on product endpoints when `REQUIRE_AUTH=true`, with
+  admin-only gating on destructive settings operations and a fail-fast guard
+  against the default/empty `JWT_SECRET_KEY`.
+- **Patched 23 known dependency vulnerabilities**; replaced the unmaintained
+  `python-jose` (which pulled a no-fix-available `ecdsa`, PYSEC-2026-1325) with
+  `PyJWT`.
+- **Hardened CORS** — credentials are disabled with a wildcard origin; documented
+  security headers (nosniff, frame-deny, CSP, HSTS, etc.).
 
 ---
+
+## Pre-1.0 development history
+
+_These milestones predate the first tagged release; they were not published as
+versioned releases._
 
 ## [0.9.0] - 2026-02-19
 
@@ -351,25 +311,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## Version History
-
-| Version | Phase | Description |
-|---------|-------|-------------|
-| 1.0.0 | Phase 10 | Production Readiness - full test coverage, integration fixes |
-| 0.9.0 | Phase 9 | Market Positioning - ATT&CK, exercises, compliance |
-| 0.8.0 | Phase 8 | Deployment & Scaling - Docker, CI/CD, monitoring |
-| 0.7.0 | Phase 7 | Advanced Features - analytics, AAR, auth, AI adaptation |
-| 0.6.0 | Phase 4 | Enhanced Safety & Policies |
-| 0.5.0 | Phase 5A | Core Game Mechanics |
-| 0.4.0 | Phase 3.5 | UI Integration & Code Quality |
-| 0.3.0 | Phase 2-3 | Scenario Generation + War Gaming |
-| 0.1.0 | Phase 1 | Foundation |
-
----
-
-[1.0.0]: https://github.com/Ap6pack/ai_tabletop_world_builder/compare/v0.9.0...v1.0.0
-[0.9.0]: https://github.com/Ap6pack/ai_tabletop_world_builder/compare/v0.8.0...v0.9.0
-[0.8.0]: https://github.com/Ap6pack/ai_tabletop_world_builder/compare/v0.7.1...v0.8.0
-[0.7.1]: https://github.com/Ap6pack/ai_tabletop_world_builder/compare/v0.7.0...v0.7.1
-[0.3.0]: https://github.com/Ap6pack/ai_tabletop_world_builder/releases/tag/v0.3.0
-[0.1.0]: https://github.com/Ap6pack/ai_tabletop_world_builder/releases/tag/v0.1.0
+[1.0.0]: https://github.com/Ap6pack/ai_tabletop_world_builder/releases/tag/v1.0.0
