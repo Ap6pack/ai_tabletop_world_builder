@@ -9,8 +9,14 @@
 """
 Application configuration settings.
 """
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from typing import Literal
+
+from pydantic import model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Placeholder secret shipped as the default; must never be used with auth enabled.
+DEFAULT_JWT_SECRET = "change-me-in-production"
 
 
 class Settings(BaseSettings):
@@ -19,7 +25,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
     # API Configuration
-    api_host: str = "0.0.0.0"
+    api_host: str = "0.0.0.0"  # noqa: S104 — bind all interfaces (intended for containers)
     api_port: int = 8000
     api_reload: bool = True
 
@@ -54,8 +60,13 @@ class Settings(BaseSettings):
     max_context_length: int = 4000
 
     # Authentication
+    # NOTE: auth is opt-in. When require_auth is False (the default), the API
+    # endpoints are NOT protected — see api/middleware/auth.py. Product routers
+    # do not yet declare an auth dependency, so enabling require_auth only
+    # guards the /auth router today. Treat this as development-grade until auth
+    # is wired onto the product endpoints.
     require_auth: bool = False
-    jwt_secret_key: str = "change-me-in-production"
+    jwt_secret_key: str = DEFAULT_JWT_SECRET
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
@@ -67,6 +78,32 @@ class Settings(BaseSettings):
     scenarios_path: str = "./scenarios/generated"
     data_path: str = "./data"
 
+    # Database
+    # SQLAlchemy URL for mutable application state (users, sessions, exercises,
+    # API keys, webhooks). Defaults to a local SQLite file; set to a Postgres
+    # URL (e.g. postgresql+psycopg://user:pass@host/db) for production.
+    database_url: str = "sqlite:///./data/app.db"
+
+    # Optional Redis URL used as a low-latency fast-path for live multi-team
+    # exercise state. Empty means exercises are served from the database.
+    redis_url: str = ""
+
+    @model_validator(mode="after")
+    def _reject_insecure_auth_config(self) -> "Settings":
+        """Fail fast if auth is enabled without a real JWT secret.
+
+        Only fires when require_auth is True, so the default (auth-off)
+        configuration and the test suite are unaffected. This prevents
+        deploying with the shipped placeholder secret, which would let anyone
+        forge valid tokens.
+        """
+        if self.require_auth and self.jwt_secret_key.strip() in ("", DEFAULT_JWT_SECRET):
+            raise ValueError(
+                "REQUIRE_AUTH is enabled but JWT_SECRET_KEY is unset or still the default "
+                "placeholder. Set JWT_SECRET_KEY to a strong random secret "
+                "(e.g. `python -c 'import secrets; print(secrets.token_urlsafe(48))'`)."
+            )
+        return self
 
 
 # Global settings instance

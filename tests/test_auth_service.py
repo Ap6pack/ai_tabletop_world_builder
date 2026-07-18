@@ -10,30 +10,20 @@
 Test suite for AuthService — user registration, authentication,
 JWT token management, and user CRUD operations.
 """
-import os
-import shutil
+
 import sys
-
-TEST_USERS_DIR = "data/test_users"
-
-
-def cleanup_test_dir():
-    """Remove and recreate the test users directory."""
-    if os.path.exists(TEST_USERS_DIR):
-        shutil.rmtree(TEST_USERS_DIR)
-    os.makedirs(TEST_USERS_DIR, exist_ok=True)
 
 
 def make_service(clean=True):
-    """Create an AuthService instance pointed at the test directory."""
-    if clean:
-        cleanup_test_dir()
+    """Create an AuthService instance.
+
+    Test isolation is provided by the autouse ``_fresh_db`` fixture (conftest),
+    which binds a throwaway SQLite database per test. The ``clean`` argument is
+    retained for backward compatibility and is a no-op.
+    """
     from api.services.auth_service import AuthService
 
-    service = AuthService()
-    service.users_dir = TEST_USERS_DIR
-    os.makedirs(service.users_dir, exist_ok=True)
-    return service
+    return AuthService()
 
 
 # ── Registration Tests ───────────────────────────────────────────────
@@ -58,7 +48,7 @@ def test_register_duplicate_username():
     service.register("bob", "bob@example.com", "password123")
     try:
         service.register("bob", "bob2@example.com", "password123")
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError:
         pass
     print("  PASS — duplicate username rejected")
@@ -70,7 +60,7 @@ def test_register_invalid_username():
     service = make_service()
     try:
         service.register("ab", "short@example.com", "password123")
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError:
         pass
     print("  PASS — short username rejected")
@@ -82,7 +72,7 @@ def test_register_invalid_password():
     service = make_service()
     try:
         service.register("charlie", "charlie@example.com", "short")
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError:
         pass
     print("  PASS — short password rejected")
@@ -94,7 +84,7 @@ def test_register_invalid_email():
     service = make_service()
     try:
         service.register("dave", "no-at-sign.com", "password123")
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError:
         pass
     print("  PASS — invalid email rejected")
@@ -257,7 +247,6 @@ if __name__ == "__main__":
     print("AUTH SERVICE TEST SUITE")
     print("=" * 70)
 
-    cleanup_test_dir()
     all_passed = True
     try:
         test_register_user()
@@ -284,9 +273,8 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n  FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         all_passed = False
-    finally:
-        cleanup_test_dir()
 
     sys.exit(0 if all_passed else 1)

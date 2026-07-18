@@ -10,12 +10,10 @@
 Action filter service for pre-action content checking.
 Checks player actions before they are processed to ensure policy compliance.
 """
-from typing import Optional, List, Dict
-from datetime import datetime
-from api.models import ContentPolicy
+
 from api.providers import LLMProviderFactory
-from api.utils.pattern_matcher import PatternMatcher, PatternMatch
 from api.utils.logger import setup_logger
+from api.utils.pattern_matcher import PatternMatch, PatternMatcher
 
 logger = setup_logger(__name__)
 
@@ -26,11 +24,11 @@ class ActionCheckResult:
     def __init__(
         self,
         is_allowed: bool,
-        reason: Optional[str] = None,
-        violations: Optional[List[str]] = None,
+        reason: str | None = None,
+        violations: list[str] | None = None,
         severity: str = "medium",
-        suggested_alternative: Optional[str] = None,
-        matched_patterns: Optional[List[PatternMatch]] = None
+        suggested_alternative: str | None = None,
+        matched_patterns: list[PatternMatch] | None = None,
     ):
         self.is_allowed = is_allowed
         self.reason = reason
@@ -39,7 +37,7 @@ class ActionCheckResult:
         self.suggested_alternative = suggested_alternative
         self.matched_patterns = matched_patterns or []
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for API responses."""
         return {
             "is_allowed": self.is_allowed,
@@ -47,7 +45,7 @@ class ActionCheckResult:
             "violations": self.violations,
             "severity": self.severity,
             "suggested_alternative": self.suggested_alternative,
-            "pattern_matches": len(self.matched_patterns)
+            "pattern_matches": len(self.matched_patterns),
         }
 
 
@@ -67,9 +65,9 @@ class ActionFilterService:
         self,
         action: str,
         policy_level: str = "educational",
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
         enable_quick_check: bool = True,
-        enable_llm_check: bool = True
+        enable_llm_check: bool = True,
     ) -> ActionCheckResult:
         """
         Check if an action is allowed under the given policy.
@@ -84,10 +82,10 @@ class ActionFilterService:
         Returns:
             ActionCheckResult with decision and details
         """
-        logger.info(f"Checking action for policy '{policy_level}'", extra={
-            "session_id": session_id,
-            "action_length": len(action)
-        })
+        logger.info(
+            f"Checking action for policy '{policy_level}'",
+            extra={"session_id": session_id, "action_length": len(action)},
+        )
 
         # Stage 1: Quick pattern-based check (fast)
         if enable_quick_check:
@@ -95,7 +93,7 @@ class ActionFilterService:
             if not quick_result.is_allowed:
                 logger.warning(
                     f"Action blocked by quick check: {quick_result.reason}",
-                    extra={"session_id": session_id, "violations": quick_result.violations}
+                    extra={"session_id": session_id, "violations": quick_result.violations},
                 )
                 return quick_result
 
@@ -105,22 +103,15 @@ class ActionFilterService:
             if not llm_result.is_allowed:
                 logger.warning(
                     f"Action blocked by LLM check: {llm_result.reason}",
-                    extra={"session_id": session_id, "violations": llm_result.violations}
+                    extra={"session_id": session_id, "violations": llm_result.violations},
                 )
                 return llm_result
 
         # Action is allowed
         logger.info("Action approved", extra={"session_id": session_id})
-        return ActionCheckResult(
-            is_allowed=True,
-            reason="Action complies with content policy"
-        )
+        return ActionCheckResult(is_allowed=True, reason="Action complies with content policy")
 
-    def _quick_pattern_check(
-        self,
-        action: str,
-        policy_level: str
-    ) -> ActionCheckResult:
+    def _quick_pattern_check(self, action: str, policy_level: str) -> ActionCheckResult:
         """
         Quick pattern-based check for obvious violations.
 
@@ -179,16 +170,12 @@ class ActionFilterService:
                 violations=violations,
                 severity=highest_severity,
                 suggested_alternative=suggested_alternative,
-                matched_patterns=matches
+                matched_patterns=matches,
             )
 
         return ActionCheckResult(is_allowed=True, matched_patterns=matches)
 
-    async def _llm_semantic_check(
-        self,
-        action: str,
-        policy_level: str
-    ) -> ActionCheckResult:
+    async def _llm_semantic_check(self, action: str, policy_level: str) -> ActionCheckResult:
         """
         LLM-based semantic analysis for context-aware checking.
 
@@ -202,6 +189,7 @@ class ActionFilterService:
         try:
             # Get policy configuration
             from api.services.content_policy_service import ContentPolicyService
+
             policy = ContentPolicyService.get_policy(policy_level)
 
             # Build prompt for LLM
@@ -243,7 +231,7 @@ SEVERITY: [low, medium, high, or critical if blocked]"""
                 prompt=prompt,
                 system_message=system_message,
                 temperature=0.3,  # Lower temperature for consistent safety checks
-                max_tokens=300
+                max_tokens=300,
             )
 
             response_text = result["content"].strip()
@@ -273,18 +261,15 @@ SEVERITY: [low, medium, high, or critical if blocked]"""
                 reason=reason,
                 violations=["Policy violation"] if not is_allowed else [],
                 severity=severity,
-                suggested_alternative=suggested_alternative
+                suggested_alternative=suggested_alternative,
             )
 
         except Exception as e:
             logger.error(f"LLM semantic check failed: {str(e)}")
             # On error, default to allowing (fail open) but log the issue
-            return ActionCheckResult(
-                is_allowed=True,
-                reason="Policy check incomplete - proceeding with caution"
-            )
+            return ActionCheckResult(is_allowed=True, reason="Policy check incomplete - proceeding with caution")
 
-    def _get_categories_for_policy(self, policy_level: str) -> List[str]:
+    def _get_categories_for_policy(self, policy_level: str) -> list[str]:
         """
         Get pattern categories to check based on policy level.
 
@@ -294,24 +279,16 @@ SEVERITY: [low, medium, high, or critical if blocked]"""
         Returns:
             List of categories to check
         """
-        if policy_level == "defensive":
-            # Most restrictive - check everything
-            return ["credentials", "pii", "exploits", "sensitive"]
-        elif policy_level == "educational":
-            # Check credentials, PII, and critical exploits
-            return ["credentials", "pii", "exploits"]
-        elif policy_level == "advanced":
-            # Check credentials and PII only
-            return ["credentials", "pii"]
-        else:  # unrestricted
-            # Only check for real credentials
-            return ["credentials"]
+        # Progressively fewer categories as the policy loosens; unrestricted
+        # only checks for real credentials.
+        categories_by_policy = {
+            "defensive": ["credentials", "pii", "exploits", "sensitive"],
+            "educational": ["credentials", "pii", "exploits"],
+            "advanced": ["credentials", "pii"],
+        }
+        return categories_by_policy.get(policy_level, ["credentials"])
 
-    def _generate_block_reason(
-        self,
-        matches: List[PatternMatch],
-        policy_level: str
-    ) -> str:
+    def _generate_block_reason(self, matches: list[PatternMatch], policy_level: str) -> str:
         """
         Generate user-friendly block reason.
 
@@ -333,28 +310,21 @@ SEVERITY: [low, medium, high, or critical if blocked]"""
             "credentials": "This action contains what appears to be credentials or API keys.",
             "pii": "This action contains personally identifiable information (PII).",
             "exploits": "This action contains exploit code or dangerous commands.",
-            "sensitive": "This action contains sensitive technical information."
+            "sensitive": "This action contains sensitive technical information.",
         }
 
-        base_message = category_messages.get(
-            most_severe.category,
-            "This action violates the content policy."
-        )
+        base_message = category_messages.get(most_severe.category, "This action violates the content policy.")
 
         policy_context = {
             "defensive": "In defensive mode, only security monitoring and incident response actions are allowed.",
             "educational": "In educational mode, actions must have clear learning objectives.",
             "advanced": "Even in advanced mode, certain content is restricted for safety.",
-            "unrestricted": "This content is blocked even in unrestricted mode."
+            "unrestricted": "This content is blocked even in unrestricted mode.",
         }
 
         return f"{base_message} {policy_context.get(policy_level, '')}"
 
-    def _suggest_alternative(
-        self,
-        matches: List[PatternMatch],
-        original_action: str
-    ) -> Optional[str]:
+    def _suggest_alternative(self, matches: list[PatternMatch], original_action: str) -> str | None:
         """
         Suggest a safer alternative action.
 
@@ -375,7 +345,7 @@ SEVERITY: [low, medium, high, or critical if blocked]"""
             "credentials": "Try describing the action without including actual credentials. Use placeholders like '[API_KEY]' or '[PASSWORD]'.",
             "pii": "Describe the action using example data instead of real personal information.",
             "exploits": "Describe the security concept you're exploring without including executable code.",
-            "sensitive": "Use generic examples rather than specific internal systems or addresses."
+            "sensitive": "Use generic examples rather than specific internal systems or addresses.",
         }
 
         return suggestions.get(primary_category)

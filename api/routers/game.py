@@ -9,10 +9,11 @@
 """
 Game API router for interactive war gaming sessions.
 """
+
 from fastapi import APIRouter, HTTPException
-from typing import Optional
 from pydantic import BaseModel, Field
-from api.models import GameState, GameResponse
+
+from api.models import GameResponse, GameState
 from api.services import GameOrchestrator, ScenarioOrchestrator
 from api.utils import setup_logger
 
@@ -23,6 +24,7 @@ router = APIRouter(prefix="/game", tags=["Game"])
 # Request/Response models
 class StartGameRequest(BaseModel):
     """Request to start a new game."""
+
     scenario_filename: str = Field(..., description="Filename of saved scenario to use")
     scenario_type: str = Field("incident-response", description="Type of scenario")
     player_role: str = Field(..., description="Player role", examples=["soc-analyst"])
@@ -31,12 +33,14 @@ class StartGameRequest(BaseModel):
 
 class PlayerActionRequest(BaseModel):
     """Request to process player action."""
+
     session_id: str = Field(..., description="Game session ID")
     action: str = Field(..., description="Player's action", examples=["Check SIEM logs for suspicious activity"])
 
 
 class EndGameRequest(BaseModel):
     """Request to end a game."""
+
     session_id: str = Field(..., description="Game session ID")
     status: str = Field("completed", description="Final status (completed, failed)")
 
@@ -69,17 +73,17 @@ async def start_game(request: StartGameRequest):
             organization=organization,
             scenario_type=request.scenario_type,
             player_role=request.player_role,
-            difficulty=request.difficulty
+            difficulty=request.difficulty,
         )
 
         return response
 
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         logger.warning(f"Scenario not found: {request.scenario_filename}")
-        raise HTTPException(status_code=404, detail=f"Scenario '{request.scenario_filename}' not found")
+        raise HTTPException(status_code=404, detail=f"Scenario '{request.scenario_filename}' not found") from None
     except Exception as e:
         logger.error(f"Failed to start game: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}") from e
 
 
 @router.post("/action", response_model=GameResponse)
@@ -101,17 +105,14 @@ async def process_action(request: PlayerActionRequest):
     """
     try:
         game_orchestrator = GameOrchestrator()
-        response = await game_orchestrator.process_player_action(
-            session_id=request.session_id,
-            action=request.action
-        )
+        response = await game_orchestrator.process_player_action(session_id=request.session_id, action=request.action)
 
         return response
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to process action: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process action: {str(e)}") from e
 
 
 @router.get("/state/{session_id}", response_model=GameState)
@@ -140,7 +141,7 @@ async def get_game_state(session_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get game state: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get game state: {str(e)}") from e
 
 
 @router.post("/hint")
@@ -164,9 +165,9 @@ async def get_hint(session_id: str):
         return {"hint": hint}
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate hint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate hint: {str(e)}") from e
 
 
 @router.post("/end", response_model=GameState)
@@ -185,21 +186,18 @@ async def end_game(request: EndGameRequest):
     """
     try:
         game_orchestrator = GameOrchestrator()
-        game_state = game_orchestrator.end_game(
-            session_id=request.session_id,
-            status=request.status
-        )
+        game_state = game_orchestrator.end_game(session_id=request.session_id, status=request.status)
 
         return game_state
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to end game: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to end game: {str(e)}") from e
 
 
 @router.get("/sessions")
-async def list_sessions(status: Optional[str] = None):
+async def list_sessions(status: str | None = None):
     """
     List all game sessions.
 
@@ -216,7 +214,7 @@ async def list_sessions(status: Optional[str] = None):
         return {"sessions": sessions}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list sessions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list sessions: {str(e)}") from e
 
 
 @router.delete("/sessions/{session_id}")
@@ -244,18 +242,14 @@ async def delete_session(session_id: str):
 
     except FileNotFoundError:
         logger.warning(f"Session not found for deletion: {session_id}")
-        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
     except Exception as e:
         logger.error(f"Failed to delete session {session_id}: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to delete session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete session: {str(e)}") from e
 
 
 @router.post("/objective")
-async def complete_objective(
-    session_id: str,
-    objective: str,
-    success: bool = True
-):
+async def complete_objective(session_id: str, objective: str, success: bool = True):
     """
     Mark an objective as completed or failed.
 
@@ -272,15 +266,11 @@ async def complete_objective(
     """
     try:
         game_orchestrator = GameOrchestrator()
-        game_state = game_orchestrator.complete_objective(
-            session_id=session_id,
-            objective=objective,
-            success=success
-        )
+        game_state = game_orchestrator.complete_objective(session_id=session_id, objective=objective, success=success)
 
         return game_state
 
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to complete objective: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to complete objective: {str(e)}") from e

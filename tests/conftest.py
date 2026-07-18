@@ -7,18 +7,22 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Root conftest for pytest — shared fixtures and collection config."""
-from datetime import datetime, timezone
-from pathlib import Path
+
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from api.models.exercise_models import (
+    ExerciseState,
+    ExerciseTeam,
+)
 from api.models.schemas import (
     BusinessImpact,
     Department,
     GameState,
     IncidentEvent,
     Inventory,
-    Objective,
     Organization,
     System,
     SystemState,
@@ -26,14 +30,54 @@ from api.models.schemas import (
     ThreatActorState,
     Vulnerability,
 )
-from api.models.exercise_models import (
-    ExerciseEvent,
-    ExerciseState,
-    ExerciseTeam,
-    Inject,
-    InjectTrigger,
-    InjectType,
-)
+
+# ============================================================================
+# Database isolation
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def _fresh_db(tmp_path):
+    """Bind the DB engine to a throwaway SQLite file for each test.
+
+    Guarantees test isolation and keeps the suite from touching the real
+    ``data/app.db``. Services read the engine from ``api.db`` at call time, so
+    rebinding here transparently redirects all storage.
+    """
+    import api.db as db
+
+    db.configure_engine(f"sqlite:///{tmp_path}/test.db")
+    db.init_db()
+    yield
+    db.get_engine().dispose()
+
+
+# ============================================================================
+# Hermeticity guard
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def _no_real_llm(monkeypatch):
+    """Prevent any test from constructing a real LLM provider.
+
+    Services build their provider lazily via ``LLMProviderFactory.create_provider``.
+    Patching it here guarantees the suite never needs an API key or network:
+    tests that exercise LLM calls should still mock the specific service method,
+    but if one is missed it gets this deterministic fake instead of a
+    ``ValueError`` (no key) or a real network call.
+    """
+    fake_provider = MagicMock(name="FakeLLMProvider")
+    fake_provider.complete = AsyncMock(return_value={"content": "{}", "model": "fake"})
+    fake_provider.health_check = AsyncMock(return_value=True)
+    fake_provider.get_model_name = MagicMock(return_value="fake")
+    fake_provider.get_provider_name = MagicMock(return_value="fake")
+
+    monkeypatch.setattr(
+        "api.providers.factory.LLMProviderFactory.create_provider",
+        lambda *args, **kwargs: fake_provider,
+    )
+    return fake_provider
 
 
 # ============================================================================
@@ -140,7 +184,7 @@ def sample_threat_actor_state():
         systems_compromised=[],
         detection_level=30,
         aggression_level=60,
-        last_update=datetime.now(timezone.utc),
+        last_update=datetime.now(UTC),
     )
 
 
@@ -155,7 +199,7 @@ def sample_game_state(sample_organization, sample_inventory, sample_threat_actor
         inventory=sample_inventory,
         incident_timeline=[
             IncidentEvent(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 event_type="detection",
                 description="Suspicious login detected",
                 severity="high",
@@ -169,7 +213,7 @@ def sample_game_state(sample_organization, sample_inventory, sample_threat_actor
                 system_id="sys-web-1",
                 status="online",
                 health=100,
-                last_update=datetime.now(timezone.utc),
+                last_update=datetime.now(UTC),
                 affected_services=[],
             )
         },

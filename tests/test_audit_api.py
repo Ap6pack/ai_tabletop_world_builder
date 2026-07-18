@@ -12,10 +12,11 @@ Test script for audit API endpoints.
 Requires a running API server at localhost:8000. Automatically skipped
 during `pytest` when the server is not reachable.
 """
-import requests
-import json
-import pytest
+
 from datetime import datetime, timedelta
+
+import pytest
+import requests
 
 API_BASE = "http://127.0.0.1:8000"
 
@@ -42,7 +43,8 @@ def test_audit_endpoints():
     # Test 1: Create some audit logs first (via test_audit_log.py)
     print("Test 1: Creating test audit logs...")
     import subprocess
-    result = subprocess.run(["python", "test_audit_log.py"], capture_output=True, text=True)
+
+    result = subprocess.run(["python", "test_audit_log.py"], capture_output=True, text=True)  # noqa: S607
     if result.returncode == 0:
         print("✅ PASS - Test logs created successfully")
         passed += 1
@@ -57,7 +59,7 @@ def test_audit_endpoints():
         response = requests.get(f"{API_BASE}/audit/stats", timeout=5)
         if response.status_code == 200:
             stats = response.json()
-            print(f"✅ PASS - Audit stats retrieved")
+            print("✅ PASS - Audit stats retrieved")
             print(f"   Total log files: {stats['total_log_files']}")
             print(f"   Disk usage: {stats['disk_usage_mb']} MB")
             print(f"   Date range: {stats.get('oldest_log_date', 'N/A')} to {stats.get('newest_log_date', 'N/A')}")
@@ -93,11 +95,7 @@ def test_audit_endpoints():
     # Test 4: Get audit logs (filtered by event_type)
     print("Test 4: GET /audit/logs (filter by event_type=violation)")
     try:
-        response = requests.get(
-            f"{API_BASE}/audit/logs",
-            params={"event_type": "violation", "limit": 10},
-            timeout=5
-        )
+        response = requests.get(f"{API_BASE}/audit/logs", params={"event_type": "violation", "limit": 10}, timeout=5)
         if response.status_code == 200:
             logs = response.json()
             print(f"✅ PASS - Retrieved {len(logs)} violation logs")
@@ -113,11 +111,7 @@ def test_audit_endpoints():
     # Test 5: Get audit logs (filtered by severity)
     print("Test 5: GET /audit/logs (filter by severity=critical)")
     try:
-        response = requests.get(
-            f"{API_BASE}/audit/logs",
-            params={"severity": "critical", "limit": 10},
-            timeout=5
-        )
+        response = requests.get(f"{API_BASE}/audit/logs", params={"severity": "critical", "limit": 10}, timeout=5)
         if response.status_code == 200:
             logs = response.json()
             print(f"✅ PASS - Retrieved {len(logs)} critical logs")
@@ -138,15 +132,12 @@ def test_audit_endpoints():
 
         response = requests.get(
             f"{API_BASE}/audit/compliance-report",
-            params={
-                "start_date": yesterday.date().isoformat(),
-                "end_date": today.date().isoformat()
-            },
-            timeout=5
+            params={"start_date": yesterday.date().isoformat(), "end_date": today.date().isoformat()},
+            timeout=5,
         )
         if response.status_code == 200:
             report = response.json()
-            print(f"✅ PASS - Compliance report generated")
+            print("✅ PASS - Compliance report generated")
             print(f"   Total checks: {report.get('total_checks', 0)}")
             print(f"   Total violations: {report.get('total_violations', 0)}")
             print(f"   Violation rate: {report.get('violation_rate', 0)}%")
@@ -165,14 +156,11 @@ def test_audit_endpoints():
     try:
         response = requests.get(
             f"{API_BASE}/audit/compliance-report",
-            params={
-                "start_date": "invalid-date",
-                "end_date": "2025-11-04"
-            },
-            timeout=5
+            params={"start_date": "invalid-date", "end_date": "2025-11-04"},
+            timeout=5,
         )
         if response.status_code == 400:
-            print(f"✅ PASS - Correctly rejected invalid date (400)")
+            print("✅ PASS - Correctly rejected invalid date (400)")
             passed += 1
         else:
             print(f"❌ FAIL - Expected 400, got {response.status_code}")
@@ -191,6 +179,7 @@ def test_audit_endpoints():
 
 if __name__ == "__main__":
     import sys
+
     try:
         test_audit_endpoints()
         sys.exit(0)

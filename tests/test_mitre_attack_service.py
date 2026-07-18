@@ -8,20 +8,26 @@
 # For inquiries, contact: contact@veritasandaequitas.com
 # Copyright (c) 2026 Veritas Aequitas Holdings LLC. All rights reserved.
 """Tests for the MITRE ATT&CK mapping and analysis service."""
+
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 
-from api.services.mitre_attack_service import MITREAttackService
-from api.models.attack_models import ATTCKTechnique, ATTCKCoverageReport
+from api.models.attack_models import ATTCKCoverageReport, ATTCKTechnique
 from api.models.schemas import (
-    GameState, Organization, Department, ThreatActor, ThreatActorState,
-    Inventory, BusinessImpact,
+    Department,
+    GameState,
+    Inventory,
+    Organization,
+    ThreatActor,
+    ThreatActorState,
 )
-
+from api.services.mitre_attack_service import MITREAttackService
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="module")
 def service():
@@ -32,23 +38,33 @@ def service():
 def make_game_state(**overrides):
     """Factory for minimal GameState instances."""
     org = Organization(
-        id="org-1", name="Test Corp", description="Test", industry="Technology",
+        id="org-1",
+        name="Test Corp",
+        description="Test",
+        industry="Technology",
         size="medium",
         departments=[
             Department(
-                id="d1", name="IT", description="IT",
-                business_function="Tech", systems=[],
+                id="d1",
+                name="IT",
+                description="IT",
+                business_function="Tech",
+                systems=[],
                 data_classification="internal",
                 compliance_requirements=[],
             )
         ],
-        threat_actors=[], security_posture="developing",
+        threat_actors=[],
+        security_posture="developing",
         compliance_frameworks=[],
     )
     defaults = dict(
-        session_id="test-session", organization=org,
-        current_scenario="test", player_role="mixed",
-        inventory=Inventory(), status="in-progress",
+        session_id="test-session",
+        organization=org,
+        current_scenario="test",
+        player_role="mixed",
+        inventory=Inventory(),
+        status="in-progress",
     )
     defaults.update(overrides)
     return GameState(**defaults)
@@ -57,6 +73,7 @@ def make_game_state(**overrides):
 # ---------------------------------------------------------------------------
 # Data-loading tests
 # ---------------------------------------------------------------------------
+
 
 def test_service_loads_techniques(service):
     """Curated dataset must contain > 80 enterprise techniques."""
@@ -71,6 +88,7 @@ def test_service_loads_tactics(service):
 # ---------------------------------------------------------------------------
 # Single-technique lookup tests
 # ---------------------------------------------------------------------------
+
 
 def test_get_technique_by_id(service):
     """T1566 (Phishing) must be retrievable by exact ID."""
@@ -89,6 +107,7 @@ def test_get_technique_not_found(service):
 # Tactic-based retrieval
 # ---------------------------------------------------------------------------
 
+
 def test_get_techniques_by_tactic(service):
     """initial-access tactic should return a non-empty list of techniques."""
     techniques = service.get_techniques_by_tactic("initial-access")
@@ -99,6 +118,7 @@ def test_get_techniques_by_tactic(service):
 # ---------------------------------------------------------------------------
 # Free-text TTP mapping
 # ---------------------------------------------------------------------------
+
 
 def test_map_ttp_exact_id(service):
     """Exact technique ID should return a single match."""
@@ -134,6 +154,7 @@ def test_resolve_ttps(service):
 # Session coverage analysis
 # ---------------------------------------------------------------------------
 
+
 def test_analyze_empty_session(service):
     """Session with no threat states should report 0% coverage."""
     gs = make_game_state(threat_states={})
@@ -146,11 +167,12 @@ def test_analyze_empty_session(service):
 def test_analyze_session_with_techniques(service):
     """Session with active + detected techniques should compute coverage."""
     ts = ThreatActorState(
-        threat_actor_id="ta-1", status="active",
+        threat_actor_id="ta-1",
+        status="active",
         active_techniques=["T1566", "T1595", "T1059"],
         detected_techniques=["T1566"],
         mitigated_techniques=["T1566"],
-        last_update=datetime.now(timezone.utc),
+        last_update=datetime.now(UTC),
     )
     gs = make_game_state(threat_states={"ta-1": ts})
     report = service.analyze_session_coverage(gs)
@@ -165,6 +187,7 @@ def test_analyze_session_with_techniques(service):
 # ---------------------------------------------------------------------------
 # Detection suggestions
 # ---------------------------------------------------------------------------
+
 
 def test_suggest_detection(service):
     """Valid technique ID should return a non-empty detection string."""
@@ -184,6 +207,7 @@ def test_suggest_detection_invalid(service):
 # Keyword aliases
 # ---------------------------------------------------------------------------
 
+
 def test_keyword_aliases(service):
     """Alias 'ransomware' should map to at least one ATT&CK technique."""
     results = service.map_ttp_to_attack("ransomware")
@@ -194,11 +218,15 @@ def test_keyword_aliases(service):
 # Threat actor profiling
 # ---------------------------------------------------------------------------
 
+
 def test_threat_actor_profile(service):
     """Threat actor with explicit attack_techniques should resolve correctly."""
     actor = ThreatActor(
-        id="ta-1", name="APT-Test", description="Test actor",
-        motivation="espionage", sophistication="nation-state",
+        id="ta-1",
+        name="APT-Test",
+        description="Test actor",
+        motivation="espionage",
+        sophistication="nation-state",
         ttps=["phishing", "lateral-movement"],
         attack_techniques=["T1566", "T1595"],
     )

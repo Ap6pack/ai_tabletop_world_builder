@@ -11,10 +11,12 @@ Test suite for Resource Manager Service.
 
 Tests resource management, action costs, and cooldowns.
 """
+
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+
+from api.models import ActionCost, ResourcePool
 from api.services.resource_manager import ResourceManager
-from api.models import ResourcePool, ActionCost
 
 
 def test_initialize_resource_pool():
@@ -30,7 +32,7 @@ def test_initialize_resource_pool():
     assert pool.budget_remaining == 100000.0
     assert pool.staff_available == 5
 
-    print(f"✅ Resource pool initialized (intermediate)")
+    print("✅ Resource pool initialized (intermediate)")
     print(f"   Action points: {pool.action_points}/{pool.max_action_points}")
     print(f"   Budget: ${pool.budget_remaining:,.0f}")
     print(f"   Staff: {pool.staff_available}")
@@ -45,7 +47,9 @@ def test_difficulty_scaling():
     difficulties = ["beginner", "intermediate", "advanced", "expert"]
     for diff in difficulties:
         pool = manager.initialize_resource_pool(diff)
-        print(f"   {diff.capitalize():12} - AP: {pool.action_points}, Budget: ${pool.budget_remaining:,.0f}, Staff: {pool.staff_available}")
+        print(
+            f"   {diff.capitalize():12} - AP: {pool.action_points}, Budget: ${pool.budget_remaining:,.0f}, Staff: {pool.staff_available}"
+        )
 
     beginner_pool = manager.initialize_resource_pool("beginner")
     expert_pool = manager.initialize_resource_pool("expert")
@@ -53,7 +57,7 @@ def test_difficulty_scaling():
     assert beginner_pool.action_points > expert_pool.action_points
     assert beginner_pool.budget_remaining > expert_pool.budget_remaining
 
-    print(f"✅ Difficulty scaling works correctly")
+    print("✅ Difficulty scaling works correctly")
 
 
 def test_get_action_cost():
@@ -68,7 +72,9 @@ def test_get_action_cost():
 
     # Containment action
     cost2 = manager.get_action_cost("isolate the compromised server")
-    print(f"   'isolate the compromised server' - {cost2.points} pts, ${cost2.budget:,.0f}, {cost2.requires_staff} staff")
+    print(
+        f"   'isolate the compromised server' - {cost2.points} pts, ${cost2.budget:,.0f}, {cost2.requires_staff} staff"
+    )
     assert cost2.points == 3
 
     # Mitigation action
@@ -77,7 +83,7 @@ def test_get_action_cost():
     assert cost3.points == 4
     assert cost3.budget == 5000.0
 
-    print(f"✅ Action cost detection works correctly")
+    print("✅ Action cost detection works correctly")
 
 
 def test_can_afford_action():
@@ -113,7 +119,7 @@ def test_can_afford_action():
     assert can_afford is False
     assert "staff" in reason.lower()
 
-    print(f"✅ Affordability checking works correctly")
+    print("✅ Affordability checking works correctly")
 
 
 def test_spend_resources():
@@ -133,7 +139,7 @@ def test_spend_resources():
     assert pool.action_points == 7  # 10 - 3
     assert pool.budget_remaining == 95000.0  # 100000 - 5000
 
-    print(f"✅ Resource spending works correctly")
+    print("✅ Resource spending works correctly")
 
 
 def test_cooldown_management():
@@ -156,14 +162,14 @@ def test_cooldown_management():
     assert "cooldown" in reason.lower()
 
     # Manually set cooldown to expired
-    pool.tools_on_cooldown["scanner"] = datetime.now(timezone.utc) - timedelta(seconds=1)
+    pool.tools_on_cooldown["scanner"] = datetime.now(UTC) - timedelta(seconds=1)
 
     # Clear expired cooldowns
     pool = manager.clear_expired_cooldowns(pool)
     print(f"   After clearing expired: {list(pool.tools_on_cooldown.keys())}")
     assert "scanner" not in pool.tools_on_cooldown
 
-    print(f"✅ Cooldown management works correctly")
+    print("✅ Cooldown management works correctly")
 
 
 def test_regenerate_action_points():
@@ -178,7 +184,7 @@ def test_regenerate_action_points():
     print(f"   Initial points: {initial_points}")
 
     # Simulate time passing (manually set last regeneration to 10 minutes ago)
-    pool.last_regeneration = datetime.now(timezone.utc) - timedelta(minutes=10)
+    pool.last_regeneration = datetime.now(UTC) - timedelta(minutes=10)
 
     # Regenerate (at 0.5 pts/min, 10 minutes = 5 points)
     pool, points_added = manager.regenerate_action_points(pool, 10)
@@ -187,7 +193,7 @@ def test_regenerate_action_points():
     assert points_added == 5
     assert pool.action_points == 10  # Capped at max
 
-    print(f"✅ Action point regeneration works correctly")
+    print("✅ Action point regeneration works correctly")
 
 
 def test_get_resource_status():
@@ -202,14 +208,18 @@ def test_get_resource_status():
 
     status = manager.get_resource_status(pool)
 
-    print(f"   Action Points: {status['action_points']['current']}/{status['action_points']['max']} ({status['action_points']['percentage']:.0f}%) - {status['action_points']['status']}")
-    print(f"   Budget: ${status['budget']['remaining']:,.0f}/${status['budget']['total']:,.0f} ({status['budget']['percentage']:.0f}%) - {status['budget']['status']}")
+    print(
+        f"   Action Points: {status['action_points']['current']}/{status['action_points']['max']} ({status['action_points']['percentage']:.0f}%) - {status['action_points']['status']}"
+    )
+    print(
+        f"   Budget: ${status['budget']['remaining']:,.0f}/${status['budget']['total']:,.0f} ({status['budget']['percentage']:.0f}%) - {status['budget']['status']}"
+    )
     print(f"   Staff: {status['staff']['available']} - {status['staff']['status']}")
 
-    assert status['action_points']['status'] == "low"  # 30% is low
-    assert status['budget']['status'] == "critical"  # 20% is critical
+    assert status["action_points"]["status"] == "low"  # 30% is low
+    assert status["budget"]["status"] == "critical"  # 20% is critical
 
-    print(f"✅ Resource status reporting works correctly")
+    print("✅ Resource status reporting works correctly")
 
 
 def test_adjust_budget():
@@ -236,7 +246,7 @@ def test_adjust_budget():
     print(f"   After -$100K (capped): ${pool.budget_remaining:,.0f}")
     assert pool.budget_remaining == 0
 
-    print(f"✅ Budget adjustments work correctly")
+    print("✅ Budget adjustments work correctly")
 
 
 def test_adjust_staff():
@@ -258,7 +268,7 @@ def test_adjust_staff():
     print(f"   After -3: {pool.staff_available}")
     assert pool.staff_available == 4
 
-    print(f"✅ Staff adjustments work correctly")
+    print("✅ Staff adjustments work correctly")
 
 
 def test_get_affordable_actions():
@@ -275,7 +285,7 @@ def test_get_affordable_actions():
         budget_total=100000,
         staff_available=2,
         tools_on_cooldown={},
-        last_regeneration=datetime.now(timezone.utc),
+        last_regeneration=datetime.now(UTC),
     )
 
     affordable = manager.get_affordable_actions(pool)
@@ -285,11 +295,11 @@ def test_get_affordable_actions():
         print(f"      - {action['action']}: {action['cost']['points']} pts, ${action['cost']['budget']:,.0f}")
 
     # Should only afford cheap actions
-    action_names = [a['action'] for a in affordable]
+    action_names = [a["action"] for a in affordable]
     assert "investigate" in action_names
     assert "patch" not in action_names  # Too expensive
 
-    print(f"✅ Affordable actions list works correctly")
+    print("✅ Affordable actions list works correctly")
 
 
 def test_estimate_action_duration():
@@ -309,7 +319,7 @@ def test_estimate_action_duration():
 
     assert duration2 > duration1  # Complex actions take longer
 
-    print(f"✅ Action duration estimation works correctly")
+    print("✅ Action duration estimation works correctly")
 
 
 def run_all_tests():
@@ -346,6 +356,7 @@ def run_all_tests():
         except Exception as e:
             print(f"❌ Test error: {e}")
             import traceback
+
             traceback.print_exc()
             failed += 1
 

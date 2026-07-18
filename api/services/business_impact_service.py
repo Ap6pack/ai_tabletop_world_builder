@@ -15,15 +15,15 @@ This service calculates:
 - Compliance penalties (framework-specific fines)
 - Reputation damage (customer churn + brand recovery costs)
 """
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+
+from datetime import UTC, datetime
+
 from api.models import (
-    GameState,
     BusinessImpact,
+    GameState,
     ImpactEvent,
     Organization,
     System,
-    SystemState,
 )
 from api.utils.logger import setup_logger
 
@@ -37,40 +37,40 @@ class BusinessImpactService:
 
     # Industry-specific hourly downtime costs (base rates in USD)
     INDUSTRY_DOWNTIME_RATES = {
-        "financial": 500000.0,      # $500K/hour for financial services
-        "healthcare": 350000.0,     # $350K/hour for healthcare
-        "technology": 300000.0,     # $300K/hour for tech companies
-        "retail": 200000.0,         # $200K/hour for retail
+        "financial": 500000.0,  # $500K/hour for financial services
+        "healthcare": 350000.0,  # $350K/hour for healthcare
+        "technology": 300000.0,  # $300K/hour for tech companies
+        "retail": 200000.0,  # $200K/hour for retail
         "manufacturing": 250000.0,  # $250K/hour for manufacturing
-        "energy": 400000.0,         # $400K/hour for energy/utilities
-        "default": 150000.0,        # $150K/hour default
+        "energy": 400000.0,  # $400K/hour for energy/utilities
+        "default": 150000.0,  # $150K/hour default
     }
 
     # Industry multipliers for downtime severity
     INDUSTRY_MULTIPLIERS = {
-        "financial": 3.0,      # Finance has highest impact
-        "healthcare": 2.5,     # Healthcare critical services
-        "technology": 2.0,     # Tech company reputation
-        "retail": 1.8,         # E-commerce downtime
+        "financial": 3.0,  # Finance has highest impact
+        "healthcare": 2.5,  # Healthcare critical services
+        "technology": 2.0,  # Tech company reputation
+        "retail": 1.8,  # E-commerce downtime
         "manufacturing": 1.5,  # Production line impact
-        "energy": 2.2,         # Utility service disruption
+        "energy": 2.2,  # Utility service disruption
         "default": 1.0,
     }
 
     # System criticality multipliers
     CRITICALITY_MULTIPLIERS = {
-        "critical": 5.0,   # Critical systems 5x impact
-        "high": 3.0,       # High priority 3x impact
-        "medium": 1.5,     # Medium priority 1.5x impact
-        "low": 1.0,        # Low priority 1x impact
+        "critical": 5.0,  # Critical systems 5x impact
+        "high": 3.0,  # High priority 3x impact
+        "medium": 1.5,  # Medium priority 1.5x impact
+        "low": 1.0,  # Low priority 1x impact
     }
 
     # Data classification value per record (USD)
     DATA_VALUE_PER_RECORD = {
-        "restricted": 500.0,      # Highly sensitive (PII, financial, health)
-        "confidential": 250.0,    # Business confidential
-        "internal": 50.0,         # Internal use only
-        "public": 0.0,            # Public data
+        "restricted": 500.0,  # Highly sensitive (PII, financial, health)
+        "confidential": 250.0,  # Business confidential
+        "internal": 50.0,  # Internal use only
+        "public": 0.0,  # Public data
     }
 
     # Compliance framework penalties (USD)
@@ -127,7 +127,7 @@ class BusinessImpactService:
             reputation_damage=0.0,
             total_cost=0.0,
             impact_description="Incident in progress. No significant business impact yet.",
-            last_updated=datetime.now(timezone.utc),
+            last_updated=datetime.now(UTC),
         )
 
     def calculate_downtime_cost(
@@ -135,7 +135,7 @@ class BusinessImpactService:
         organization: Organization,
         system: System,
         hours: float,
-    ) -> Tuple[float, str]:
+    ) -> tuple[float, str]:
         """
         Calculate downtime cost for a system being offline.
 
@@ -149,26 +149,19 @@ class BusinessImpactService:
         Returns:
             Tuple of (cost, description)
         """
-        logger.debug(f"Calculating downtime cost: system={system.name}, hours={hours:.2f}, industry={organization.industry}")
+        logger.debug(
+            f"Calculating downtime cost: system={system.name}, hours={hours:.2f}, industry={organization.industry}"
+        )
 
         # Get industry-specific rate
         industry = organization.industry.lower()
-        base_rate = self.INDUSTRY_DOWNTIME_RATES.get(
-            industry,
-            self.INDUSTRY_DOWNTIME_RATES["default"]
-        )
+        base_rate = self.INDUSTRY_DOWNTIME_RATES.get(industry, self.INDUSTRY_DOWNTIME_RATES["default"])
 
         # Get industry multiplier
-        industry_multiplier = self.INDUSTRY_MULTIPLIERS.get(
-            industry,
-            self.INDUSTRY_MULTIPLIERS["default"]
-        )
+        industry_multiplier = self.INDUSTRY_MULTIPLIERS.get(industry, self.INDUSTRY_MULTIPLIERS["default"])
 
         # Get criticality multiplier
-        criticality_multiplier = self.CRITICALITY_MULTIPLIERS.get(
-            system.criticality,
-            1.0
-        )
+        criticality_multiplier = self.CRITICALITY_MULTIPLIERS.get(system.criticality, 1.0)
 
         # Calculate cost
         cost = base_rate * hours * industry_multiplier * criticality_multiplier
@@ -188,7 +181,7 @@ class BusinessImpactService:
         organization: Organization,
         department_name: str,
         records_compromised: int,
-    ) -> Tuple[float, str]:
+    ) -> tuple[float, str]:
         """
         Calculate data loss/breach cost.
 
@@ -209,17 +202,11 @@ class BusinessImpactService:
                 department = dept
                 break
 
-        if not department:
-            # Default to confidential if department not found
-            classification = "confidential"
-        else:
-            classification = department.data_classification
+        # Default to confidential if department not found
+        classification = "confidential" if not department else department.data_classification
 
         # Get value per record
-        value_per_record = self.DATA_VALUE_PER_RECORD.get(
-            classification,
-            self.DATA_VALUE_PER_RECORD["confidential"]
-        )
+        value_per_record = self.DATA_VALUE_PER_RECORD.get(classification, self.DATA_VALUE_PER_RECORD["confidential"])
 
         # Calculate cost
         cost = records_compromised * value_per_record
@@ -235,8 +222,8 @@ class BusinessImpactService:
         self,
         organization: Organization,
         records_compromised: int,
-        frameworks: Optional[List[str]] = None,
-    ) -> Tuple[Dict[str, float], str]:
+        frameworks: list[str] | None = None,
+    ) -> tuple[dict[str, float], str]:
         """
         Calculate compliance penalties for data breaches.
 
@@ -260,9 +247,7 @@ class BusinessImpactService:
                 penalty_info = self.COMPLIANCE_PENALTIES[framework]
 
                 # Calculate penalty: base + (per_record × records)
-                penalty = penalty_info["base"] + (
-                    penalty_info["per_record"] * records_compromised
-                )
+                penalty = penalty_info["base"] + (penalty_info["per_record"] * records_compromised)
 
                 # Cap at maximum
                 penalty = min(penalty, penalty_info["max"])
@@ -283,7 +268,7 @@ class BusinessImpactService:
         organization: Organization,
         records_compromised: int,
         severity: str,
-    ) -> Tuple[float, str]:
+    ) -> tuple[float, str]:
         """
         Calculate reputation/brand damage costs.
 
@@ -310,9 +295,7 @@ class BusinessImpactService:
         churn_cost = records_compromised * self.CUSTOMER_CHURN_COST_PER_RECORD
 
         # Calculate total reputation damage
-        cost = (
-            self.REPUTATION_BASE_COST + churn_cost
-        ) * severity_multiplier * self.BRAND_RECOVERY_MULTIPLIER
+        cost = (self.REPUTATION_BASE_COST + churn_cost) * severity_multiplier * self.BRAND_RECOVERY_MULTIPLIER
 
         description = (
             f"Reputation Damage ({severity}): {records_compromised:,} customers affected. "
@@ -327,10 +310,10 @@ class BusinessImpactService:
         game_state: GameState,
         organization: Organization,
         event_type: str,
-        system_id: Optional[str] = None,
-        hours: Optional[float] = None,
-        records: Optional[int] = None,
-        department: Optional[str] = None,
+        system_id: str | None = None,
+        hours: float | None = None,
+        records: int | None = None,
+        department: str | None = None,
         severity: str = "medium",
     ) -> GameState:
         """
@@ -363,37 +346,29 @@ class BusinessImpactService:
             # Find the system
             system = self._find_system(organization, system_id)
             if system:
-                cost, description = self.calculate_downtime_cost(
-                    organization, system, hours
-                )
+                cost, description = self.calculate_downtime_cost(organization, system, hours)
                 game_state.business_impact.downtime_cost += cost
                 game_state.business_impact.downtime_hours += hours
 
         elif event_type == "data_loss" and records and department:
-            cost, description = self.calculate_data_loss_cost(
-                organization, department, records
-            )
+            cost, description = self.calculate_data_loss_cost(organization, department, records)
             game_state.business_impact.data_loss_cost += cost
             game_state.business_impact.records_compromised += records
 
         elif event_type == "compliance" and records:
-            penalties, description = self.calculate_compliance_penalties(
-                organization, records
-            )
+            penalties, description = self.calculate_compliance_penalties(organization, records)
             for framework, penalty in penalties.items():
                 current = game_state.business_impact.compliance_penalties.get(framework, 0.0)
                 game_state.business_impact.compliance_penalties[framework] = current + penalty
             cost = sum(penalties.values())
 
         elif event_type == "reputation" and records:
-            cost, description = self.calculate_reputation_damage(
-                organization, records, severity
-            )
+            cost, description = self.calculate_reputation_damage(organization, records, severity)
             game_state.business_impact.reputation_damage += cost
 
         # Create impact event
         impact_event = ImpactEvent(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             event_type=event_type,
             system_id=system_id,
             cost=cost,
@@ -404,21 +379,19 @@ class BusinessImpactService:
 
         # Update total cost
         game_state.business_impact.total_cost = (
-            game_state.business_impact.downtime_cost +
-            game_state.business_impact.data_loss_cost +
-            sum(game_state.business_impact.compliance_penalties.values()) +
-            game_state.business_impact.reputation_damage
+            game_state.business_impact.downtime_cost
+            + game_state.business_impact.data_loss_cost
+            + sum(game_state.business_impact.compliance_penalties.values())
+            + game_state.business_impact.reputation_damage
         )
 
         # Update description
-        game_state.business_impact.impact_description = self.get_impact_summary(
-            game_state.business_impact
-        )
-        game_state.business_impact.last_updated = datetime.now(timezone.utc)
+        game_state.business_impact.impact_description = self.get_impact_summary(game_state.business_impact)
+        game_state.business_impact.last_updated = datetime.now(UTC)
 
         return game_state
 
-    def generate_impact_report(self, business_impact: BusinessImpact) -> Dict:
+    def generate_impact_report(self, business_impact: BusinessImpact) -> dict:
         """
         Generate a structured impact report from the current business impact state.
 
@@ -459,15 +432,11 @@ class BusinessImpactService:
         parts = []
 
         if business_impact.downtime_cost > 0:
-            parts.append(
-                f"Downtime: {business_impact.downtime_hours:.1f} hours, "
-                f"${business_impact.downtime_cost:,.0f}"
-            )
+            parts.append(f"Downtime: {business_impact.downtime_hours:.1f} hours, ${business_impact.downtime_cost:,.0f}")
 
         if business_impact.data_loss_cost > 0:
             parts.append(
-                f"Data Loss: {business_impact.records_compromised:,} records, "
-                f"${business_impact.data_loss_cost:,.0f}"
+                f"Data Loss: {business_impact.records_compromised:,} records, ${business_impact.data_loss_cost:,.0f}"
             )
 
         if business_impact.compliance_penalties:
@@ -481,7 +450,7 @@ class BusinessImpactService:
         summary = ". ".join(parts) + f". Total: ${business_impact.total_cost:,.0f}"
         return summary
 
-    def _find_system(self, organization: Organization, system_id: str) -> Optional[System]:
+    def _find_system(self, organization: Organization, system_id: str) -> System | None:
         """
         Find a system by ID in the organization.
 
@@ -528,7 +497,7 @@ class BusinessImpactService:
 
         # Calculate hours based on time elapsed
         # Assuming each turn is approximately 5 minutes
-        hours_elapsed = game_state.time_elapsed / 60.0
+        game_state.time_elapsed / 60.0
 
         # Calculate downtime (assuming system was down for a portion of time)
         # This is a simplified model - in reality you'd track when it went down

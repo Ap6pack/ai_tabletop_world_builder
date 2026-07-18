@@ -9,18 +9,19 @@
 """
 Scenario orchestrator service that coordinates all generators to create complete scenarios.
 """
-from typing import Optional, List
-from api.models import Organization, GenerateScenarioRequest
-from api.services.organization_generator import OrganizationGenerator
-from api.services.department_generator import DepartmentGenerator
-from api.services.system_generator import SystemGenerator
-from api.services.vulnerability_generator import VulnerabilityGenerator
-from api.services.threat_actor_generator import ThreatActorGenerator
-from api.providers import LLMProviderFactory
-from api.utils import setup_logger
+
 import json
 import os
 from datetime import datetime
+
+from api.models import Organization
+from api.providers import LLMProviderFactory
+from api.services.department_generator import DepartmentGenerator
+from api.services.organization_generator import OrganizationGenerator
+from api.services.system_generator import SystemGenerator
+from api.services.threat_actor_generator import ThreatActorGenerator
+from api.services.vulnerability_generator import VulnerabilityGenerator
+from api.utils import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -34,23 +35,39 @@ class ScenarioOrchestrator:
     """
 
     def __init__(self, llm_provider=None):
-        """Initialize the scenario orchestrator with all generators."""
-        self.llm_provider = llm_provider or LLMProviderFactory.create_provider()
+        """Initialize the scenario orchestrator with all generators.
 
-        # Initialize all generators with shared LLM provider
-        self.org_generator = OrganizationGenerator(self.llm_provider)
-        self.dept_generator = DepartmentGenerator(self.llm_provider)
-        self.system_generator = SystemGenerator(self.llm_provider)
-        self.vuln_generator = VulnerabilityGenerator(self.llm_provider)
-        self.threat_generator = ThreatActorGenerator(self.llm_provider)
+        The LLM provider is created lazily by each generator on first use, so
+        constructing the orchestrator does not require an API key.
+        """
+        self._llm_provider = llm_provider
+
+        # Share the (possibly None) provider with all generators; each will
+        # lazily create a default provider on first use if none was supplied.
+        self.org_generator = OrganizationGenerator(llm_provider)
+        self.dept_generator = DepartmentGenerator(llm_provider)
+        self.system_generator = SystemGenerator(llm_provider)
+        self.vuln_generator = VulnerabilityGenerator(llm_provider)
+        self.threat_generator = ThreatActorGenerator(llm_provider)
+
+    @property
+    def llm_provider(self):
+        """Lazily instantiate the LLM provider so construction needs no API key."""
+        if self._llm_provider is None:
+            self._llm_provider = LLMProviderFactory.create_provider()
+        return self._llm_provider
+
+    @llm_provider.setter
+    def llm_provider(self, value):
+        self._llm_provider = value
 
     async def generate_complete_scenario(
         self,
         industry: str,
         size: str = "medium",
         complexity: str = "moderate",
-        focus_areas: Optional[List[str]] = None,
-        num_departments: int = 3
+        focus_areas: list[str] | None = None,
+        num_departments: int = 3,
     ) -> Organization:
         """
         Generate a complete training scenario with full hierarchy.
@@ -76,19 +93,13 @@ class ScenarioOrchestrator:
 
         # Step 1: Generate organization
         organization = await self.org_generator.generate_organization(
-            industry=industry,
-            size=size,
-            complexity=complexity,
-            focus_areas=focus_areas
+            industry=industry, size=size, complexity=complexity, focus_areas=focus_areas
         )
 
         # Step 2: Generate departments
         logger.info(f"Generating {num_departments} departments for {organization.name}")
         departments = await self.dept_generator.generate_departments(
-            organization_name=organization.name,
-            industry=industry,
-            size=size,
-            num_departments=num_departments
+            organization_name=organization.name, industry=industry, size=size, num_departments=num_departments
         )
 
         # Step 3: Generate systems for each department
@@ -100,7 +111,7 @@ class ScenarioOrchestrator:
                 department_name=dept.name,
                 department_function=dept.business_function,
                 industry=industry,
-                num_systems=num_systems
+                num_systems=num_systems,
             )
 
             # Step 4: Generate vulnerabilities for each system
@@ -112,7 +123,7 @@ class ScenarioOrchestrator:
                     os=system.os,
                     services=system.services,
                     complexity=complexity,
-                    focus_areas=focus_areas
+                    focus_areas=focus_areas,
                 )
 
                 system.vulnerabilities = vulnerabilities
@@ -128,33 +139,27 @@ class ScenarioOrchestrator:
             organization_name=organization.name,
             industry=industry,
             focus_areas=focus_areas,
-            num_actors=self._determine_threat_actor_count(complexity)
+            num_actors=self._determine_threat_actor_count(complexity),
         )
 
         organization.threat_actors = threat_actors
 
-        logger.info(f"Scenario generation complete: {organization.name} ({len(departments)} departments, {num_threat_actors} threat actors)")
+        logger.info(
+            f"Scenario generation complete: {organization.name} ({len(departments)} departments, {num_threat_actors} threat actors)"
+        )
         return organization
 
     def _determine_systems_count(self, complexity: str) -> int:
         """Determine number of systems per department based on complexity."""
-        mapping = {
-            "basic": 2,
-            "moderate": 3,
-            "complex": 4
-        }
+        mapping = {"basic": 2, "moderate": 3, "complex": 4}
         return mapping.get(complexity, 3)
 
     def _determine_threat_actor_count(self, complexity: str) -> int:
         """Determine number of threat actors based on complexity."""
-        mapping = {
-            "basic": 1,
-            "moderate": 2,
-            "complex": 3
-        }
+        mapping = {"basic": 1, "moderate": 2, "complex": 3}
         return mapping.get(complexity, 2)
 
-    async def save_scenario(self, organization: Organization, filename: Optional[str] = None) -> str:
+    async def save_scenario(self, organization: Organization, filename: str | None = None) -> str:
         """
         Save generated scenario to JSON file.
 
@@ -177,7 +182,7 @@ class ScenarioOrchestrator:
         filepath = os.path.join(scenarios_dir, filename)
 
         # Convert to dict and save
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(organization.model_dump(), f, indent=2, default=str)
 
         return filepath
@@ -200,12 +205,12 @@ class ScenarioOrchestrator:
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"Scenario file not found: {filepath}")
 
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = json.load(f)
 
         return Organization(**data)
 
-    def list_scenarios(self) -> List[dict]:
+    def list_scenarios(self) -> list[dict]:
         """
         List all saved scenarios.
 
@@ -219,23 +224,25 @@ class ScenarioOrchestrator:
 
         scenarios = []
         for filename in os.listdir(scenarios_dir):
-            if filename.endswith('.json'):
+            if filename.endswith(".json"):
                 filepath = os.path.join(scenarios_dir, filename)
                 stat = os.stat(filepath)
 
                 # Try to load and get basic info
                 try:
-                    with open(filepath, 'r') as f:
+                    with open(filepath) as f:
                         data = json.load(f)
 
-                    scenarios.append({
-                        "filename": filename,
-                        "name": data.get("name", "Unknown"),
-                        "industry": data.get("industry", "Unknown"),
-                        "size": data.get("size", "Unknown"),
-                        "created_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
-                        "file_size": stat.st_size
-                    })
+                    scenarios.append(
+                        {
+                            "filename": filename,
+                            "name": data.get("name", "Unknown"),
+                            "industry": data.get("industry", "Unknown"),
+                            "size": data.get("size", "Unknown"),
+                            "created_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
+                            "file_size": stat.st_size,
+                        }
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to read scenario file {filename}: {str(e)}")
                     continue
@@ -243,11 +250,11 @@ class ScenarioOrchestrator:
         return sorted(scenarios, key=lambda x: x["created_at"], reverse=True)
 
     @staticmethod
-    def get_supported_industries() -> List[str]:
+    def get_supported_industries() -> list[str]:
         """Get list of supported industries."""
         return OrganizationGenerator.get_supported_industries()
 
     @staticmethod
-    def get_industry_info(industry: str) -> Optional[dict]:
+    def get_industry_info(industry: str) -> dict | None:
         """Get information about a specific industry."""
         return OrganizationGenerator.get_industry_info(industry)

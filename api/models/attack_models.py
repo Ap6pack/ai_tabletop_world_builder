@@ -9,8 +9,8 @@
 """
 MITRE ATT&CK data models for technique mapping and coverage analysis.
 """
+
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
 
 
 class ATTCKTechnique(BaseModel):
@@ -55,12 +55,12 @@ class ATTCKTechnique(BaseModel):
         ...,
         description="Brief description of the technique",
     )
-    platforms: List[str] = Field(
+    platforms: list[str] = Field(
         default_factory=list,
         description="Applicable platforms",
         examples=[["Windows", "Linux", "macOS"]],
     )
-    data_sources: List[str] = Field(
+    data_sources: list[str] = Field(
         default_factory=list,
         description="Data sources useful for detection",
     )
@@ -68,7 +68,7 @@ class ATTCKTechnique(BaseModel):
         default="",
         description="Detection guidance",
     )
-    mitigations: List[str] = Field(
+    mitigations: list[str] = Field(
         default_factory=list,
         description="Recommended mitigations",
     )
@@ -76,7 +76,7 @@ class ATTCKTechnique(BaseModel):
         default=False,
         description="Whether this is a sub-technique",
     )
-    parent_technique_id: Optional[str] = Field(
+    parent_technique_id: str | None = Field(
         default=None,
         description="Parent technique ID for sub-techniques",
     )
@@ -123,19 +123,19 @@ class ATTCKCoverageReport(BaseModel):
         gaps: ATT&CK IDs that were exercised but not detected.
     """
 
-    techniques_exercised: List[str] = Field(
+    techniques_exercised: list[str] = Field(
         default_factory=list,
         description="ATT&CK technique IDs that were exercised",
     )
-    techniques_detected: List[str] = Field(
+    techniques_detected: list[str] = Field(
         default_factory=list,
         description="ATT&CK technique IDs that were detected",
     )
-    techniques_mitigated: List[str] = Field(
+    techniques_mitigated: list[str] = Field(
         default_factory=list,
         description="ATT&CK technique IDs that were mitigated",
     )
-    coverage_by_tactic: Dict[str, Dict[str, int]] = Field(
+    coverage_by_tactic: dict[str, dict[str, int]] = Field(
         default_factory=dict,
         description="Per-tactic coverage breakdown: {tactic: {total, detected, mitigated}}",
     )
@@ -143,7 +143,7 @@ class ATTCKCoverageReport(BaseModel):
         default=0.0,
         description="Overall detection coverage percentage",
     )
-    gaps: List[str] = Field(
+    gaps: list[str] = Field(
         default_factory=list,
         description="ATT&CK technique IDs exercised but not detected",
     )

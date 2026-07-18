@@ -48,8 +48,15 @@ venv.bak/
 # Generated scenarios and data
 scenarios/generated/*.json
 data/*.db
+data/*.db-wal
+data/*.db-shm
 data/*.sqlite
 data/sessions/*.json
+data/exercises/
+# Runtime user records (contain password hashes) and audit logs
+data/users/*.json
+data/test_users/*.json
+data/audit_logs/*.jsonl
 *.log
 
 # Testing

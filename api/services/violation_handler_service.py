@@ -10,9 +10,11 @@
 Violation handler service for managing policy violations.
 Provides automated responses, escalation, and user education.
 """
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta, timezone
+
 from collections import defaultdict
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 from api.models import PolicyViolation, ViolationResponse
 from api.services.audit_log_service import AuditLogService
 from api.utils.logger import setup_logger
@@ -23,7 +25,7 @@ logger = setup_logger(__name__)
 class ViolationHandlerService:
     """Service for handling policy violations with appropriate responses."""
 
-    def __init__(self, audit_log_service: Optional[AuditLogService] = None):
+    def __init__(self, audit_log_service: AuditLogService | None = None):
         """
         Initialize violation handler service.
 
@@ -31,7 +33,7 @@ class ViolationHandlerService:
             audit_log_service: Optional audit log service for logging
         """
         self.audit_log_service = audit_log_service or AuditLogService()
-        self.violation_history: Dict[str, List[PolicyViolation]] = defaultdict(list)
+        self.violation_history: dict[str, list[PolicyViolation]] = defaultdict(list)
 
     def handle_violation(
         self,
@@ -39,9 +41,9 @@ class ViolationHandlerService:
         violation_type: str,
         severity: str,
         policy_level: str,
-        session_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        session_id: str | None = None,
+        user_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ViolationResponse:
         """
         Handle a policy violation with appropriate response.
@@ -59,8 +61,7 @@ class ViolationHandlerService:
             ViolationResponse with action and messaging
         """
         logger.info(
-            f"Handling {severity} violation: {violation_type}",
-            extra={"session_id": session_id, "user_id": user_id}
+            f"Handling {severity} violation: {violation_type}", extra={"session_id": session_id, "user_id": user_id}
         )
 
         # Create violation record
@@ -72,7 +73,7 @@ class ViolationHandlerService:
             user_id=user_id,
             session_id=session_id,
             action_taken="pending",
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Check violation history for escalation
@@ -94,7 +95,7 @@ class ViolationHandlerService:
             action_taken=response.action,
             session_id=session_id,
             user_id=user_id,
-            metadata=metadata
+            metadata=metadata,
         )
 
         logger.info(
@@ -102,17 +103,13 @@ class ViolationHandlerService:
             extra={
                 "violation_id": violation.id,
                 "action": response.action,
-                "requires_review": response.requires_review
-            }
+                "requires_review": response.requires_review,
+            },
         )
 
         return response
 
-    def _determine_response(
-        self,
-        violation: PolicyViolation,
-        user_id: Optional[str]
-    ) -> ViolationResponse:
+    def _determine_response(self, violation: PolicyViolation, user_id: str | None) -> ViolationResponse:
         """
         Determine appropriate response to violation.
 
@@ -124,7 +121,6 @@ class ViolationHandlerService:
             ViolationResponse
         """
         severity = violation.severity
-        violation_type = violation.violation_type
 
         # Check for repeat violations (escalation)
         repeat_violations = self._get_recent_violations(user_id) if user_id else []
@@ -140,11 +136,7 @@ class ViolationHandlerService:
         else:  # critical
             return self._handle_critical_severity(violation, is_repeat)
 
-    def _handle_low_severity(
-        self,
-        violation: PolicyViolation,
-        is_repeat: bool
-    ) -> ViolationResponse:
+    def _handle_low_severity(self, violation: PolicyViolation, is_repeat: bool) -> ViolationResponse:
         """Handle low severity violations."""
         if is_repeat:
             # Second low violation - give warning
@@ -153,7 +145,7 @@ class ViolationHandlerService:
                 message="Your action was blocked due to policy restrictions. This is your second violation. Please review the content policy guidelines.",
                 educational_content=self._get_educational_content(violation.violation_type),
                 suggested_alternative=self._get_alternative_suggestion(violation.violation_type),
-                requires_review=False
+                requires_review=False,
             )
         else:
             # First low violation - informational
@@ -161,14 +153,10 @@ class ViolationHandlerService:
                 action="warn",
                 message="Your action was flagged for review but allowed. Please be mindful of content policy restrictions.",
                 educational_content=self._get_educational_content(violation.violation_type),
-                requires_review=False
+                requires_review=False,
             )
 
-    def _handle_medium_severity(
-        self,
-        violation: PolicyViolation,
-        is_repeat: bool
-    ) -> ViolationResponse:
+    def _handle_medium_severity(self, violation: PolicyViolation, is_repeat: bool) -> ViolationResponse:
         """Handle medium severity violations."""
         if is_repeat:
             # Repeat medium violation - escalate
@@ -177,7 +165,7 @@ class ViolationHandlerService:
                 message="Your action has been blocked due to repeated policy violations. This incident will be reviewed by administrators.",
                 educational_content=self._get_educational_content(violation.violation_type),
                 suggested_alternative=self._get_alternative_suggestion(violation.violation_type),
-                requires_review=True
+                requires_review=True,
             )
         else:
             # First medium violation - block with education
@@ -186,34 +174,26 @@ class ViolationHandlerService:
                 message="Your action was blocked due to policy restrictions. Please review the guidelines and try a different approach.",
                 educational_content=self._get_educational_content(violation.violation_type),
                 suggested_alternative=self._get_alternative_suggestion(violation.violation_type),
-                requires_review=False
+                requires_review=False,
             )
 
-    def _handle_high_severity(
-        self,
-        violation: PolicyViolation,
-        is_repeat: bool
-    ) -> ViolationResponse:
+    def _handle_high_severity(self, violation: PolicyViolation, is_repeat: bool) -> ViolationResponse:
         """Handle high severity violations."""
         return ViolationResponse(
             action="escalate",
             message="Your action has been blocked due to a serious policy violation. This incident has been logged and will be reviewed.",
             educational_content=self._get_educational_content(violation.violation_type),
             suggested_alternative=self._get_alternative_suggestion(violation.violation_type),
-            requires_review=True
+            requires_review=True,
         )
 
-    def _handle_critical_severity(
-        self,
-        violation: PolicyViolation,
-        is_repeat: bool
-    ) -> ViolationResponse:
+    def _handle_critical_severity(self, violation: PolicyViolation, is_repeat: bool) -> ViolationResponse:
         """Handle critical severity violations."""
         return ViolationResponse(
             action="escalate",
             message="Your action has been blocked due to a critical security policy violation. This incident has been logged and flagged for immediate review. Continued violations may result in restricted access.",
             educational_content=self._get_educational_content(violation.violation_type),
-            requires_review=True
+            requires_review=True,
         )
 
     def _get_educational_content(self, violation_type: str) -> str:
@@ -228,17 +208,11 @@ class ViolationHandlerService:
         """
         educational_messages = {
             "credentials": "Security best practice: Never share actual credentials, API keys, or passwords in training exercises. Use placeholder values like '[API_KEY]' or '[PASSWORD]' instead. This protects real credentials and maintains security hygiene.",
-
             "pii": "Privacy reminder: Avoid including real personal information (PII) such as actual names, email addresses, phone numbers, or social security numbers. Use fictional examples to maintain privacy standards and comply with data protection regulations.",
-
             "exploit_code": "Training guideline: While learning about security vulnerabilities is important, avoid including actual exploit code or malicious commands. Instead, describe the concepts and techniques in educational terms. This keeps the training safe and compliant.",
-
             "sql_injection": "SQL injection awareness: Discuss SQL injection concepts without including actual malicious SQL queries. Focus on detection, prevention, and remediation techniques rather than exploitation methods.",
-
             "xss": "XSS education: Cross-site scripting (XSS) should be discussed conceptually. Avoid including actual XSS payloads. Focus on understanding attack vectors, detection methods, and secure coding practices.",
-
             "shellcode": "Shellcode policy: Discussion of shellcode and exploit payloads should remain conceptual. Focus on defense mechanisms, detection techniques, and system hardening rather than actual exploitation code.",
-
             "dangerous_commands": "Safe practices: Avoid demonstrating destructive commands that could cause system damage. Focus on detection, monitoring, and incident response procedures instead.",
         }
 
@@ -262,15 +236,10 @@ class ViolationHandlerService:
         """
         suggestions = {
             "credentials": "Instead of using actual credentials, try: 'Check if the authentication system properly validates credentials' or 'Test the login mechanism with a test account'.",
-
             "pii": "Instead of real information, try: 'Investigate user records with anonymized data' or 'Search for patterns in the dataset without exposing individual identities'.",
-
             "exploit_code": "Instead of actual exploit code, try: 'Research the vulnerability type and its characteristics' or 'Review security advisories about this issue'.",
-
             "sql_injection": "Instead of SQL injection payloads, try: 'Test input validation on the login form' or 'Review database query parameterization'.",
-
             "xss": "Instead of XSS payloads, try: 'Check input sanitization in the web application' or 'Review Content Security Policy headers'.",
-
             "dangerous_commands": "Instead of destructive commands, try: 'Analyze system logs for suspicious activity' or 'Review access controls and permissions'.",
         }
 
@@ -282,11 +251,7 @@ class ViolationHandlerService:
         # Default suggestion
         return "Try rephrasing your action to focus on security analysis, detection, or response rather than actual exploitation or execution of potentially harmful commands."
 
-    def _get_recent_violations(
-        self,
-        user_id: str,
-        time_window_hours: int = 24
-    ) -> List[PolicyViolation]:
+    def _get_recent_violations(self, user_id: str, time_window_hours: int = 24) -> list[PolicyViolation]:
         """
         Get recent violations for a user.
 
@@ -300,19 +265,12 @@ class ViolationHandlerService:
         if user_id not in self.violation_history:
             return []
 
-        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=time_window_hours)
-        recent_violations = [
-            v for v in self.violation_history[user_id]
-            if v.timestamp > cutoff_time
-        ]
+        cutoff_time = datetime.now(UTC) - timedelta(hours=time_window_hours)
+        recent_violations = [v for v in self.violation_history[user_id] if v.timestamp > cutoff_time]
 
         return recent_violations
 
-    def get_violation_metrics(
-        self,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def get_violation_metrics(self, user_id: str | None = None, session_id: str | None = None) -> dict[str, Any]:
         """
         Get violation metrics for a user or session.
 
@@ -333,12 +291,7 @@ class ViolationHandlerService:
             violations = [v for v in violations if v.session_id == session_id]
 
         if not violations:
-            return {
-                "total_violations": 0,
-                "by_severity": {},
-                "by_type": {},
-                "recent_violations": 0
-            }
+            return {"total_violations": 0, "by_severity": {}, "by_type": {}, "recent_violations": 0}
 
         # Calculate metrics
         by_severity = defaultdict(int)
@@ -355,7 +308,7 @@ class ViolationHandlerService:
             "by_severity": dict(by_severity),
             "by_type": dict(by_type),
             "recent_violations": len(recent),
-            "last_violation": violations[-1].timestamp.isoformat() if violations else None
+            "last_violation": violations[-1].timestamp.isoformat() if violations else None,
         }
 
     def reset_user_violations(self, user_id: str) -> int:

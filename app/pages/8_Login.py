@@ -9,10 +9,12 @@
 """
 Streamlit Login & Registration Page.
 """
-import streamlit as st
-import requests
-import sys
+
 import os
+import sys
+
+import requests
+import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import API_BASE_URL, DEFAULT_TIMEOUT
@@ -121,31 +123,30 @@ if st.session_state.current_user:
     st.markdown("---")
 
     # Change password section
-    with st.expander("Change Password"):
-        with st.form("change_password"):
-            old_pw = st.text_input("Current Password", type="password")
-            new_pw = st.text_input("New Password", type="password")
-            confirm_pw = st.text_input("Confirm New Password", type="password")
+    with st.expander("Change Password"), st.form("change_password"):
+        old_pw = st.text_input("Current Password", type="password")
+        new_pw = st.text_input("New Password", type="password")
+        confirm_pw = st.text_input("Confirm New Password", type="password")
 
-            if st.form_submit_button("Update Password"):
-                if new_pw != confirm_pw:
-                    st.error("New passwords do not match.")
-                elif len(new_pw) < 8:
-                    st.error("Password must be at least 8 characters.")
-                else:
-                    try:
-                        resp = requests.post(
-                            f"{API_BASE_URL}/auth/change-password",
-                            json={"old_password": old_pw, "new_password": new_pw},
-                            headers={"Authorization": f"Bearer {st.session_state.auth_token}"},
-                            timeout=DEFAULT_TIMEOUT,
-                        )
-                        if resp.status_code == 200:
-                            st.success("Password updated successfully.")
-                        else:
-                            st.error(resp.json().get("detail", "Failed to update password."))
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
+        if st.form_submit_button("Update Password"):
+            if new_pw != confirm_pw:
+                st.error("New passwords do not match.")
+            elif len(new_pw) < 8:
+                st.error("Password must be at least 8 characters.")
+            else:
+                try:
+                    resp = requests.post(
+                        f"{API_BASE_URL}/auth/change-password",
+                        json={"old_password": old_pw, "new_password": new_pw},
+                        headers={"Authorization": f"Bearer {st.session_state.auth_token}"},
+                        timeout=DEFAULT_TIMEOUT,
+                    )
+                    if resp.status_code == 200:
+                        st.success("Password updated successfully.")
+                    else:
+                        st.error(resp.json().get("detail", "Failed to update password."))
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
 
     st.markdown("---")
     if st.button("Logout", use_container_width=True):
@@ -160,35 +161,33 @@ else:
 
     tab1, tab2 = st.tabs(["Sign In", "Register"])
 
-    with tab1:
-        with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
+    with tab1, st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
 
-            if st.form_submit_button("Sign In", use_container_width=True, type="primary"):
-                if not username or not password:
-                    st.error("Please enter both username and password.")
-                elif login(username, password):
-                    st.success("Login successful!")
-                    st.rerun()
+        if st.form_submit_button("Sign In", use_container_width=True, type="primary"):
+            if not username or not password:
+                st.error("Please enter both username and password.")
+            elif login(username, password):
+                st.success("Login successful!")
+                st.rerun()
 
-    with tab2:
-        with st.form("register_form"):
-            reg_username = st.text_input("Username", key="reg_user")
-            reg_email = st.text_input("Email", key="reg_email")
-            reg_display = st.text_input("Display Name (optional)", key="reg_display")
-            reg_password = st.text_input("Password", type="password", key="reg_pass")
-            reg_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm")
+    with tab2, st.form("register_form"):
+        reg_username = st.text_input("Username", key="reg_user")
+        reg_email = st.text_input("Email", key="reg_email")
+        reg_display = st.text_input("Display Name (optional)", key="reg_display")
+        reg_password = st.text_input("Password", type="password", key="reg_pass")
+        reg_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm")
 
-            if st.form_submit_button("Create Account", use_container_width=True, type="primary"):
-                if not reg_username or not reg_email or not reg_password:
-                    st.error("Please fill in all required fields.")
-                elif reg_password != reg_confirm:
-                    st.error("Passwords do not match.")
-                elif len(reg_password) < 8:
-                    st.error("Password must be at least 8 characters.")
-                elif register(reg_username, reg_email, reg_password, reg_display):
-                    st.success("Account created! You can now sign in.")
+        if st.form_submit_button("Create Account", use_container_width=True, type="primary"):
+            if not reg_username or not reg_email or not reg_password:
+                st.error("Please fill in all required fields.")
+            elif reg_password != reg_confirm:
+                st.error("Passwords do not match.")
+            elif len(reg_password) < 8:
+                st.error("Password must be at least 8 characters.")
+            elif register(reg_username, reg_email, reg_password, reg_display):
+                st.success("Account created! You can now sign in.")
 
 # Sidebar
 with st.sidebar:

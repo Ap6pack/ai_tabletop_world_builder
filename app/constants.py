@@ -17,7 +17,7 @@ PLAYER_ROLES = {
     "Incident Responder": "incident-responder",
     "Security Engineer": "security-engineer",
     "CISO": "ciso",
-    "Mixed Team": "mixed"
+    "Mixed Team": "mixed",
 }
 
 # Reverse mapping for display: API value -> UI label
@@ -28,18 +28,13 @@ SCENARIO_TYPES = {
     "Incident Response": "incident-response",
     "Threat Hunting": "threat-hunting",
     "Vulnerability Management": "vulnerability-management",
-    "Compliance Audit": "compliance-audit"
+    "Compliance Audit": "compliance-audit",
 }
 
 SCENARIO_TYPES_DISPLAY = {v: k for k, v in SCENARIO_TYPES.items()}
 
 # Difficulty levels
-DIFFICULTY_LEVELS = {
-    "Beginner": "beginner",
-    "Intermediate": "intermediate",
-    "Advanced": "advanced",
-    "Expert": "expert"
-}
+DIFFICULTY_LEVELS = {"Beginner": "beginner", "Intermediate": "intermediate", "Advanced": "advanced", "Expert": "expert"}
 
 DIFFICULTY_LEVELS_DISPLAY = {v: k for k, v in DIFFICULTY_LEVELS.items()}
 
@@ -48,16 +43,12 @@ ORG_SIZES = {
     "Small (< 100 employees)": "small",
     "Medium (100-1000)": "medium",
     "Large (1000-5000)": "large",
-    "Enterprise (5000+)": "enterprise"
+    "Enterprise (5000+)": "enterprise",
 }
 
 ORG_SIZES_DISPLAY = {v: k for k, v in ORG_SIZES.items()}
 
 # Complexity levels
-COMPLEXITY_LEVELS = {
-    "Basic": "basic",
-    "Moderate": "moderate",
-    "Complex": "complex"
-}
+COMPLEXITY_LEVELS = {"Basic": "basic", "Moderate": "moderate", "Complex": "complex"}
 
 COMPLEXITY_LEVELS_DISPLAY = {v: k for k, v in COMPLEXITY_LEVELS.items()}

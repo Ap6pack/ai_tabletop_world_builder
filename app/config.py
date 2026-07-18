@@ -9,6 +9,7 @@
 """
 Frontend application configuration.
 """
+
 import os
 
 # API Configuration

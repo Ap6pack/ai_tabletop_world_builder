@@ -9,12 +9,14 @@
 """
 AI Game Master service for generating dynamic narrative and responding to player actions.
 """
-from typing import Optional, Dict, Any, List
-from api.models import GameState, GameResponse, IncidentEvent
+
+import json
+from datetime import datetime
+from typing import Any
+
+from api.models import GameState, IncidentEvent
 from api.providers import LLMProviderFactory
 from api.services import ContentPolicyService
-from datetime import datetime
-import json
 
 
 class GameMasterService:
@@ -27,8 +29,19 @@ class GameMasterService:
 
     def __init__(self, llm_provider=None, content_policy=None):
         """Initialize the game master service."""
-        self.llm_provider = llm_provider or LLMProviderFactory.create_provider()
+        self._llm_provider = llm_provider
         self.content_policy = content_policy or ContentPolicyService.get_policy("educational")
+
+    @property
+    def llm_provider(self):
+        """Lazily instantiate the LLM provider so construction needs no API key."""
+        if self._llm_provider is None:
+            self._llm_provider = LLMProviderFactory.create_provider()
+        return self._llm_provider
+
+    @llm_provider.setter
+    def llm_provider(self, value):
+        self._llm_provider = value
 
     async def start_game(self, game_state: GameState) -> str:
         """
@@ -45,19 +58,12 @@ class GameMasterService:
         system_message = self._build_system_message(game_state)
 
         result = await self.llm_provider.complete(
-            prompt=prompt,
-            system_message=system_message,
-            temperature=0.8,
-            max_tokens=500
+            prompt=prompt, system_message=system_message, temperature=0.8, max_tokens=500
         )
 
         return result["content"].strip()
 
-    async def process_action(
-        self,
-        action: str,
-        game_state: GameState
-    ) -> Dict[str, Any]:
+    async def process_action(self, action: str, game_state: GameState) -> dict[str, Any]:
         """
         Process a player action and generate response.
 
@@ -73,10 +79,7 @@ class GameMasterService:
         system_message = self._build_system_message(game_state)
 
         result = await self.llm_provider.complete(
-            prompt=prompt,
-            system_message=system_message,
-            temperature=0.7,
-            max_tokens=800
+            prompt=prompt, system_message=system_message, temperature=0.7, max_tokens=800
         )
 
         response_text = result["content"].strip()
@@ -138,7 +141,7 @@ Content Policy: {self.content_policy.level}"""
         org = game_state.organization
 
         # Get a threat actor if available
-        threat_actor = org.threat_actors[0] if org.threat_actors else None
+        org.threat_actors[0] if org.threat_actors else None
 
         # Get a vulnerable system if available
         vulnerable_system = None
@@ -161,7 +164,7 @@ SCENARIO SETUP:
 - Current Status: Normal operations
 
 BACKGROUND:
-{org.description if hasattr(org, 'description') else f"{org.name} is a {org.size} {org.industry} organization with a {org.security_posture} security posture."}
+{org.description if hasattr(org, "description") else f"{org.name} is a {org.size} {org.industry} organization with a {org.security_posture} security posture."}
 
 INITIAL SITUATION:
 You've just arrived at your desk. Your SIEM dashboard shows a new HIGH severity alert that was triggered 5 minutes ago.
@@ -185,10 +188,9 @@ OPENING SCENE:"""
         recent_events = game_state.incident_timeline[-5:] if game_state.incident_timeline else []
 
         # Build context from recent events
-        timeline_context = "\n".join([
-            f"- [{event.timestamp.strftime('%H:%M')}] {event.description}"
-            for event in recent_events
-        ])
+        timeline_context = "\n".join(
+            [f"- [{event.timestamp.strftime('%H:%M')}] {event.description}" for event in recent_events]
+        )
 
         # Available tools
         tools_list = ", ".join(game_state.inventory.tools.keys())
@@ -242,7 +244,7 @@ NARRATIVE RESPONSE:"""
 
         return prompt
 
-    def _parse_game_master_response(self, response_text: str, game_state: GameState) -> Dict[str, Any]:
+    def _parse_game_master_response(self, response_text: str, game_state: GameState) -> dict[str, Any]:
         """Parse game master response to extract structured data."""
 
         # Split narrative from structured data
@@ -260,7 +262,7 @@ NARRATIVE RESPONSE:"""
                     json_text = json_text.strip()
 
                 structured = json.loads(json_text)
-            except:
+            except Exception:
                 # If parsing fails, use defaults
                 structured = {
                     "action_valid": True,
@@ -269,7 +271,7 @@ NARRATIVE RESPONSE:"""
                     "inventory_changes": {},
                     "score_change": {"points": 0, "reason": ""},
                     "new_events": [],
-                    "hints": []
+                    "hints": [],
                 }
         else:
             # No structured data found, use narrative only
@@ -281,19 +283,21 @@ NARRATIVE RESPONSE:"""
                 "inventory_changes": {},
                 "score_change": {"points": 0, "reason": ""},
                 "new_events": [],
-                "hints": []
+                "hints": [],
             }
 
         # Convert new_events to IncidentEvent objects
         events = []
         for event_data in structured.get("new_events", []):
-            events.append(IncidentEvent(
-                timestamp=datetime.now(),
-                event_type=event_data.get("type", "action"),
-                description=event_data.get("description", ""),
-                severity=event_data.get("severity", "info"),
-                actor=event_data.get("actor", "system")
-            ))
+            events.append(
+                IncidentEvent(
+                    timestamp=datetime.now(),
+                    event_type=event_data.get("type", "action"),
+                    description=event_data.get("description", ""),
+                    severity=event_data.get("severity", "info"),
+                    actor=event_data.get("actor", "system"),
+                )
+            )
 
         return {
             "narrative": narrative,
@@ -303,7 +307,7 @@ NARRATIVE RESPONSE:"""
             "inventory_changes": structured.get("inventory_changes", {}),
             "score_change": structured.get("score_change", {"points": 0, "reason": ""}),
             "new_events": events,
-            "hints": structured.get("hints", [])
+            "hints": structured.get("hints", []),
         }
 
     async def generate_hint(self, game_state: GameState) -> str:
@@ -316,13 +320,9 @@ NARRATIVE RESPONSE:"""
         Returns:
             Hint text
         """
-        recent_actions = [
-            event.description
-            for event in game_state.incident_timeline[-3:]
-            if event.actor == "player"
-        ]
+        recent_actions = [event.description for event in game_state.incident_timeline[-3:] if event.actor == "player"]
 
-        prompt = f"""The player seems stuck. Recent actions: {', '.join(recent_actions) if recent_actions else 'None yet'}
+        prompt = f"""The player seems stuck. Recent actions: {", ".join(recent_actions) if recent_actions else "None yet"}
 
 Provide a subtle hint about what they should investigate next. Don't give away the answer, just guide them in the right direction.
 
@@ -331,10 +331,7 @@ One sentence hint:"""
         system_message = self._build_system_message(game_state)
 
         result = await self.llm_provider.complete(
-            prompt=prompt,
-            system_message=system_message,
-            temperature=0.7,
-            max_tokens=100
+            prompt=prompt, system_message=system_message, temperature=0.7, max_tokens=100
         )
 
         return result["content"].strip()

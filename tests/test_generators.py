@@ -7,8 +7,9 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Tests for all generator services (organization, department, system, vulnerability, threat_actor, objective)."""
+
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -20,17 +21,17 @@ from api.models.schemas import (
     ThreatActor,
     Vulnerability,
 )
-from api.services.organization_generator import OrganizationGenerator
 from api.services.department_generator import DepartmentGenerator
-from api.services.system_generator import SystemGenerator
-from api.services.vulnerability_generator import VulnerabilityGenerator
-from api.services.threat_actor_generator import ThreatActorGenerator
 from api.services.objective_generator import ObjectiveGenerator
-
+from api.services.organization_generator import OrganizationGenerator
+from api.services.system_generator import SystemGenerator
+from api.services.threat_actor_generator import ThreatActorGenerator
+from api.services.vulnerability_generator import VulnerabilityGenerator
 
 # ---------------------------------------------------------------------------
 # Common fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_llm():
@@ -42,10 +43,15 @@ def mock_llm():
 
 def _make_org(**overrides):
     defaults = dict(
-        id="org-1", name="Test Corp", description="A test company",
-        industry="Technology", size="medium",
-        departments=[], threat_actors=[],
-        security_posture="developing", compliance_frameworks=["SOC 2"],
+        id="org-1",
+        name="Test Corp",
+        description="A test company",
+        industry="Technology",
+        size="medium",
+        departments=[],
+        threat_actors=[],
+        security_posture="developing",
+        compliance_frameworks=["SOC 2"],
     )
     defaults.update(overrides)
     return Organization(**defaults)
@@ -53,8 +59,11 @@ def _make_org(**overrides):
 
 def _make_system(**overrides):
     defaults = dict(
-        id="sys-1", name="Web Server", description="Primary web server",
-        type="server", os="Ubuntu 22.04",
+        id="sys-1",
+        name="Web Server",
+        description="Primary web server",
+        type="server",
+        os="Ubuntu 22.04",
         services=["nginx", "postgres"],
         criticality="high",
     )
@@ -64,7 +73,9 @@ def _make_system(**overrides):
 
 def _make_dept(**overrides):
     defaults = dict(
-        id="d1", name="IT Ops", description="IT Operations",
+        id="d1",
+        name="IT Ops",
+        description="IT Operations",
         business_function="Technology",
         systems=[_make_system()],
         data_classification="confidential",
@@ -75,8 +86,11 @@ def _make_dept(**overrides):
 
 def _make_threat_actor(**overrides):
     defaults = dict(
-        id="ta-1", name="DarkNexus", description="Ransomware group",
-        motivation="Financial", sophistication="organized-crime",
+        id="ta-1",
+        name="DarkNexus",
+        description="Ransomware group",
+        motivation="Financial",
+        sophistication="organized-crime",
         ttps=["Phishing", "Ransomware"],
         attack_techniques=["T1566", "T1486"],
         targets=["Technology"],
@@ -89,15 +103,22 @@ def _make_threat_actor(**overrides):
 # OrganizationGenerator
 # ============================================================================
 
+
 class TestOrganizationGenerator:
     @pytest.mark.asyncio
     async def test_generate_organization(self, mock_llm):
-        mock_llm.complete = AsyncMock(return_value={"content": json.dumps({
-            "name": "Acme Corp",
-            "description": "A technology company",
-            "security_posture": "developing",
-            "compliance_frameworks": ["SOC 2"],
-        })})
+        mock_llm.complete = AsyncMock(
+            return_value={
+                "content": json.dumps(
+                    {
+                        "name": "Acme Corp",
+                        "description": "A technology company",
+                        "security_posture": "developing",
+                        "compliance_frameworks": ["SOC 2"],
+                    }
+                )
+            }
+        )
         gen = OrganizationGenerator(llm_provider=mock_llm)
 
         org = await gen.generate_organization(industry="Technology", size="medium")
@@ -140,27 +161,34 @@ class TestOrganizationGenerator:
 # DepartmentGenerator
 # ============================================================================
 
+
 class TestDepartmentGenerator:
     @pytest.mark.asyncio
     async def test_generate_departments(self, mock_llm):
-        mock_llm.complete = AsyncMock(return_value={"content": json.dumps({
-            "departments": [
-                {
-                    "name": "Engineering",
-                    "description": "Software engineering",
-                    "business_function": "Development",
-                    "data_classification": "confidential",
-                    "compliance_requirements": ["SOC 2"],
-                },
-                {
-                    "name": "Finance",
-                    "description": "Financial operations",
-                    "business_function": "Finance",
-                    "data_classification": "restricted",
-                    "compliance_requirements": ["SOX"],
-                },
-            ]
-        })})
+        mock_llm.complete = AsyncMock(
+            return_value={
+                "content": json.dumps(
+                    {
+                        "departments": [
+                            {
+                                "name": "Engineering",
+                                "description": "Software engineering",
+                                "business_function": "Development",
+                                "data_classification": "confidential",
+                                "compliance_requirements": ["SOC 2"],
+                            },
+                            {
+                                "name": "Finance",
+                                "description": "Financial operations",
+                                "business_function": "Finance",
+                                "data_classification": "restricted",
+                                "compliance_requirements": ["SOX"],
+                            },
+                        ]
+                    }
+                )
+            }
+        )
         gen = DepartmentGenerator(llm_provider=mock_llm)
 
         depts = await gen.generate_departments(
@@ -174,9 +202,15 @@ class TestDepartmentGenerator:
 
     @pytest.mark.asyncio
     async def test_generate_departments_empty_response(self, mock_llm):
-        mock_llm.complete = AsyncMock(return_value={"content": json.dumps({
-            "departments": [],
-        })})
+        mock_llm.complete = AsyncMock(
+            return_value={
+                "content": json.dumps(
+                    {
+                        "departments": [],
+                    }
+                )
+            }
+        )
         gen = DepartmentGenerator(llm_provider=mock_llm)
         depts = await gen.generate_departments("Corp", "Tech", "small", 3)
         assert depts == []
@@ -186,22 +220,29 @@ class TestDepartmentGenerator:
 # SystemGenerator
 # ============================================================================
 
+
 class TestSystemGenerator:
     @pytest.mark.asyncio
     async def test_generate_systems(self, mock_llm):
-        mock_llm.complete = AsyncMock(return_value={"content": json.dumps({
-            "systems": [
-                {
-                    "name": "DB Server",
-                    "description": "PostgreSQL database",
-                    "type": "database",
-                    "os": "Ubuntu 22.04",
-                    "services": ["postgres"],
-                    "security_controls": ["encryption"],
-                    "criticality": "critical",
-                },
-            ]
-        })})
+        mock_llm.complete = AsyncMock(
+            return_value={
+                "content": json.dumps(
+                    {
+                        "systems": [
+                            {
+                                "name": "DB Server",
+                                "description": "PostgreSQL database",
+                                "type": "database",
+                                "os": "Ubuntu 22.04",
+                                "services": ["postgres"],
+                                "security_controls": ["encryption"],
+                                "criticality": "critical",
+                            },
+                        ]
+                    }
+                )
+            }
+        )
         gen = SystemGenerator(llm_provider=mock_llm)
 
         systems = await gen.generate_systems(
@@ -217,9 +258,15 @@ class TestSystemGenerator:
 
     @pytest.mark.asyncio
     async def test_generate_systems_empty(self, mock_llm):
-        mock_llm.complete = AsyncMock(return_value={"content": json.dumps({
-            "systems": [],
-        })})
+        mock_llm.complete = AsyncMock(
+            return_value={
+                "content": json.dumps(
+                    {
+                        "systems": [],
+                    }
+                )
+            }
+        )
         gen = SystemGenerator(llm_provider=mock_llm)
         systems = await gen.generate_systems("Corp", "IT", "Ops", "Tech", 2)
         assert systems == []
@@ -229,21 +276,28 @@ class TestSystemGenerator:
 # VulnerabilityGenerator
 # ============================================================================
 
+
 class TestVulnerabilityGenerator:
     @pytest.mark.asyncio
     async def test_generate_vulnerabilities(self, mock_llm):
-        mock_llm.complete = AsyncMock(return_value={"content": json.dumps({
-            "vulnerabilities": [
-                {
-                    "name": "CVE-2024-1234",
-                    "description": "Remote code execution",
-                    "severity": "critical",
-                    "cve_id": "CVE-2024-1234",
-                    "exploitation_complexity": "moderate",
-                    "remediation": "Apply patch",
-                },
-            ]
-        })})
+        mock_llm.complete = AsyncMock(
+            return_value={
+                "content": json.dumps(
+                    {
+                        "vulnerabilities": [
+                            {
+                                "name": "CVE-2024-1234",
+                                "description": "Remote code execution",
+                                "severity": "critical",
+                                "cve_id": "CVE-2024-1234",
+                                "exploitation_complexity": "moderate",
+                                "remediation": "Apply patch",
+                            },
+                        ]
+                    }
+                )
+            }
+        )
         gen = VulnerabilityGenerator(llm_provider=mock_llm)
 
         vulns = await gen.generate_vulnerabilities(
@@ -266,22 +320,29 @@ class TestVulnerabilityGenerator:
 # ThreatActorGenerator
 # ============================================================================
 
+
 class TestThreatActorGenerator:
     @pytest.mark.asyncio
     async def test_generate_threat_actors(self, mock_llm):
-        mock_llm.complete = AsyncMock(return_value={"content": json.dumps({
-            "threat_actors": [
-                {
-                    "name": "SilkRoad Group",
-                    "description": "Nation-state actor",
-                    "motivation": "Espionage",
-                    "sophistication": "nation-state",
-                    "ttps": ["Spear Phishing", "Zero Day Exploits"],
-                    "attack_techniques": ["T1566", "T1190"],
-                    "targets": ["Government", "Technology"],
-                },
-            ]
-        })})
+        mock_llm.complete = AsyncMock(
+            return_value={
+                "content": json.dumps(
+                    {
+                        "threat_actors": [
+                            {
+                                "name": "SilkRoad Group",
+                                "description": "Nation-state actor",
+                                "motivation": "Espionage",
+                                "sophistication": "nation-state",
+                                "ttps": ["Spear Phishing", "Zero Day Exploits"],
+                                "attack_techniques": ["T1566", "T1190"],
+                                "targets": ["Government", "Technology"],
+                            },
+                        ]
+                    }
+                )
+            }
+        )
         gen = ThreatActorGenerator(llm_provider=mock_llm)
 
         actors = await gen.generate_threat_actors(
@@ -295,9 +356,15 @@ class TestThreatActorGenerator:
 
     @pytest.mark.asyncio
     async def test_generate_threat_actors_empty(self, mock_llm):
-        mock_llm.complete = AsyncMock(return_value={"content": json.dumps({
-            "threat_actors": [],
-        })})
+        mock_llm.complete = AsyncMock(
+            return_value={
+                "content": json.dumps(
+                    {
+                        "threat_actors": [],
+                    }
+                )
+            }
+        )
         gen = ThreatActorGenerator(llm_provider=mock_llm)
         actors = await gen.generate_threat_actors("Corp", "Tech", num_actors=2)
         assert actors == []
@@ -306,6 +373,7 @@ class TestThreatActorGenerator:
 # ============================================================================
 # ObjectiveGenerator
 # ============================================================================
+
 
 class TestObjectiveGenerator:
     def test_generate_objectives_from_scenario(self):
@@ -358,12 +426,18 @@ class TestObjectiveGenerator:
             threat_actors=[_make_threat_actor()],
         )
         easy_objs = gen.generate_objectives_from_scenario(
-            org, "incident-response", "beginner", "soc-analyst",
+            org,
+            "incident-response",
+            "beginner",
+            "soc-analyst",
         )
         hard_objs = gen.generate_objectives_from_scenario(
-            org, "incident-response", "expert", "soc-analyst",
+            org,
+            "incident-response",
+            "expert",
+            "soc-analyst",
         )
         # Expert objectives should have equal or higher total points
-        easy_total = sum(o.points for o in easy_objs)
-        hard_total = sum(o.points for o in hard_objs)
-        assert hard_total >= easy_total or True  # Points may vary
+        sum(o.points for o in easy_objs)
+        sum(o.points for o in hard_objs)
+        assert True  # Points may vary

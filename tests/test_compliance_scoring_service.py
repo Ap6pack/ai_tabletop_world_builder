@@ -7,7 +7,8 @@
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
 """Tests for the ComplianceScoringService."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 import pytest
 
@@ -20,37 +21,47 @@ from api.models.schemas import (
     ThreatActorState,
 )
 from api.services.compliance_scoring_service import (
-    ComplianceControl,
-    ComplianceFunction,
     ComplianceGap,
     ComplianceScoreReport,
     ComplianceScoringService,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_org():
     return Organization(
-        id="org-1", name="Test Corp", description="Test",
-        industry="Technology", size="medium",
-        departments=[Department(
-            id="d1", name="IT", description="IT",
-            business_function="Tech", systems=[],
-            data_classification="internal",
-        )],
-        threat_actors=[], security_posture="developing",
+        id="org-1",
+        name="Test Corp",
+        description="Test",
+        industry="Technology",
+        size="medium",
+        departments=[
+            Department(
+                id="d1",
+                name="IT",
+                description="IT",
+                business_function="Tech",
+                systems=[],
+                data_classification="internal",
+            )
+        ],
+        threat_actors=[],
+        security_posture="developing",
         compliance_frameworks=[],
     )
 
 
 def _make_game_state(**overrides):
     defaults = dict(
-        session_id="s1", organization=_make_org(),
-        current_scenario="test", player_role="mixed",
-        inventory=Inventory(), status="in-progress",
+        session_id="s1",
+        organization=_make_org(),
+        current_scenario="test",
+        player_role="mixed",
+        inventory=Inventory(),
+        status="in-progress",
     )
     defaults.update(overrides)
     return GameState(**defaults)
@@ -59,6 +70,7 @@ def _make_game_state(**overrides):
 # ---------------------------------------------------------------------------
 # Framework Loading
 # ---------------------------------------------------------------------------
+
 
 class TestFrameworkLoading:
     def test_frameworks_loaded_on_init(self):
@@ -79,6 +91,7 @@ class TestFrameworkLoading:
 # ---------------------------------------------------------------------------
 # score_session
 # ---------------------------------------------------------------------------
+
 
 class TestScoreSession:
     def test_score_empty_state(self):
@@ -107,11 +120,12 @@ class TestScoreSession:
         gs = _make_game_state(
             threat_states={
                 "ta-1": ThreatActorState(
-                    threat_actor_id="ta-1", status="active",
+                    threat_actor_id="ta-1",
+                    status="active",
                     active_techniques=["T1566", "T1059", "T1486", "T1190"],
                     detected_techniques=[],
                     mitigated_techniques=[],
-                    last_update=datetime.now(timezone.utc),
+                    last_update=datetime.now(UTC),
                 ),
             },
         )
@@ -120,11 +134,7 @@ class TestScoreSession:
             pytest.skip("No frameworks loaded")
         report = svc.score_session(gs, frameworks[0])
         # Some controls should have scores > 0 due to active technique overlap
-        has_positive = any(
-            c.score > 0
-            for f in report.functions
-            for c in f.controls
-        )
+        has_positive = any(c.score > 0 for f in report.functions for c in f.controls)
         assert has_positive, "Expected at least one control scored > 0"
 
     def test_score_with_detection_and_mitigation(self):
@@ -134,11 +144,12 @@ class TestScoreSession:
         gs = _make_game_state(
             threat_states={
                 "ta-1": ThreatActorState(
-                    threat_actor_id="ta-1", status="active",
+                    threat_actor_id="ta-1",
+                    status="active",
                     active_techniques=techniques,
                     detected_techniques=techniques,
                     mitigated_techniques=techniques,
-                    last_update=datetime.now(timezone.utc),
+                    last_update=datetime.now(UTC),
                 ),
             },
         )
@@ -155,14 +166,14 @@ class TestScoreSession:
         gs = _make_game_state(
             incident_timeline=[
                 IncidentEvent(
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                     event_type="action",
                     description="Deployed network monitoring and blocked suspicious traffic",
                     severity="info",
                     actor="player",
                 ),
                 IncidentEvent(
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                     event_type="action",
                     description="Ran vulnerability scan and patched critical systems",
                     severity="info",
@@ -171,11 +182,12 @@ class TestScoreSession:
             ],
             threat_states={
                 "ta-1": ThreatActorState(
-                    threat_actor_id="ta-1", status="active",
+                    threat_actor_id="ta-1",
+                    status="active",
                     active_techniques=["T1566"],
                     detected_techniques=["T1566"],
                     mitigated_techniques=[],
-                    last_update=datetime.now(timezone.utc),
+                    last_update=datetime.now(UTC),
                 ),
             },
         )
@@ -190,13 +202,16 @@ class TestScoreSession:
 # Per-control scoring rubric
 # ---------------------------------------------------------------------------
 
+
 class TestControlScoring:
     def test_score_capped_at_100(self):
         """Max control score is 100 regardless of inputs."""
         svc = ComplianceScoringService()
         control = svc._score_control(
-            control_id="C1", name="Test Control",
-            description="", attack_techniques=["T1566"],
+            control_id="C1",
+            name="Test Control",
+            description="",
+            attack_techniques=["T1566"],
             observable_actions=["monitor", "scan", "patch", "block"],
             weight=1,
             active_techniques={"T1566"},
@@ -210,8 +225,10 @@ class TestControlScoring:
         """No technique overlap and no action match => 0 score."""
         svc = ComplianceScoringService()
         control = svc._score_control(
-            control_id="C2", name="Empty Control",
-            description="", attack_techniques=["T9999"],
+            control_id="C2",
+            name="Empty Control",
+            description="",
+            attack_techniques=["T9999"],
             observable_actions=["nonexistent_action"],
             weight=1,
             active_techniques=set(),
@@ -225,9 +242,12 @@ class TestControlScoring:
         """Active technique overlap gives +40."""
         svc = ComplianceScoringService()
         control = svc._score_control(
-            control_id="C3", name="Active Only",
-            description="", attack_techniques=["T1566"],
-            observable_actions=[], weight=1,
+            control_id="C3",
+            name="Active Only",
+            description="",
+            attack_techniques=["T1566"],
+            observable_actions=[],
+            weight=1,
             active_techniques={"T1566"},
             detected_techniques=set(),
             mitigated_techniques=set(),
@@ -239,9 +259,12 @@ class TestControlScoring:
         """Active + detected + mitigated = 40 + 30 + 30 = 100."""
         svc = ComplianceScoringService()
         control = svc._score_control(
-            control_id="C4", name="Full Coverage",
-            description="", attack_techniques=["T1566"],
-            observable_actions=[], weight=1,
+            control_id="C4",
+            name="Full Coverage",
+            description="",
+            attack_techniques=["T1566"],
+            observable_actions=[],
+            weight=1,
             active_techniques={"T1566"},
             detected_techniques={"T1566"},
             mitigated_techniques={"T1566"},
@@ -253,6 +276,7 @@ class TestControlScoring:
 # ---------------------------------------------------------------------------
 # get_gap_analysis
 # ---------------------------------------------------------------------------
+
 
 class TestGapAnalysis:
     def test_gaps_below_threshold(self):
@@ -274,18 +298,32 @@ class TestGapAnalysis:
         svc = ComplianceScoringService()
         # Provide broad technique coverage
         techniques = [
-            "T1566", "T1059", "T1486", "T1190", "T1071", "T1078",
-            "T1210", "T1021", "T1105", "T1048", "T1041", "T1489",
-            "T1490", "T1529", "T1537", "T1567",
+            "T1566",
+            "T1059",
+            "T1486",
+            "T1190",
+            "T1071",
+            "T1078",
+            "T1210",
+            "T1021",
+            "T1105",
+            "T1048",
+            "T1041",
+            "T1489",
+            "T1490",
+            "T1529",
+            "T1537",
+            "T1567",
         ]
         gs = _make_game_state(
             threat_states={
                 "ta-1": ThreatActorState(
-                    threat_actor_id="ta-1", status="active",
+                    threat_actor_id="ta-1",
+                    status="active",
                     active_techniques=techniques,
                     detected_techniques=techniques,
                     mitigated_techniques=techniques,
-                    last_update=datetime.now(timezone.utc),
+                    last_update=datetime.now(UTC),
                 ),
             },
         )
@@ -301,6 +339,7 @@ class TestGapAnalysis:
 # ---------------------------------------------------------------------------
 # generate_compliance_report (multi-framework)
 # ---------------------------------------------------------------------------
+
 
 class TestComplianceReport:
     def test_multi_framework_report_structure(self):

@@ -6,20 +6,28 @@
 # NOTICE: This file contains proprietary code developed by Veritas Aequitas Holdings LLC.
 # Unauthorized use, reproduction, or distribution is strictly prohibited.
 # For inquiries, contact: contact@veritasandaequitas.com
-"""Redis-backed storage for multi-team exercise state with file-based fallback."""
-import json
-import shutil
-from pathlib import Path
-from typing import Optional, List, Dict
-from datetime import datetime, timezone
+"""Storage for multi-team exercise state.
 
+Defaults to the application database. Redis can be enabled as a low-latency
+fast-path via ``redis_url``; a file backend remains for archival and as a
+last-resort fallback.
+"""
+
+import json
+from pathlib import Path
+
+from sqlalchemy import select
+
+from api.db import ExerciseRow, init_db, session_scope
 from api.models.exercise_models import ExerciseState
 from api.utils.logger import setup_logger
+from config.settings import settings
 
 logger = setup_logger(__name__)
 
 try:
     import redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -37,51 +45,52 @@ class ExerciseStore:
     Falls back to file-based JSON storage if Redis is unavailable.
     """
 
-    def __init__(self, redis_url: Optional[str] = None) -> None:
+    def __init__(self, redis_url: str | None = None) -> None:
         """
         Initialize the exercise store.
 
         Args:
             redis_url: Redis connection URL (e.g., "redis://localhost:6379/0").
-                       If None or connection fails, falls back to file storage.
+                       Defaults to ``settings.redis_url``. If empty/None or the
+                       connection fails, exercise state is served from the
+                       database.
         """
+        if redis_url is None:
+            redis_url = settings.redis_url or None
+
         self._use_redis = False
-        self._redis_client: Optional["redis.Redis"] = None
+        self._redis_client: redis.Redis | None = None
         self._storage_dir = Path("data/exercises")
         self._archive_dir = Path("data/exercises/archive")
 
-        # Ensure file-based directories exist
-        self._storage_dir.mkdir(parents=True, exist_ok=True)
+        # Ensure the database schema and the file archive directory exist.
+        init_db()
         self._archive_dir.mkdir(parents=True, exist_ok=True)
 
         # Attempt Redis connection
         if redis_url and REDIS_AVAILABLE:
             try:
-                self._redis_client = redis.Redis.from_url(
-                    redis_url, decode_responses=True
-                )
+                self._redis_client = redis.Redis.from_url(redis_url, decode_responses=True)
                 self._redis_client.ping()
                 self._use_redis = True
                 logger.info("ExerciseStore initialized with Redis backend: %s", redis_url)
             except (redis.ConnectionError, redis.RedisError) as exc:
                 logger.warning(
-                    "Redis connection failed (%s), falling back to file storage.",
+                    "Redis connection failed (%s), falling back to database storage.",
                     exc,
                 )
                 self._redis_client = None
                 self._use_redis = False
         elif redis_url and not REDIS_AVAILABLE:
-            logger.warning(
-                "redis-py package not installed. Falling back to file storage."
-            )
+            logger.warning("redis-py package not installed. Falling back to database storage.")
         else:
-            logger.info("No Redis URL provided. Using file-based exercise storage.")
+            logger.info("No Redis URL provided. Using database exercise storage.")
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
-    def get_exercise(self, exercise_id: str) -> Optional[ExerciseState]:
+    def get_exercise(self, exercise_id: str) -> ExerciseState | None:
         """
         Load an exercise by ID.
 
@@ -93,7 +102,7 @@ class ExerciseStore:
         """
         if self._use_redis:
             return self._redis_get(exercise_id)
-        return self._file_get(exercise_id)
+        return self._db_get(exercise_id)
 
     def save_exercise(self, state: ExerciseState) -> None:
         """
@@ -110,7 +119,7 @@ class ExerciseStore:
         if self._use_redis:
             self._redis_save(state)
         else:
-            self._file_save(state)
+            self._db_save(state)
 
         logger.debug(
             "Saved exercise %s (version %d, phase=%s)",
@@ -131,9 +140,9 @@ class ExerciseStore:
         """
         if self._use_redis:
             return self._redis_delete(exercise_id)
-        return self._file_delete(exercise_id)
+        return self._db_delete(exercise_id)
 
-    def list_exercises(self, phase: Optional[str] = None) -> List[Dict]:
+    def list_exercises(self, phase: str | None = None) -> list[dict]:
         """
         List exercises with summary information.
 
@@ -144,10 +153,7 @@ class ExerciseStore:
             List of dicts with keys: exercise_id, name, phase, team_count,
             current_round, version.
         """
-        if self._use_redis:
-            summaries = self._redis_list()
-        else:
-            summaries = self._file_list()
+        summaries = self._redis_list() if self._use_redis else self._db_list()
 
         if phase:
             summaries = [s for s in summaries if s.get("phase") == phase]
@@ -176,9 +182,7 @@ class ExerciseStore:
             raise ValueError(f"Exercise {exercise_id} not found.")
 
         archive_path = self._archive_dir / f"{exercise_id}.json"
-        archive_path.write_text(
-            state.model_dump_json(indent=2), encoding="utf-8"
-        )
+        archive_path.write_text(state.model_dump_json(indent=2), encoding="utf-8")
 
         # Remove from primary storage
         self.delete_exercise(exercise_id)
@@ -200,7 +204,61 @@ class ExerciseStore:
         """
         if self._use_redis:
             return self._redis_get_version(exercise_id)
-        return self._file_get_version(exercise_id)
+        return self._db_get_version(exercise_id)
+
+    # ------------------------------------------------------------------
+    # Database backend (default)
+    # ------------------------------------------------------------------
+
+    def _db_get(self, exercise_id: str) -> ExerciseState | None:
+        with session_scope() as db:
+            row = db.get(ExerciseRow, exercise_id)
+            if row is None:
+                return None
+            return ExerciseState.model_validate(row.data)
+
+    def _db_save(self, state: ExerciseState) -> None:
+        payload = state.model_dump(mode="json")
+        with session_scope() as db:
+            row = db.get(ExerciseRow, state.exercise_id)
+            if row is None:
+                row = ExerciseRow(exercise_id=state.exercise_id)
+                db.add(row)
+            row.name = state.name
+            row.phase = state.phase
+            row.facilitator_id = state.facilitator_id
+            row.current_round = state.current_round
+            row.team_count = len(state.teams)
+            row.version = state.version
+            row.data = payload
+
+    def _db_delete(self, exercise_id: str) -> bool:
+        with session_scope() as db:
+            row = db.get(ExerciseRow, exercise_id)
+            if row is None:
+                return False
+            db.delete(row)
+        return True
+
+    def _db_list(self) -> list[dict]:
+        with session_scope() as db:
+            rows = db.scalars(select(ExerciseRow)).all()
+            return [
+                {
+                    "exercise_id": row.exercise_id,
+                    "name": row.name,
+                    "phase": row.phase,
+                    "team_count": row.team_count,
+                    "current_round": row.current_round,
+                    "version": row.version,
+                }
+                for row in rows
+            ]
+
+    def _db_get_version(self, exercise_id: str) -> int:
+        with session_scope() as db:
+            version = db.scalar(select(ExerciseRow.version).where(ExerciseRow.exercise_id == exercise_id))
+            return version if version is not None else -1
 
     # ------------------------------------------------------------------
     # Redis backend
@@ -209,7 +267,7 @@ class ExerciseStore:
     def _redis_key(self, exercise_id: str) -> str:
         return f"{REDIS_KEY_PREFIX}{exercise_id}"
 
-    def _redis_get(self, exercise_id: str) -> Optional[ExerciseState]:
+    def _redis_get(self, exercise_id: str) -> ExerciseState | None:
         try:
             data = self._redis_client.get(self._redis_key(exercise_id))
             if data is None:
@@ -242,14 +300,12 @@ class ExerciseStore:
             logger.error("Redis DELETE failed for %s: %s", exercise_id, exc)
             return False
 
-    def _redis_list(self) -> List[Dict]:
-        summaries: List[Dict] = []
+    def _redis_list(self) -> list[dict]:
+        summaries: list[dict] = []
         try:
             cursor = 0
             while True:
-                cursor, keys = self._redis_client.scan(
-                    cursor=cursor, match=f"{REDIS_KEY_PREFIX}*", count=100
-                )
+                cursor, keys = self._redis_client.scan(cursor=cursor, match=f"{REDIS_KEY_PREFIX}*", count=100)
                 for key in keys:
                     data = self._redis_client.get(key)
                     if data:
@@ -283,7 +339,7 @@ class ExerciseStore:
     def _file_path(self, exercise_id: str) -> Path:
         return self._storage_dir / f"{exercise_id}.json"
 
-    def _file_get(self, exercise_id: str) -> Optional[ExerciseState]:
+    def _file_get(self, exercise_id: str) -> ExerciseState | None:
         path = self._file_path(exercise_id)
         if not path.exists():
             return None
@@ -297,9 +353,7 @@ class ExerciseStore:
     def _file_save(self, state: ExerciseState) -> None:
         path = self._file_path(state.exercise_id)
         try:
-            path.write_text(
-                state.model_dump_json(indent=2), encoding="utf-8"
-            )
+            path.write_text(state.model_dump_json(indent=2), encoding="utf-8")
         except Exception as exc:
             logger.error("Failed to save exercise to %s: %s", path, exc)
 
@@ -310,8 +364,8 @@ class ExerciseStore:
             return True
         return False
 
-    def _file_list(self) -> List[Dict]:
-        summaries: List[Dict] = []
+    def _file_list(self) -> list[dict]:
+        summaries: list[dict] = []
         for path in self._storage_dir.glob("*.json"):
             try:
                 data = path.read_text(encoding="utf-8")
@@ -338,7 +392,7 @@ class ExerciseStore:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _make_summary(state: ExerciseState) -> Dict:
+    def _make_summary(state: ExerciseState) -> dict:
         """Build a lightweight summary dict from full exercise state."""
         return {
             "exercise_id": state.exercise_id,

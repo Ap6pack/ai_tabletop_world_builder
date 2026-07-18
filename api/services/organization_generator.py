@@ -9,13 +9,14 @@
 """
 Organization generator service for creating realistic cybersecurity training scenarios.
 """
-from typing import Optional, List, Dict, Any
-from api.models import Organization, Department, System, Vulnerability, ThreatActor
-from api.providers import LLMProviderFactory
-from api.services import ContentPolicyService
+
 import json
 import uuid
-from datetime import datetime
+from typing import Any
+
+from api.models import Organization
+from api.providers import LLMProviderFactory
+from api.services import ContentPolicyService
 
 
 class OrganizationGenerator:
@@ -25,23 +26,53 @@ class OrganizationGenerator:
     INDUSTRY_TEMPLATES = {
         "Financial Services": {
             "description": "Banks, credit unions, investment firms, and payment processors",
-            "key_systems": ["Core Banking System", "ATM Network", "Online Banking Portal", "Payment Gateway", "Trading Platform"],
-            "common_departments": ["Retail Banking", "Commercial Banking", "IT Operations", "Compliance", "Risk Management", "Customer Service"],
+            "key_systems": [
+                "Core Banking System",
+                "ATM Network",
+                "Online Banking Portal",
+                "Payment Gateway",
+                "Trading Platform",
+            ],
+            "common_departments": [
+                "Retail Banking",
+                "Commercial Banking",
+                "IT Operations",
+                "Compliance",
+                "Risk Management",
+                "Customer Service",
+            ],
             "compliance_frameworks": ["PCI-DSS", "SOX", "GLBA", "FFIEC"],
             "threat_actors": ["Financially Motivated Crime Groups", "Nation-State APTs", "Insider Threats"],
             "data_types": ["Customer PII", "Financial Records", "Transaction Data", "Credit Card Data"],
         },
         "Healthcare": {
             "description": "Hospitals, clinics, medical practices, and health insurance providers",
-            "key_systems": ["Electronic Health Records (EHR)", "Patient Portal", "Medical Imaging Systems", "Laboratory Information System", "Pharmacy Management"],
+            "key_systems": [
+                "Electronic Health Records (EHR)",
+                "Patient Portal",
+                "Medical Imaging Systems",
+                "Laboratory Information System",
+                "Pharmacy Management",
+            ],
             "common_departments": ["Patient Care", "Radiology", "Laboratory", "Pharmacy", "IT Services", "Billing"],
             "compliance_frameworks": ["HIPAA", "HITECH", "FDA 21 CFR Part 11"],
             "threat_actors": ["Ransomware Groups", "Data Brokers", "Insider Threats"],
-            "data_types": ["PHI (Protected Health Information)", "Medical Records", "Insurance Information", "Prescription Data"],
+            "data_types": [
+                "PHI (Protected Health Information)",
+                "Medical Records",
+                "Insurance Information",
+                "Prescription Data",
+            ],
         },
         "Technology": {
             "description": "Software companies, SaaS providers, cloud platforms, and tech startups",
-            "key_systems": ["Production Infrastructure", "CI/CD Pipeline", "Customer Portal", "API Gateway", "Database Clusters"],
+            "key_systems": [
+                "Production Infrastructure",
+                "CI/CD Pipeline",
+                "Customer Portal",
+                "API Gateway",
+                "Database Clusters",
+            ],
             "common_departments": ["Engineering", "DevOps", "Product", "Sales", "Customer Success", "Security"],
             "compliance_frameworks": ["SOC 2", "ISO 27001", "GDPR", "CCPA"],
             "threat_actors": ["APT Groups", "Competitor Espionage", "Hacktivists", "Supply Chain Attackers"],
@@ -49,7 +80,13 @@ class OrganizationGenerator:
         },
         "Retail": {
             "description": "E-commerce, brick-and-mortar stores, and omnichannel retailers",
-            "key_systems": ["E-commerce Platform", "Point of Sale (POS)", "Inventory Management", "Customer Database", "Payment Processing"],
+            "key_systems": [
+                "E-commerce Platform",
+                "Point of Sale (POS)",
+                "Inventory Management",
+                "Customer Database",
+                "Payment Processing",
+            ],
             "common_departments": ["Sales", "E-commerce", "Store Operations", "Supply Chain", "IT", "Marketing"],
             "compliance_frameworks": ["PCI-DSS", "CCPA", "GDPR"],
             "threat_actors": ["Payment Card Skimmers", "E-commerce Fraud", "Ransomware Groups"],
@@ -57,15 +94,30 @@ class OrganizationGenerator:
         },
         "Manufacturing": {
             "description": "Industrial manufacturers, factories, and supply chain operations",
-            "key_systems": ["SCADA/ICS Systems", "Manufacturing Execution System (MES)", "Enterprise Resource Planning (ERP)", "Supply Chain Management"],
+            "key_systems": [
+                "SCADA/ICS Systems",
+                "Manufacturing Execution System (MES)",
+                "Enterprise Resource Planning (ERP)",
+                "Supply Chain Management",
+            ],
             "common_departments": ["Production", "Quality Assurance", "Supply Chain", "Maintenance", "IT/OT", "Safety"],
             "compliance_frameworks": ["NIST CSF", "IEC 62443", "ISO 27001"],
             "threat_actors": ["Nation-State APTs", "Industrial Espionage", "Ransomware Groups"],
-            "data_types": ["Intellectual Property", "Manufacturing Processes", "Supply Chain Data", "Production Schedules"],
+            "data_types": [
+                "Intellectual Property",
+                "Manufacturing Processes",
+                "Supply Chain Data",
+                "Production Schedules",
+            ],
         },
         "Government": {
             "description": "Federal, state, and local government agencies",
-            "key_systems": ["Citizen Services Portal", "Records Management System", "Emergency Response Systems", "Internal Networks"],
+            "key_systems": [
+                "Citizen Services Portal",
+                "Records Management System",
+                "Emergency Response Systems",
+                "Internal Networks",
+            ],
             "common_departments": ["Public Services", "IT", "Human Resources", "Finance", "Emergency Management"],
             "compliance_frameworks": ["FISMA", "NIST 800-53", "FedRAMP", "CJIS"],
             "threat_actors": ["Nation-State APTs", "Hacktivists", "Terrorist Groups"],
@@ -73,7 +125,12 @@ class OrganizationGenerator:
         },
         "Education": {
             "description": "Universities, colleges, K-12 schools, and online learning platforms",
-            "key_systems": ["Student Information System", "Learning Management System (LMS)", "Research Networks", "Library Systems"],
+            "key_systems": [
+                "Student Information System",
+                "Learning Management System (LMS)",
+                "Research Networks",
+                "Library Systems",
+            ],
             "common_departments": ["Academic Affairs", "Student Services", "IT Services", "Research", "Administration"],
             "compliance_frameworks": ["FERPA", "COPPA", "GDPR"],
             "threat_actors": ["Student Hackers", "Ransomware Groups", "Research Espionage"],
@@ -81,12 +138,17 @@ class OrganizationGenerator:
         },
         "Energy/Utilities": {
             "description": "Power generation, water utilities, oil and gas companies",
-            "key_systems": ["SCADA Systems", "Energy Management System", "Distribution Control", "Customer Billing System"],
+            "key_systems": [
+                "SCADA Systems",
+                "Energy Management System",
+                "Distribution Control",
+                "Customer Billing System",
+            ],
             "common_departments": ["Operations", "Grid Management", "Customer Service", "IT/OT Security", "Compliance"],
             "compliance_frameworks": ["NERC CIP", "TSA Pipeline Security", "NIST CSF"],
             "threat_actors": ["Nation-State APTs", "Eco-terrorists", "Ransomware Groups"],
             "data_types": ["Critical Infrastructure Data", "Customer Information", "Operational Technology Data"],
-        }
+        },
     }
 
     def __init__(self, llm_provider=None, content_policy=None):
@@ -97,15 +159,22 @@ class OrganizationGenerator:
             llm_provider: Optional LLM provider instance. If None, creates default.
             content_policy: Optional content policy. If None, uses educational policy.
         """
-        self.llm_provider = llm_provider or LLMProviderFactory.create_provider()
+        self._llm_provider = llm_provider
         self.content_policy = content_policy or ContentPolicyService.get_policy("educational")
 
+    @property
+    def llm_provider(self):
+        """Lazily instantiate the LLM provider so construction needs no API key."""
+        if self._llm_provider is None:
+            self._llm_provider = LLMProviderFactory.create_provider()
+        return self._llm_provider
+
+    @llm_provider.setter
+    def llm_provider(self, value):
+        self._llm_provider = value
+
     async def generate_organization(
-        self,
-        industry: str,
-        size: str = "medium",
-        complexity: str = "moderate",
-        focus_areas: Optional[List[str]] = None
+        self, industry: str, size: str = "medium", complexity: str = "moderate", focus_areas: list[str] | None = None
     ) -> Organization:
         """
         Generate a complete organization with IT infrastructure.
@@ -137,12 +206,7 @@ class OrganizationGenerator:
         return organization
 
     def _build_organization_prompt(
-        self,
-        industry: str,
-        size: str,
-        complexity: str,
-        template: Dict[str, Any],
-        focus_areas: Optional[List[str]] = None
+        self, industry: str, size: str, complexity: str, template: dict[str, Any], focus_areas: list[str] | None = None
     ) -> str:
         """Build the prompt for organization generation."""
 
@@ -150,7 +214,7 @@ class OrganizationGenerator:
             "small": "50-100 employees",
             "medium": "100-1000 employees",
             "large": "1000-5000 employees",
-            "enterprise": "5000+ employees"
+            "enterprise": "5000+ employees",
         }
 
         focus_text = ""
@@ -163,7 +227,7 @@ ORGANIZATION DETAILS:
 - Industry: {industry}
 - Size: {size_mapping.get(size, size)}
 - Complexity: {complexity}
-- Description: {template['description']}
+- Description: {template["description"]}
 
 REQUIREMENTS:
 1. Create a realistic company name (not a real company)
@@ -174,10 +238,10 @@ REQUIREMENTS:
 {focus_text}
 
 CONTEXT:
-- Common departments in this industry: {', '.join(template['common_departments'])}
-- Typical systems: {', '.join(template['key_systems'])}
-- Compliance requirements: {', '.join(template['compliance_frameworks'])}
-- Data types: {', '.join(template['data_types'])}
+- Common departments in this industry: {", ".join(template["common_departments"])}
+- Typical systems: {", ".join(template["key_systems"])}
+- Compliance requirements: {", ".join(template["compliance_frameworks"])}
+- Data types: {", ".join(template["data_types"])}
 
 Generate a realistic organization profile in valid JSON format:
 {{
@@ -199,11 +263,11 @@ IMPORTANT: Respond ONLY with valid JSON. No additional text."""
         mapping = {
             "basic": "immature or developing (many vulnerabilities, limited controls)",
             "moderate": "developing or defined (some controls in place, room for improvement)",
-            "complex": "defined or managed (mature security program with some gaps)"
+            "complex": "defined or managed (mature security program with some gaps)",
         }
         return mapping.get(complexity, "developing")
 
-    async def _generate_with_llm(self, prompt: str, context: str) -> Dict[str, Any]:
+    async def _generate_with_llm(self, prompt: str, context: str) -> dict[str, Any]:
         """
         Generate content using LLM and parse JSON response.
 
@@ -227,10 +291,7 @@ IMPORTANT RULES:
 5. No markdown code blocks, just raw JSON"""
 
         result = await self.llm_provider.complete(
-            prompt=prompt,
-            system_message=system_message,
-            temperature=0.7,
-            max_tokens=2000
+            prompt=prompt, system_message=system_message, temperature=0.7, max_tokens=2000
         )
 
         content = result["content"].strip()
@@ -245,14 +306,10 @@ IMPORTANT RULES:
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse LLM output as JSON: {e}\nOutput: {content}")
+            raise ValueError(f"Failed to parse LLM output as JSON: {e}\nOutput: {content}") from e
 
     def _parse_organization(
-        self,
-        org_data: Dict[str, Any],
-        industry: str,
-        size: str,
-        template: Dict[str, Any]
+        self, org_data: dict[str, Any], industry: str, size: str, template: dict[str, Any]
     ) -> Organization:
         """Parse LLM output into Organization model."""
 
@@ -267,15 +324,15 @@ IMPORTANT RULES:
             departments=[],  # Will be populated separately
             threat_actors=[],  # Will be populated separately
             security_posture=org_data.get("security_posture", "developing"),
-            compliance_frameworks=org_data.get("compliance_frameworks", template["compliance_frameworks"])
+            compliance_frameworks=org_data.get("compliance_frameworks", template["compliance_frameworks"]),
         )
 
     @staticmethod
-    def get_supported_industries() -> List[str]:
+    def get_supported_industries() -> list[str]:
         """Get list of supported industries."""
         return list(OrganizationGenerator.INDUSTRY_TEMPLATES.keys())
 
     @staticmethod
-    def get_industry_info(industry: str) -> Optional[Dict[str, Any]]:
+    def get_industry_info(industry: str) -> dict[str, Any] | None:
         """Get information about a specific industry."""
         return OrganizationGenerator.INDUSTRY_TEMPLATES.get(industry)

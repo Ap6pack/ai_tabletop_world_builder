@@ -9,11 +9,13 @@
 """
 Threat actor generator service for creating realistic adversary profiles.
 """
-from typing import List, Dict, Any, Optional
-from api.models import ThreatActor
-from api.providers import LLMProviderFactory
+
 import json
 import uuid
+from typing import Any
+
+from api.models import ThreatActor
+from api.providers import LLMProviderFactory
 
 
 class ThreatActorGenerator:
@@ -21,15 +23,22 @@ class ThreatActorGenerator:
 
     def __init__(self, llm_provider=None):
         """Initialize the threat actor generator."""
-        self.llm_provider = llm_provider or LLMProviderFactory.create_provider()
+        self._llm_provider = llm_provider
+
+    @property
+    def llm_provider(self):
+        """Lazily instantiate the LLM provider so construction needs no API key."""
+        if self._llm_provider is None:
+            self._llm_provider = LLMProviderFactory.create_provider()
+        return self._llm_provider
+
+    @llm_provider.setter
+    def llm_provider(self, value):
+        self._llm_provider = value
 
     async def generate_threat_actors(
-        self,
-        organization_name: str,
-        industry: str,
-        focus_areas: Optional[List[str]] = None,
-        num_actors: int = 2
-    ) -> List[ThreatActor]:
+        self, organization_name: str, industry: str, focus_areas: list[str] | None = None, num_actors: int = 2
+    ) -> list[ThreatActor]:
         """
         Generate threat actors targeting an organization.
 
@@ -42,12 +51,7 @@ class ThreatActorGenerator:
         Returns:
             List of ThreatActor instances
         """
-        prompt = self._build_threat_actors_prompt(
-            organization_name,
-            industry,
-            focus_areas,
-            num_actors
-        )
+        prompt = self._build_threat_actors_prompt(organization_name, industry, focus_areas, num_actors)
 
         actors_data = await self._generate_with_llm(prompt)
 
@@ -59,11 +63,7 @@ class ThreatActorGenerator:
         return threat_actors
 
     def _build_threat_actors_prompt(
-        self,
-        organization_name: str,
-        industry: str,
-        focus_areas: Optional[List[str]],
-        num_actors: int
+        self, organization_name: str, industry: str, focus_areas: list[str] | None, num_actors: int
     ) -> str:
         """Build prompt for threat actor generation."""
 
@@ -117,7 +117,7 @@ IMPORTANT:
 
         return prompt
 
-    async def _generate_with_llm(self, prompt: str) -> Dict[str, Any]:
+    async def _generate_with_llm(self, prompt: str) -> dict[str, Any]:
         """Generate content using LLM and parse JSON."""
 
         system_message = """You are generating realistic threat actor profiles for cybersecurity training scenarios.
@@ -135,7 +135,7 @@ RULES:
             prompt=prompt,
             system_message=system_message,
             temperature=0.8,  # Slightly higher for creative threat actor names
-            max_tokens=2000
+            max_tokens=2000,
         )
 
         content = result["content"].strip()
@@ -150,9 +150,9 @@ RULES:
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse threat actor data: {e}\nOutput: {content}")
+            raise ValueError(f"Failed to parse threat actor data: {e}\nOutput: {content}") from e
 
-    def _parse_threat_actor(self, actor_info: Dict[str, Any]) -> ThreatActor:
+    def _parse_threat_actor(self, actor_info: dict[str, Any]) -> ThreatActor:
         """Parse threat actor data into ThreatActor model."""
 
         actor_id = f"actor_{uuid.uuid4().hex[:8]}"
@@ -164,5 +164,5 @@ RULES:
             motivation=actor_info.get("motivation", "Unknown"),
             sophistication=actor_info.get("sophistication", "script-kiddie"),
             ttps=actor_info.get("ttps", []),
-            targets=actor_info.get("targets", [])
+            targets=actor_info.get("targets", []),
         )

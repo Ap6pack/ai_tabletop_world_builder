@@ -3,7 +3,7 @@
 ## Project Status
 
 **Version**: 1.0.0
-**Status**: Phase 10 Production Readiness Complete
+**Status**: Active development — core platform functional, CI green, pre-production (see AUDIT.md)
 **License**: Proprietary (Open source code, commercial use requires license)
 **Copyright**: Veritas Aequitas Holdings LLC
 
@@ -67,7 +67,7 @@ ai_tabletop_world_builder/
 │
 ├── Testing (tests/)
 │   ├── conftest.py                  # Shared test fixtures
-│   └── test_*.py                    # 24 test files (241 tests)
+│   └── test_*.py                    # 25 test files (245 tests)
 │
 ├── Documentation (docs/)
 │   └── *.md                         # Phase completion & planning docs
@@ -96,7 +96,7 @@ ai_tabletop_world_builder/
 | **API Routers** | 12 |
 | **UI Pages** | 12 |
 | **Test Files** | 24 |
-| **Tests** | 241 (240 passed, 1 skipped) |
+| **Tests** | 245 (244 passed, 1 skipped) — hermetic, no API key needed |
 | **Industries** | 8 |
 | **Player Roles** | 4 |
 | **MITRE Techniques** | 93 |
@@ -236,7 +236,7 @@ ai_tabletop_world_builder/
 - **Container**: Docker + Docker Compose
 - **CI/CD**: GitHub Actions
 - **Monitoring**: OpenTelemetry
-- **Storage**: JSON files (file-based persistence)
+- **Storage**: SQLAlchemy (SQLite by default, Postgres-ready via `DATABASE_URL`) for mutable state — users, game sessions, exercises, API keys, webhooks; append-only JSONL for audit logs; JSON files for generated scenarios
 
 ---
 
@@ -275,6 +275,6 @@ ai_tabletop_world_builder/
 
 ---
 
-**Last Updated**: 2026-02-20
+**Last Updated**: 2026-07-18
 **Version**: 1.0.0
-**Status**: Phase 10 Production Readiness Complete
+**Status**: Active development — core platform functional, CI green, pre-production (see AUDIT.md)
