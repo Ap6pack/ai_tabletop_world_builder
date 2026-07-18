@@ -236,7 +236,7 @@ ai_tabletop_world_builder/
 - **Container**: Docker + Docker Compose
 - **CI/CD**: GitHub Actions
 - **Monitoring**: OpenTelemetry
-- **Storage**: JSON files (file-based persistence)
+- **Storage**: SQLAlchemy (SQLite by default, Postgres-ready via `DATABASE_URL`) for mutable state — users, game sessions, exercises, API keys, webhooks; append-only JSONL for audit logs; JSON files for generated scenarios
 
 ---
 

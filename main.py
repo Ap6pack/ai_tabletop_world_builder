@@ -10,9 +10,12 @@
 FastAPI main application entry point.
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.db import init_db
 from api.middleware.cors import get_cors_origins
 from api.middleware.request_logging import RequestLoggingMiddleware
 from api.middleware.security import SecurityHeadersMiddleware
@@ -33,11 +36,20 @@ from api.routers import (
 )
 from config import settings
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Ensure the database schema exists before serving requests."""
+    init_db()
+    yield
+
+
 # Create FastAPI app
 app = FastAPI(
     title="Cybersecurity War Gaming Platform API",
     description="AI-powered cybersecurity training and war gaming platform",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Configure CORS

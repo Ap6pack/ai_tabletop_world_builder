@@ -21,6 +21,7 @@ from sqlalchemy import select
 from api.db import ExerciseRow, init_db, session_scope
 from api.models.exercise_models import ExerciseState
 from api.utils.logger import setup_logger
+from config.settings import settings
 
 logger = setup_logger(__name__)
 
@@ -50,8 +51,13 @@ class ExerciseStore:
 
         Args:
             redis_url: Redis connection URL (e.g., "redis://localhost:6379/0").
-                       If None or connection fails, falls back to file storage.
+                       Defaults to ``settings.redis_url``. If empty/None or the
+                       connection fails, exercise state is served from the
+                       database.
         """
+        if redis_url is None:
+            redis_url = settings.redis_url or None
+
         self._use_redis = False
         self._redis_client: redis.Redis | None = None
         self._storage_dir = Path("data/exercises")
@@ -70,15 +76,15 @@ class ExerciseStore:
                 logger.info("ExerciseStore initialized with Redis backend: %s", redis_url)
             except (redis.ConnectionError, redis.RedisError) as exc:
                 logger.warning(
-                    "Redis connection failed (%s), falling back to file storage.",
+                    "Redis connection failed (%s), falling back to database storage.",
                     exc,
                 )
                 self._redis_client = None
                 self._use_redis = False
         elif redis_url and not REDIS_AVAILABLE:
-            logger.warning("redis-py package not installed. Falling back to file storage.")
+            logger.warning("redis-py package not installed. Falling back to database storage.")
         else:
-            logger.info("No Redis URL provided. Using file-based exercise storage.")
+            logger.info("No Redis URL provided. Using database exercise storage.")
 
     # ------------------------------------------------------------------
     # Public API
