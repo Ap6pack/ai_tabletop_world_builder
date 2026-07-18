@@ -8,8 +8,6 @@
 # For inquiries, contact: contact@veritasandaequitas.com
 """Tests for ScenarioOrchestrator — scenario generation pipeline."""
 
-import json
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -155,24 +153,14 @@ class TestGenerateCompleteScenario:
 
 class TestSaveLoadScenario:
     @pytest.mark.asyncio
-    async def test_save_and_load_roundtrip(self, orch, tmp_path):
-        """Round-trip save → load preserves data."""
+    async def test_save_and_load_roundtrip(self, orch):
+        """Round-trip save → load preserves data (DB-backed)."""
         org = _make_org(departments=[_make_dept()])
 
-        # Point the orchestrator at temp directory
-        scenarios_dir = str(tmp_path / "scenarios" / "generated")
-        os.makedirs(scenarios_dir, exist_ok=True)
+        filename = await orch.save_scenario(org, "test_save.json")
+        assert filename == "test_save.json"
 
-        # Patch the hardcoded paths in save/load
-        with patch("api.services.scenario_orchestrator.os.makedirs"):
-            filepath = os.path.join(scenarios_dir, "test_save.json")
-            with open(filepath, "w") as f:
-                json.dump(org.model_dump(), f, default=str)
-
-        # Load directly to verify round-trip
-        with open(filepath) as f:
-            data = json.load(f)
-        loaded = Organization(**data)
+        loaded = await orch.load_scenario(filename)
         assert loaded.name == "Test Corp"
         assert loaded.industry == "Technology"
 
@@ -181,6 +169,14 @@ class TestSaveLoadScenario:
         with pytest.raises(FileNotFoundError):
             await orch.load_scenario("nonexistent_file.json")
 
+    @pytest.mark.asyncio
+    async def test_delete_scenario(self, orch):
+        org = _make_org()
+        await orch.save_scenario(org, "to_delete.json")
+        orch.delete_scenario("to_delete.json")
+        with pytest.raises(FileNotFoundError):
+            await orch.load_scenario("to_delete.json")
+
 
 # ---------------------------------------------------------------------------
 # list_scenarios / industry support
@@ -188,11 +184,15 @@ class TestSaveLoadScenario:
 
 
 class TestListAndIndustry:
-    def test_list_scenarios_empty_dir(self, orch, tmp_path):
-        """No scenarios directory returns empty list."""
-        with patch("api.services.scenario_orchestrator.os.path.exists", return_value=False):
-            result = orch.list_scenarios()
-        assert result == []
+    def test_list_scenarios_empty(self, orch):
+        """An empty database returns no scenarios."""
+        assert orch.list_scenarios() == []
+
+    @pytest.mark.asyncio
+    async def test_list_scenarios_returns_saved(self, orch):
+        await orch.save_scenario(_make_org(), "listed.json")
+        listing = orch.list_scenarios()
+        assert any(s["filename"] == "listed.json" for s in listing)
 
     def test_get_supported_industries(self):
         industries = ScenarioOrchestrator.get_supported_industries()

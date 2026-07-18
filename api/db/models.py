@@ -136,3 +136,26 @@ class WebhookDeliveryRow(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     webhook_id: Mapped[str] = mapped_column(String(64), index=True)
     record: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+class GeneratedScenarioRow(Base):
+    __tablename__ = "generated_scenarios"
+
+    filename: Mapped[str] = mapped_column(String(255), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), default="")
+    industry: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    size: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[str] = mapped_column(String(64))
+    data: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+class LibraryScenarioRow(Base):
+    __tablename__ = "library_scenarios"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    category: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    difficulty: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    rating: Mapped[float] = mapped_column(default=0.0)
+    rating_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[str] = mapped_column(String(64))
+    data: Mapped[dict[str, Any]] = mapped_column(JSON)

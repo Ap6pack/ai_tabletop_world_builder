@@ -11,9 +11,11 @@ Scenario orchestrator service that coordinates all generators to create complete
 """
 
 import json
-import os
 from datetime import datetime
 
+from sqlalchemy import select
+
+from api.db import GeneratedScenarioRow, init_db, session_scope
 from api.models import Organization
 from api.providers import LLMProviderFactory
 from api.services.department_generator import DepartmentGenerator
@@ -40,6 +42,7 @@ class ScenarioOrchestrator:
         The LLM provider is created lazily by each generator on first use, so
         constructing the orchestrator does not require an API key.
         """
+        init_db()
         self._llm_provider = llm_provider
 
         # Share the (possibly None) provider with all generators; each will
@@ -175,77 +178,71 @@ class ScenarioOrchestrator:
             safe_name = organization.name.replace(" ", "_").replace("/", "_")
             filename = f"{safe_name}_{timestamp}.json"
 
-        # Ensure scenarios directory exists
-        scenarios_dir = "scenarios/generated"
-        os.makedirs(scenarios_dir, exist_ok=True)
+        payload = organization.model_dump(mode="json")
+        with session_scope() as db:
+            row = db.get(GeneratedScenarioRow, filename)
+            if row is None:
+                row = GeneratedScenarioRow(filename=filename, created_at=datetime.now().isoformat())
+                db.add(row)
+            row.name = organization.name
+            row.industry = organization.industry
+            row.size = organization.size
+            row.data = payload
 
-        filepath = os.path.join(scenarios_dir, filename)
-
-        # Convert to dict and save
-        with open(filepath, "w") as f:
-            json.dump(organization.model_dump(), f, indent=2, default=str)
-
-        return filepath
+        return filename
 
     async def load_scenario(self, filename: str) -> Organization:
         """
-        Load scenario from JSON file.
+        Load a saved scenario by filename.
 
         Args:
-            filename: Name of file in scenarios/generated directory
+            filename: Identifier of the saved scenario
 
         Returns:
             Organization instance
 
         Raises:
-            FileNotFoundError: If file doesn't exist
+            FileNotFoundError: If the scenario does not exist
         """
-        filepath = os.path.join("scenarios/generated", filename)
+        with session_scope() as db:
+            row = db.get(GeneratedScenarioRow, filename)
+            if row is None:
+                raise FileNotFoundError(f"Scenario not found: {filename}")
+            return Organization(**row.data)
 
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"Scenario file not found: {filepath}")
+    def delete_scenario(self, filename: str) -> None:
+        """
+        Delete a saved scenario.
 
-        with open(filepath) as f:
-            data = json.load(f)
-
-        return Organization(**data)
+        Raises:
+            FileNotFoundError: If the scenario does not exist
+        """
+        with session_scope() as db:
+            row = db.get(GeneratedScenarioRow, filename)
+            if row is None:
+                raise FileNotFoundError(f"Scenario not found: {filename}")
+            db.delete(row)
 
     def list_scenarios(self) -> list[dict]:
         """
         List all saved scenarios.
 
         Returns:
-            List of scenario metadata (name, size, created_at)
+            List of scenario metadata (filename, name, industry, size, created_at)
         """
-        scenarios_dir = "scenarios/generated"
-
-        if not os.path.exists(scenarios_dir):
-            return []
-
-        scenarios = []
-        for filename in os.listdir(scenarios_dir):
-            if filename.endswith(".json"):
-                filepath = os.path.join(scenarios_dir, filename)
-                stat = os.stat(filepath)
-
-                # Try to load and get basic info
-                try:
-                    with open(filepath) as f:
-                        data = json.load(f)
-
-                    scenarios.append(
-                        {
-                            "filename": filename,
-                            "name": data.get("name", "Unknown"),
-                            "industry": data.get("industry", "Unknown"),
-                            "size": data.get("size", "Unknown"),
-                            "created_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
-                            "file_size": stat.st_size,
-                        }
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to read scenario file {filename}: {str(e)}")
-                    continue
+        with session_scope() as db:
+            rows = db.scalars(select(GeneratedScenarioRow)).all()
+            scenarios = [
+                {
+                    "filename": row.filename,
+                    "name": row.name or "Unknown",
+                    "industry": row.industry or "Unknown",
+                    "size": row.size or "Unknown",
+                    "created_at": row.created_at,
+                    "file_size": len(json.dumps(row.data)),
+                }
+                for row in rows
+            ]
 
         return sorted(scenarios, key=lambda x: x["created_at"], reverse=True)
 
