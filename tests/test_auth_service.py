@@ -11,30 +11,19 @@ Test suite for AuthService — user registration, authentication,
 JWT token management, and user CRUD operations.
 """
 
-import os
-import shutil
 import sys
-
-TEST_USERS_DIR = "data/test_users"
-
-
-def cleanup_test_dir():
-    """Remove and recreate the test users directory."""
-    if os.path.exists(TEST_USERS_DIR):
-        shutil.rmtree(TEST_USERS_DIR)
-    os.makedirs(TEST_USERS_DIR, exist_ok=True)
 
 
 def make_service(clean=True):
-    """Create an AuthService instance pointed at the test directory."""
-    if clean:
-        cleanup_test_dir()
+    """Create an AuthService instance.
+
+    Test isolation is provided by the autouse ``_fresh_db`` fixture (conftest),
+    which binds a throwaway SQLite database per test. The ``clean`` argument is
+    retained for backward compatibility and is a no-op.
+    """
     from api.services.auth_service import AuthService
 
-    service = AuthService()
-    service.users_dir = TEST_USERS_DIR
-    os.makedirs(service.users_dir, exist_ok=True)
-    return service
+    return AuthService()
 
 
 # ── Registration Tests ───────────────────────────────────────────────
@@ -258,7 +247,6 @@ if __name__ == "__main__":
     print("AUTH SERVICE TEST SUITE")
     print("=" * 70)
 
-    cleanup_test_dir()
     all_passed = True
     try:
         test_register_user()
@@ -288,7 +276,5 @@ if __name__ == "__main__":
 
         traceback.print_exc()
         all_passed = False
-    finally:
-        cleanup_test_dir()
 
     sys.exit(0 if all_passed else 1)

@@ -32,6 +32,27 @@ from api.models.schemas import (
 )
 
 # ============================================================================
+# Database isolation
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def _fresh_db(tmp_path):
+    """Bind the DB engine to a throwaway SQLite file for each test.
+
+    Guarantees test isolation and keeps the suite from touching the real
+    ``data/app.db``. Services read the engine from ``api.db`` at call time, so
+    rebinding here transparently redirects all storage.
+    """
+    import api.db as db
+
+    db.configure_engine(f"sqlite:///{tmp_path}/test.db")
+    db.init_db()
+    yield
+    db.get_engine().dispose()
+
+
+# ============================================================================
 # Hermeticity guard
 # ============================================================================
 
