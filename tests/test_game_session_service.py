@@ -8,9 +8,6 @@
 # For inquiries, contact: contact@veritasandaequitas.com
 """Tests for GameSessionService — session persistence and management."""
 
-import json
-import os
-
 import pytest
 
 from api.models.schemas import (
@@ -49,12 +46,9 @@ def _make_org():
 
 
 @pytest.fixture
-def session_svc(tmp_path):
-    """GameSessionService backed by a temp directory."""
-    svc = GameSessionService()
-    svc.sessions_dir = str(tmp_path / "sessions")
-    os.makedirs(svc.sessions_dir, exist_ok=True)
-    return svc
+def session_svc():
+    """GameSessionService backed by the per-test database (see conftest _fresh_db)."""
+    return GameSessionService()
 
 
 # ---------------------------------------------------------------------------
@@ -201,23 +195,24 @@ class TestSessionLifecycle:
 
 
 # ---------------------------------------------------------------------------
-# File persistence
+# Persistence
 # ---------------------------------------------------------------------------
 
 
-class TestFilePersistence:
-    def test_save_creates_json_file(self, session_svc):
+class TestPersistence:
+    def test_save_persists_session(self, session_svc):
         gs = session_svc.create_session(
             _make_org(),
             "incident-response",
             "soc-analyst",
             "intermediate",
         )
-        filepath = os.path.join(session_svc.sessions_dir, f"{gs.session_id}.json")
-        assert os.path.exists(filepath)
-        with open(filepath) as f:
-            data = json.load(f)
-        assert data["session_id"] == gs.session_id
+        # A freshly created session is retrievable from storage.
+        loaded = session_svc.get_session(gs.session_id)
+        assert loaded is not None
+        assert loaded.session_id == gs.session_id
+        # And it appears in the indexed session listing.
+        assert any(s["session_id"] == gs.session_id for s in session_svc.list_sessions())
 
     def test_round_trip_preserves_data(self, session_svc):
         gs = session_svc.create_session(
