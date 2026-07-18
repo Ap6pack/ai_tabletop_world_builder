@@ -65,6 +65,25 @@ def _fresh_db(tmp_path):
 
 
 # ============================================================================
+# Rate limiter isolation
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Clear rate-limit counters before each test.
+
+    The TestClient presents a single client identity, so without a reset the
+    fixed-window counts would accumulate across the suite and trip the limit.
+    """
+    from api.middleware.rate_limit import rate_limiter
+
+    rate_limiter.reset()
+    yield
+    rate_limiter.reset()
+
+
+# ============================================================================
 # Hermeticity guard
 # ============================================================================
 

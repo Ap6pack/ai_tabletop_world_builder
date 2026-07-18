@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.db import init_db
 from api.middleware.auth import get_current_user
 from api.middleware.cors import get_cors_origins
+from api.middleware.rate_limit import rate_limit
 from api.middleware.request_logging import RequestLoggingMiddleware
 from api.middleware.security import SecurityHeadersMiddleware
 from api.middleware.telemetry import TelemetryMiddleware
@@ -68,23 +69,24 @@ app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(TelemetryMiddleware)
 TelemetryMiddleware.setup_telemetry(app)
 
-# Product routers require authentication when REQUIRE_AUTH is enabled. With auth
-# disabled (the local/dev default) get_current_user returns None and requests
-# pass through unchanged. The auth router is intentionally left open so users can
-# register and log in.
-auth_required = [Depends(get_current_user)]
-app.include_router(llm_router, dependencies=auth_required)
-app.include_router(content_policy_router, dependencies=auth_required)
-app.include_router(scenarios_router, dependencies=auth_required)
-app.include_router(game_router, dependencies=auth_required)
-app.include_router(settings_router, dependencies=auth_required)
-app.include_router(audit_router, dependencies=auth_required)
-app.include_router(analytics_router, dependencies=auth_required)
-app.include_router(auth_router)
-app.include_router(library_router, dependencies=auth_required)
-app.include_router(integrations_router, dependencies=auth_required)
-app.include_router(mitre_router, dependencies=auth_required)
-app.include_router(exercise_router, dependencies=auth_required)
+# All routers are rate limited. Product routers additionally require
+# authentication when REQUIRE_AUTH is enabled; with auth disabled (the local/dev
+# default) get_current_user returns None and requests pass through unchanged. The
+# auth router is left open (no auth dependency) but is still rate limited to slow
+# credential-stuffing against register/login.
+protected = [Depends(rate_limit), Depends(get_current_user)]
+app.include_router(llm_router, dependencies=protected)
+app.include_router(content_policy_router, dependencies=protected)
+app.include_router(scenarios_router, dependencies=protected)
+app.include_router(game_router, dependencies=protected)
+app.include_router(settings_router, dependencies=protected)
+app.include_router(audit_router, dependencies=protected)
+app.include_router(analytics_router, dependencies=protected)
+app.include_router(auth_router, dependencies=[Depends(rate_limit)])
+app.include_router(library_router, dependencies=protected)
+app.include_router(integrations_router, dependencies=protected)
+app.include_router(mitre_router, dependencies=protected)
+app.include_router(exercise_router, dependencies=protected)
 
 
 @app.get("/")

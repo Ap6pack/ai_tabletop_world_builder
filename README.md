@@ -372,6 +372,11 @@ pytest --tb=short -q
   `admin` role. With auth disabled (the local/dev default) endpoints are open.
   Note: the Streamlit UI does not yet attach tokens, so run it against an
   auth-disabled API or behind an authenticating gateway.
+- **Rate Limiting**: Fixed-window limits on all API endpoints, keyed per
+  authenticated user (or client IP when anonymous), to protect LLM-backed
+  endpoints from abuse. Configure via `RATE_LIMIT_ENABLED`, `RATE_LIMIT_REQUESTS`,
+  and `RATE_LIMIT_WINDOW_SECONDS`; uses Redis (`REDIS_URL`) for shared limits
+  across instances, otherwise an in-process counter.
 
 ## Contributing
 
