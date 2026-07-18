@@ -50,12 +50,17 @@ class TestHealthEndpoint:
 
 class TestRouterRegistration:
     def test_all_routers_registered(self):
-        """Verify a minimum number of routes are registered."""
+        """Verify a minimum number of endpoints are registered.
+
+        Counts paths via the OpenAPI schema rather than ``app.routes``: modern
+        FastAPI includes routers lazily, so the raw route list holds router
+        wrappers, not expanded endpoints.
+        """
         from main import app
 
-        routes = [r for r in app.routes if hasattr(r, "methods")]
-        # We have 75+ endpoints across 12 routers
-        assert len(routes) >= 20, f"Only {len(routes)} routes registered"
+        paths = app.openapi()["paths"]
+        # We have 60+ unique endpoint paths across 12 routers
+        assert len(paths) >= 20, f"Only {len(paths)} endpoint paths registered"
 
     def test_key_endpoints_exist(self):
         """Verify critical endpoint paths are registered."""

@@ -15,9 +15,9 @@ import re
 import uuid
 from datetime import UTC, datetime, timedelta
 
+import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from jose import JWTError, jwt
 from sqlalchemy import select
 
 from api.db import UserRow, init_db, session_scope
@@ -182,7 +182,7 @@ class AuthService:
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             return payload
-        except JWTError as exc:
+        except jwt.PyJWTError as exc:
             logger.debug("Token verification failed: %s", exc)
             return None
 
