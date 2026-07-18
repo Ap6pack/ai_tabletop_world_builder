@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Database storage layer (SQLAlchemy)**: mutable application state — users,
+  game sessions, exercises, API keys, and webhooks — now persists to a real
+  database (SQLite by default, Postgres-ready via `DATABASE_URL`) instead of
+  loose JSON files. Replaces O(n) directory scans with indexed queries and adds
+  transactional, concurrency-safe writes. Redis remains an optional low-latency
+  fast-path for live exercises; audit logs stay append-only JSONL by design.
 - **Together AI provider**: implemented end-to-end (provider, factory, availability,
   settings API, request schema, and Settings UI). It was previously documented but
   unimplemented, raising `Unknown provider type` at runtime.

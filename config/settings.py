@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     # URL (e.g. postgresql+psycopg://user:pass@host/db) for production.
     database_url: str = "sqlite:///./data/app.db"
 
+    # Optional Redis URL used as a low-latency fast-path for live multi-team
+    # exercise state. Empty means exercises are served from the database.
+    redis_url: str = ""
+
     @model_validator(mode="after")
     def _reject_insecure_auth_config(self) -> "Settings":
         """Fail fast if auth is enabled without a real JWT secret.

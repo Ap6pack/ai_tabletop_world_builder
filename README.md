@@ -403,9 +403,10 @@ For issues and questions:
 ---
 
 **Version**: 1.0.0
-**Status**: Active development — core platform functional and CI green; not yet
-production-hardened (auth is not enforced on product endpoints and storage is
-file-based — see AUDIT.md).
+**Status**: Active development — core platform functional and CI green. Mutable
+state (users, sessions, exercises, API keys, webhooks) is stored via SQLAlchemy
+(SQLite by default, Postgres-ready via `DATABASE_URL`). Auth is not yet enforced
+on product endpoints — see AUDIT.md.
 **Last Updated**: 2026-07-18
 
 See [CHANGELOG.md](CHANGELOG.md) for complete details.
