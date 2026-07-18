@@ -78,6 +78,12 @@ class Settings(BaseSettings):
     scenarios_path: str = "./scenarios/generated"
     data_path: str = "./data"
 
+    # Database
+    # SQLAlchemy URL for mutable application state (users, sessions, exercises,
+    # API keys, webhooks). Defaults to a local SQLite file; set to a Postgres
+    # URL (e.g. postgresql+psycopg://user:pass@host/db) for production.
+    database_url: str = "sqlite:///./data/app.db"
+
     @model_validator(mode="after")
     def _reject_insecure_auth_config(self) -> "Settings":
         """Fail fast if auth is enabled without a real JWT secret.
