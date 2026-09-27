@@ -8,8 +8,8 @@ multi-user environment. For local development see the README.
 - **API**: FastAPI (`main:app`), stateless — scale horizontally behind a load balancer.
 - **Frontend**: Streamlit (`app/Home.py`).
 - **Database**: PostgreSQL (required for production). All mutable state lives here.
-- **Cache (optional)**: Redis — a low-latency fast-path for live multi-team
-  exercises and shared rate-limit counters across instances.
+- **Cache**: Redis — shared rate-limit counters (required with more than one
+  worker or instance) and a low-latency fast-path for live multi-team exercises.
 
 > **Warning — single trusted team only (for now).** Game sessions, generated
 > scenarios and exercises are not yet scoped to their owner, and exercise roles
@@ -20,9 +20,9 @@ multi-user environment. For local development see the README.
 
 ## 1. Prerequisites
 
-- Python 3.13
+- Python 3.11, 3.12 or 3.13
 - A managed PostgreSQL database (RDS, Cloud SQL, Neon, Supabase, …)
-- (Optional) Redis
+- Redis (required when running more than one worker or instance)
 - An API key for at least one LLM provider (OpenAI, Anthropic, Together, or a
   self-hosted Ollama)
 
@@ -91,6 +91,11 @@ python scripts/create_admin.py <username>
 ```bash
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
+
+> **Redis is required for more than one worker or instance.** Without
+> `REDIS_URL`, rate-limit counters live in each worker process, so four workers
+> allow four times the configured limit. The API logs a warning at startup when
+> it is running without shared counters.
 
 **Frontend**:
 

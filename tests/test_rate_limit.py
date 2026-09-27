@@ -56,3 +56,23 @@ def test_limiter_key_prefers_user_over_ip():
     # No/invalid token falls back to client IP.
     request.headers = {}
     assert rl._client_key(request) == "ip:1.2.3.4"
+
+
+def test_startup_warns_without_shared_counters(monkeypatch):
+    from api.middleware import rate_limit as rl
+
+    monkeypatch.setenv("WEB_CONCURRENCY", "4")
+    message = rl.warn_if_limits_not_shared()
+    assert message is not None
+    assert "4x" in message
+    assert "REDIS_URL" in message
+
+
+def test_no_warning_with_redis_or_when_disabled(monkeypatch):
+    from api.middleware import rate_limit as rl
+
+    monkeypatch.setattr(rl.rate_limiter, "_redis", object())
+    assert rl.warn_if_limits_not_shared() is None
+    monkeypatch.setattr(rl.rate_limiter, "_redis", None)
+    monkeypatch.setattr(settings, "rate_limit_enabled", False)
+    assert rl.warn_if_limits_not_shared() is None

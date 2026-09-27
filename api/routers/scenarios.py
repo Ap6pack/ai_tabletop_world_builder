@@ -25,6 +25,7 @@ class GenerateScenarioRequest(BaseModel):
     complexity: str = Field("moderate", description="Scenario complexity", examples=["moderate"])
     focus_areas: list[str] | None = Field(None, description="Focus areas", examples=[["ransomware", "phishing"]])
     num_departments: int = Field(3, ge=1, le=10, description="Number of departments to generate")
+    duration_minutes: int = Field(60, ge=15, le=480, description="Planned exercise length in minutes")
 
 
 class ScenarioListItem(BaseModel):
@@ -62,6 +63,7 @@ async def generate_scenario(request: GenerateScenarioRequest):
             focus_areas=request.focus_areas,
             num_departments=request.num_departments,
         )
+        organization.metadata["duration_minutes"] = request.duration_minutes
 
         # Auto-save the generated scenario
         filepath = await orchestrator.save_scenario(organization)

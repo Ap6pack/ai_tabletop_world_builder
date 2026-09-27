@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.db import init_db
 from api.middleware.auth import get_current_user
 from api.middleware.cors import allow_credentials, get_cors_origins
-from api.middleware.rate_limit import rate_limit
+from api.middleware.rate_limit import rate_limit, warn_if_limits_not_shared
 from api.middleware.request_logging import RequestLoggingMiddleware
 from api.middleware.security import SecurityHeadersMiddleware
 from api.middleware.telemetry import TelemetryMiddleware
@@ -40,6 +40,7 @@ async def lifespan(_app: FastAPI):
     """Ensure the database schema exists and load stored settings before serving requests."""
     init_db()
     settings_store.apply_overrides(force=True)
+    warn_if_limits_not_shared()
     yield
 
 

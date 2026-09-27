@@ -85,12 +85,23 @@ git remote add upstream https://github.com/Ap6pack/ai_tabletop_world_builder.git
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Install development dependencies
-pip install pytest pytest-asyncio black flake8 mypy
+# Install runtime + development dependencies (both are fully pinned lock files)
+pip install -r requirements.txt -r requirements-dev.txt
 ```
+
+#### Changing dependencies
+
+Edit the top-level lists in `requirements.in` (runtime) or `requirements-dev.in`
+(tests and tooling), then regenerate the lock files with
+[uv](https://docs.astral.sh/uv/):
+
+```bash
+uv pip compile requirements.in --universal --python-version 3.11 -o requirements.txt
+uv pip compile requirements-dev.in --universal --python-version 3.11 -o requirements-dev.txt
+```
+
+The Dockerfiles and CI install only from the lock files, so commit both the
+`.in` and `.txt` changes together.
 
 ### 3. Configure Environment
 

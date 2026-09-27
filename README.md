@@ -120,7 +120,8 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. **Install dependencies**
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt                 # runtime (pinned lock file)
+pip install -r requirements-dev.txt             # tests and tooling (optional)
 ```
 
 4. **Configure environment**
@@ -355,15 +356,17 @@ ai_tabletop_world_builder/
 ├── main.py                 # FastAPI entry point
 ├── Dockerfile              # Container build
 ├── docker-compose.yml      # Multi-service orchestration
-├── requirements.txt        # Python dependencies
+├── requirements.in         # Top-level runtime dependencies
+├── requirements.txt        # Pinned runtime lock file (installed by Docker/CI)
+├── requirements-dev.txt    # Pinned test/dev tooling lock file
 └── README.md               # This file
 ```
 
 ### Running Tests
 
 ```bash
+pip install -r requirements.txt -r requirements-dev.txt
 pytest --tb=short -q
-# 244 passed, 1 skipped
 # Tests are hermetic — no API key or network required (a fake LLM provider is
 # injected via tests/conftest.py). Tests are in the tests/ directory.
 ```

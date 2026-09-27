@@ -153,6 +153,8 @@ class Organization(BaseModel):
     threat_actors: list[ThreatActor] = Field(default_factory=list)
     security_posture: Literal["immature", "developing", "defined", "managed", "optimized"]
     compliance_frameworks: list[str] = Field(default_factory=list)
+    # Free-form scenario settings, e.g. {"duration_minutes": 90}.
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 # ============================================================================

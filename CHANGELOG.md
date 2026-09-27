@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Reproducible dependencies** — `requirements.in` / `requirements-dev.in` list the
+  top-level packages; `requirements.txt` and `requirements-dev.txt` are fully pinned
+  lock files generated with `uv pip compile --universal`. The Dockerfiles and CI
+  install only from the lock files, and test tools (pytest, fakeredis, ruff, …) no
+  longer ship in the production images.
+- **CI tests Python 3.11, 3.12 and 3.13** (the range `pyproject.toml` declares) and
+  runs `alembic upgrade head && alembic check` on SQLite and PostgreSQL.
+- Scenario duration is read from the scenario's `metadata.duration_minutes`
+  (set by `POST /scenarios/generate`'s new `duration_minutes` field) and drives the
+  escalation timeline; 60 minutes remains the fallback.
+- The API logs a startup warning when rate limiting runs without Redis, since each
+  worker then counts separately; DEPLOY.md now lists Redis as required for more
+  than one worker or instance.
 - **Prometheus metrics** — `GET /metrics` exposes HTTP request counts, latency
   histograms, error counts, active requests, and LLM call counts/latency, so the
   bundled Prometheus scrape job and Grafana dashboard now receive data. Grafana
@@ -46,6 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- GitHub Actions moved to their Node 24 releases (`actions/checkout@v6`,
+  `actions/setup-python@v6`, `actions/upload-artifact@v6`,
+  `docker/setup-buildx-action@v4`, `docker/build-push-action@v7`,
+  `docker/login-action@v4`, `docker/metadata-action@v6`).
+- The test suite uses `httpx2` for Starlette's `TestClient`, removing the
+  deprecation warning; the suite now runs warning-free.
 - Default models updated to `claude-sonnet-5` (Anthropic) and `gpt-5.6-terra`
   (OpenAI). The providers omit `temperature` for models that reject it, send
   `max_completion_tokens` to OpenAI reasoning models, keep thinking off on Claude
