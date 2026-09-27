@@ -62,7 +62,7 @@ jobs:
             echo "is_release=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ steps.v.outputs.ref }}
 
