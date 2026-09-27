@@ -48,7 +48,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(
     title="Cybersecurity War Gaming Platform API",
     description="AI-powered cybersecurity training and war gaming platform",
-    version="0.1.0",
+    version="1.1.0",
     lifespan=lifespan,
 )
 
@@ -99,7 +99,7 @@ app.include_router(exercise_router, dependencies=protected)
 @app.get("/")
 async def root():
     """Root endpoint."""
-    return {"message": "Cybersecurity War Gaming Platform API", "version": "0.1.0", "docs": "/docs"}
+    return {"message": "Cybersecurity War Gaming Platform API", "version": "1.1.0", "docs": "/docs"}
 
 
 @app.get("/health")
