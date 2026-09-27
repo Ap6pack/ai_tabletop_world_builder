@@ -10,6 +10,7 @@ import io
 from fastapi import APIRouter, HTTPException, Query
 from starlette.responses import StreamingResponse
 
+from api.middleware.telemetry import record_aar_generation
 from api.models import AARReport, PerformanceDashboard
 from api.services.aar_service import AARService
 from api.services.game_session_service import GameSessionService
@@ -48,6 +49,7 @@ async def generate_aar(session_id: str, include_alternatives: bool = True):
             )
 
         report = aar_service.generate_aar(game_state=game_state, include_alternatives=include_alternatives)
+        record_aar_generation(report.overall_grade)
 
         logger.info(
             f"AAR generated for session {session_id}: grade={report.overall_grade}",

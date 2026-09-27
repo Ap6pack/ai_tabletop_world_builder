@@ -27,8 +27,8 @@ class LLMRequest(BaseModel):
     )
     model: str | None = Field(
         None,
-        description="Model to use. If not specified, uses default for the provider. Examples: 'gpt-4', 'claude-3-5-sonnet-20241022', 'llama3'",
-        examples=["gpt-4-turbo-preview"],
+        description="Model to use. If not specified, uses default for the provider. Examples: 'gpt-5.6-terra', 'claude-sonnet-5', 'llama3'",
+        examples=["claude-sonnet-5"],
     )
     temperature: float | None = Field(
         None,

@@ -7,8 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Prometheus metrics** — `GET /metrics` exposes HTTP request counts, latency
+  histograms, error counts, active requests, and LLM call counts/latency, so the
+  bundled Prometheus scrape job and Grafana dashboard now receive data. Grafana
+  gets its datasource and dashboard provisioned automatically. Optional
+  `METRICS_TOKEN` protects the endpoint.
+- `app_settings` table (Alembic migration `238cbfb8c9b4`) for runtime-edited settings.
+
 ### Security
 
+- **JWT secrets must be at least 32 bytes** when `REQUIRE_AUTH=true` (HS256 needs a
+  key as long as its output); the test suite now signs with a 48-byte key.
+- **The Settings API no longer rewrites `.env`.** Edited settings are stored in the
+  database, survive restarts, are shared across instances, and values containing
+  newlines or other control characters are rejected (previously a newline could
+  inject extra settings into `.env`).
 - **Webhook SSRF protection** — webhook URLs must be `https` and resolve only to
   public addresses; loopback, private, link-local (including cloud metadata at
   `169.254.169.254`) and reserved ranges are refused at registration, on update,
@@ -31,6 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Default models updated to `claude-sonnet-5` (Anthropic) and `gpt-5.6-terra`
+  (OpenAI). The providers omit `temperature` for models that reject it, send
+  `max_completion_tokens` to OpenAI reasoning models, keep thinking off on Claude
+  models where short replies matter, and read text blocks by type instead of
+  assuming the first content block is text.
+- `library_scenarios.rating` is declared as `Float` explicitly, so `alembic check`
+  reports no drift on SQLAlchemy 2.1.
 - `tests/test_audit_api.py` now runs in CI via `TestClient` instead of being
   skipped unless a live server was running.
 - README and DEPLOY.md warn that data is not yet scoped per user, so the

@@ -72,7 +72,7 @@ if provider == "OpenAI":
             st.info("ℹ️ No API Key Configured")
             api_key = st.text_input("OpenAI API Key", type="password", help="Get your API key from platform.openai.com")
 
-        model = st.selectbox("Model", ["gpt-4-turbo-preview", "gpt-4", "gpt-3.5-turbo"])
+        model = st.selectbox("Model", ["gpt-5.6-terra", "gpt-6-astra"])
     with col2:
         temperature = st.slider(
             "Temperature", 0.0, 2.0, 0.7, 0.1, help="Higher = more creative, Lower = more deterministic"
@@ -117,9 +117,7 @@ elif provider == "Anthropic":
                 "Anthropic API Key", type="password", help="Get your API key from console.anthropic.com"
             )
 
-        model = st.selectbox(
-            "Model", ["claude-3-5-sonnet-20241022", "claude-3-opus-20240229", "claude-3-sonnet-20240229"]
-        )
+        model = st.selectbox("Model", ["claude-sonnet-5", "claude-opus-5", "claude-haiku-4-5"])
     with col2:
         temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
         max_tokens = st.number_input("Max Tokens", 100, 8000, 4096, 100)

@@ -34,10 +34,14 @@ class AuthService:
         """Initialize auth service with database-backed user storage."""
         init_db()
         self.hasher = PasswordHasher()
-        self.secret_key = settings.jwt_secret_key
         self.algorithm = settings.jwt_algorithm
         self.access_token_expire_minutes = settings.jwt_access_token_expire_minutes
         self.refresh_token_expire_days = settings.jwt_refresh_token_expire_days
+
+    @property
+    def secret_key(self) -> str:
+        """Signing key, read from settings on each use so every instance shares it."""
+        return settings.jwt_secret_key
 
     def register(
         self,

@@ -42,6 +42,7 @@ Set these as environment variables (never commit real secrets). See
 | `RATE_LIMIT_REQUESTS` | Requests per window per caller | tune to taste (default 120) |
 | `RATE_LIMIT_WINDOW_SECONDS` | Rate-limit window | `60` |
 | `REDIS_URL` | Optional shared cache/limits | `redis://host:6379/0` |
+| `METRICS_TOKEN` | Bearer token required to read `/metrics` | a random string (or empty to leave it open on a private network) |
 | `API_RELOAD` | Auto-reload (dev only) | `false` |
 
 Generate a JWT secret:
@@ -51,7 +52,12 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
 > **Note:** the app refuses to start when `REQUIRE_AUTH=true` and `JWT_SECRET_KEY`
-> is unset or the shipped placeholder.
+> is unset, the shipped placeholder, or shorter than 32 bytes.
+
+Settings changed at runtime through the Settings page (`POST /settings/update`)
+are stored in the database (`app_settings` table), layered over the environment,
+and picked up by every API instance within about 10 seconds. `.env` is never
+rewritten, so the container filesystem can be read-only.
 
 ## 3. Database schema
 
@@ -131,6 +137,11 @@ Pin a release by version instead of `latest` (e.g. `:1.0.0`, `:1.0`, `:1`).
 ## 6. Health & scaling
 
 - Health check: `GET /health` → `{"status": "healthy"}`.
+- Metrics: `GET /metrics` serves Prometheus metrics (HTTP rates, latency,
+  errors, LLM calls). Set `METRICS_TOKEN` to require a bearer token.
+  `docker-compose.monitoring.yml` runs Prometheus and a provisioned Grafana
+  dashboard. Counters are per process, so with `--workers N` each scrape sees
+  one worker; prefer one worker per container when you need exact totals.
 - The API is stateless — run N instances behind a load balancer; set `REDIS_URL`
   so rate limits and live-exercise state are shared across them.
 - Back up PostgreSQL regularly; that is the system of record.

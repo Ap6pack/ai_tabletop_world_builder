@@ -8,6 +8,7 @@ Game API router for interactive war gaming sessions.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from api.middleware.telemetry import record_game_action
 from api.models import GameResponse, GameState
 from api.services import GameOrchestrator, ScenarioOrchestrator
 from api.utils import setup_logger
@@ -101,6 +102,7 @@ async def process_action(request: PlayerActionRequest):
     try:
         game_orchestrator = GameOrchestrator()
         response = await game_orchestrator.process_player_action(session_id=request.session_id, action=request.action)
+        record_game_action("player_action")
 
         return response
 

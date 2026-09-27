@@ -30,8 +30,8 @@ curl -X POST http://127.0.0.1:8000/llm/complete \
 
 ## Valid Model Names
 
-**OpenAI**: `gpt-4-turbo-preview`, `gpt-4`, `gpt-3.5-turbo`  
-**Anthropic**: `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`  
+**OpenAI**: `gpt-5.6-terra`, `gpt-6-astra`  
+**Anthropic**: `claude-sonnet-5`, `claude-opus-5`  
 **Ollama**: `llama3`, `mistral`, `mixtral`
 
 ---

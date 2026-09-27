@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import delete
 
 from api.db import (
@@ -21,6 +21,7 @@ from api.db import (
     session_scope,
 )
 from api.middleware.auth import require_admin
+from api.services import settings_store
 from config import settings
 
 router = APIRouter(prefix="/settings", tags=["settings"])
@@ -63,6 +64,14 @@ class SettingsUpdate(BaseModel):
     scenarios_path: str | None = None
     data_path: str | None = None
 
+    @field_validator("*", mode="before")
+    @classmethod
+    def _reject_control_characters(cls, value):
+        """Refuse line breaks and other control characters in any value."""
+        if isinstance(value, str) and any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
+            raise ValueError("control characters (including newlines) are not allowed")
+        return value
+
 
 class StorageStats(BaseModel):
     """Storage statistics."""
@@ -101,54 +110,16 @@ async def get_current_settings():
 @router.post("/update")
 async def update_settings(updates: SettingsUpdate, _admin: dict | None = Depends(require_admin)):
     """
-    Update application settings and persist to .env file.
+    Update application settings.
 
-    Note: This updates the runtime settings and writes to .env file.
-    API restart may be required for some changes to take full effect.
+    Changes are stored in the database, take effect immediately, survive
+    restarts, and reach every API instance within a few seconds.
     """
-    env_path = Path(".env")
-
-    # Read existing .env file
-    env_lines = []
-    if env_path.exists():
-        with open(env_path) as f:
-            env_lines = f.readlines()
-
-    # Build map of existing env vars
-    env_dict = {}
-    for line in env_lines:
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            key, value = line.split("=", 1)
-            env_dict[key.strip()] = value.strip()
-
-    # Update settings based on provided values
     updates_dict = updates.model_dump(exclude_none=True)
-
-    for key, value in updates_dict.items():
-        # Convert to uppercase for env var names
-        env_key = key.upper()
-
-        # Update runtime settings
-        setattr(settings, key, value)
-
-        # Update env dict
-        if isinstance(value, bool):
-            env_dict[env_key] = str(value).lower()
-        else:
-            env_dict[env_key] = str(value)
-
-    # Write back to .env file
-    with open(env_path, "w") as f:
-        f.write("# Application Settings\n")
-        f.write("# Updated via Settings API\n\n")
-
-        for key, value in sorted(env_dict.items()):
-            f.write(f"{key}={value}\n")
+    settings_store.save_overrides(updates_dict)
 
     return {
         "message": "Settings updated successfully",
-        "note": "Some settings may require API restart to take full effect",
         "updated_keys": list(updates_dict.keys()),
     }
 
@@ -246,67 +217,12 @@ async def clear_all_data(_admin: dict | None = Depends(require_admin)):
 @router.post("/reset/defaults")
 async def reset_to_defaults(_admin: dict | None = Depends(require_admin)):
     """
-    Reset all settings to default values.
+    Reset settings to the deployment defaults (environment variables / .env).
 
-    This will update the .env file with default values.
+    Removes every setting changed through the API except stored provider API keys.
     """
-    defaults = {
-        "DEFAULT_LLM_PROVIDER": "openai",
-        "OPENAI_MODEL": "gpt-4-turbo-preview",
-        "OPENAI_TEMPERATURE": "0.7",
-        "ANTHROPIC_MODEL": "claude-3-5-sonnet-20241022",
-        "ANTHROPIC_TEMPERATURE": "0.7",
-        "OLLAMA_BASE_URL": "http://localhost:11434",
-        "OLLAMA_MODEL": "llama3",
-        "OLLAMA_TEMPERATURE": "0.7",
-        "DEFAULT_CONTENT_POLICY": "educational",
-        "SESSION_TIMEOUT": "3600",
-        "MAX_CONTEXT_LENGTH": "4000",
-        "SCENARIOS_PATH": "./scenarios/generated",
-        "DATA_PATH": "./data",
-    }
-
-    # Keep API keys from current .env
-    env_path = Path(".env")
-    existing_keys = {}
-
-    if env_path.exists():
-        with open(env_path) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    key = key.strip()
-                    if "API_KEY" in key:
-                        existing_keys[key] = value.strip()
-
-    # Merge defaults with existing API keys
-    defaults.update(existing_keys)
-
-    # Write to .env
-    with open(env_path, "w") as f:
-        f.write("# Application Settings\n")
-        f.write("# Reset to defaults\n\n")
-
-        for key, value in sorted(defaults.items()):
-            f.write(f"{key}={value}\n")
-
-    # Update runtime settings
-    settings.default_llm_provider = "openai"
-    settings.openai_model = "gpt-4-turbo-preview"
-    settings.openai_temperature = 0.7
-    settings.anthropic_model = "claude-3-5-sonnet-20241022"
-    settings.anthropic_temperature = 0.7
-    settings.ollama_base_url = "http://localhost:11434"
-    settings.ollama_model = "llama3"
-    settings.ollama_temperature = 0.7
-    settings.default_content_policy = "educational"
-    settings.session_timeout = 3600
-    settings.max_context_length = 4000
-    settings.scenarios_path = "./scenarios/generated"
-    settings.data_path = "./data"
-
-    return {"message": "Settings reset to defaults", "note": "API keys were preserved. API restart recommended."}
+    settings_store.clear_overrides(keep_secrets=True)
+    return {"message": "Settings reset to defaults", "note": "API keys were preserved."}
 
 
 @router.delete("/provider/{provider}/key")
@@ -315,9 +231,7 @@ async def clear_provider_key(
     _admin: dict | None = Depends(require_admin),
 ):
     """
-    Clear API key for a specific LLM provider.
-
-    This removes the API key from the .env file and runtime configuration.
+    Clear the API key for an LLM provider.
 
     Args:
         provider: Provider name (openai, anthropic, together, or ollama)
@@ -325,54 +239,15 @@ async def clear_provider_key(
     Returns:
         Confirmation message
     """
-    # Map provider to env var key
-    key_mapping = {
-        "openai": "OPENAI_API_KEY",
-        "anthropic": "ANTHROPIC_API_KEY",
-        "together": "TOGETHER_API_KEY",
-        "ollama": None,  # Ollama doesn't use API keys
-    }
-
     if provider == "ollama":
         raise HTTPException(status_code=400, detail="Ollama does not use API keys. Clear the base URL if needed.")
 
-    env_key = key_mapping[provider]
-    env_path = Path(".env")
-
-    if not env_path.exists():
-        raise HTTPException(status_code=404, detail=".env file not found")
-
-    # Read existing .env
-    env_lines = []
-    with open(env_path) as f:
-        env_lines = f.readlines()
-
-    # Remove the API key line
-    new_lines = []
-    key_found = False
-
-    for line in env_lines:
-        stripped = line.strip()
-        # Keep line if it's not the API key we're removing
-        if stripped.startswith(env_key + "="):
-            key_found = True
-            continue  # Skip this line (removes it)
-        new_lines.append(line)
-
-    if not key_found:
+    key = f"{provider}_api_key"
+    if not getattr(settings, key):
         raise HTTPException(status_code=404, detail=f"No API key found for {provider}")
 
-    # Write updated .env
-    with open(env_path, "w") as f:
-        f.writelines(new_lines)
-
-    # Clear from runtime settings
-    if provider == "openai":
-        settings.openai_api_key = None
-    elif provider == "anthropic":
-        settings.anthropic_api_key = None
-    elif provider == "together":
-        settings.together_api_key = None
+    # Stored as an empty override so it also masks a key set in the environment.
+    settings_store.save_overrides({key: ""})
 
     return {
         "message": f"API key for {provider} has been removed",

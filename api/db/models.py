@@ -12,7 +12,7 @@ indexed storage.
 
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Float, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -150,7 +150,17 @@ class LibraryScenarioRow(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     category: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     difficulty: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
-    rating: Mapped[float] = mapped_column(default=0.0)
+    rating: Mapped[float] = mapped_column(Float, default=0.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[str] = mapped_column(String(64))
     data: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+class AppSettingRow(Base):
+    """Runtime-editable setting overriding the environment/.env value."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[Any] = mapped_column(JSON)
+    updated_at: Mapped[str] = mapped_column(String(64))

@@ -35,3 +35,14 @@ def test_auth_enabled_with_real_secret_loads():
         jwt_secret_key="a-strong-random-secret-value-1234567890",
     )
     assert s.require_auth is True
+
+
+@pytest.mark.parametrize("secret", ["abc", "x" * 31, "short-but-not-the-placeholder"])
+def test_auth_enabled_with_short_secret_is_rejected(secret):
+    """Secrets shorter than 32 bytes are too weak for HS256."""
+    with pytest.raises(ValueError, match="at least 32 bytes"):
+        Settings(_env_file=None, require_auth=True, jwt_secret_key=secret)
+
+
+def test_auth_enabled_with_32_byte_secret_loads():
+    assert Settings(_env_file=None, require_auth=True, jwt_secret_key="x" * 32).require_auth is True

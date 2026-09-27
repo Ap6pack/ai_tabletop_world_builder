@@ -59,6 +59,24 @@ def _fresh_db(tmp_path):
         db.get_engine().dispose()
 
 
+@pytest.fixture(autouse=True)
+def _reset_runtime_settings():
+    """Undo settings changed through the Settings API so tests stay independent."""
+    from api.services import settings_store
+
+    settings_store.reset_runtime()
+    yield
+    settings_store.reset_runtime()
+
+
+@pytest.fixture(autouse=True)
+def _strong_test_jwt_secret(monkeypatch):
+    """Sign test tokens with a 48-byte key (HS256 wants at least 32 bytes)."""
+    from config.settings import settings
+
+    monkeypatch.setattr(settings, "jwt_secret_key", "test-only-jwt-secret-key-0123456789abcdefghijklmn")
+
+
 # ============================================================================
 # Rate limiter isolation
 # ============================================================================

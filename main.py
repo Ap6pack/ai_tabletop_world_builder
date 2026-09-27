@@ -31,13 +31,15 @@ from api.routers import (
     scenarios_router,
     settings_router,
 )
+from api.services import settings_store
 from config import settings
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """Ensure the database schema exists before serving requests."""
+    """Ensure the database schema exists and load stored settings before serving requests."""
     init_db()
+    settings_store.apply_overrides(force=True)
     yield
 
 
@@ -67,12 +69,18 @@ app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(TelemetryMiddleware)
 TelemetryMiddleware.setup_telemetry(app)
 
+
 # All routers are rate limited. Product routers additionally require
 # authentication when REQUIRE_AUTH is enabled; with auth disabled (the local/dev
 # default) get_current_user returns None and requests pass through unchanged. The
 # auth router is left open (no auth dependency) but is still rate limited to slow
 # credential-stuffing against register/login.
-protected = [Depends(rate_limit), Depends(get_current_user)]
+async def refresh_settings() -> None:
+    """Pick up settings changed through the API on another instance (cached for a few seconds)."""
+    settings_store.apply_overrides()
+
+
+protected = [Depends(rate_limit), Depends(get_current_user), Depends(refresh_settings)]
 app.include_router(llm_router, dependencies=protected)
 app.include_router(content_policy_router, dependencies=protected)
 app.include_router(scenarios_router, dependencies=protected)

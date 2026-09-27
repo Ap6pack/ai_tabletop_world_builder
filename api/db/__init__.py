@@ -21,6 +21,7 @@ from config.settings import settings
 
 from .models import (
     ApiKeyRow,
+    AppSettingRow,
     Base,
     ExerciseRow,
     GameSessionRow,
@@ -37,6 +38,7 @@ __all__ = [
     "GameSessionRow",
     "ExerciseRow",
     "ApiKeyRow",
+    "AppSettingRow",
     "WebhookRow",
     "WebhookDeliveryRow",
     "GeneratedScenarioRow",
