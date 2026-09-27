@@ -408,6 +408,8 @@ pytest --tb=short -q
 
 ## Contributing
 
+Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report security vulnerabilities privately as described in [SECURITY.md](SECURITY.md), not as public issues.
+
 Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
 - Code of conduct
 - Development setup

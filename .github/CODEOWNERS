@@ -1,0 +1,11 @@
+# Default owner for everything in the repository.
+*                       @Ap6pack
+
+# Security-sensitive areas: auth, storage schema, CI/release and deployment.
+/api/middleware/        @Ap6pack
+/api/db/                @Ap6pack
+/alembic/               @Ap6pack
+/.github/               @Ap6pack
+/docker-compose*.yml    @Ap6pack
+/Dockerfile*            @Ap6pack
+/SECURITY.md            @Ap6pack

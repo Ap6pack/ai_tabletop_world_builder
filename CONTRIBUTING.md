@@ -18,22 +18,12 @@ Thank you for your interest in contributing to the Cybersecurity War Gaming Plat
 
 ## 📜 Code of Conduct
 
-### Our Pledge
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
+By participating you agree to uphold it. Report unacceptable behavior as described
+in that document.
 
-We are committed to providing a welcoming and inclusive environment for all contributors, regardless of background or experience level. We expect all participants to:
-
-- Be respectful and professional
-- Accept constructive criticism gracefully
-- Focus on what's best for the project and community
-- Show empathy towards other community members
-- Respect differing viewpoints and experiences
-
-### Unacceptable Behavior
-
-- Harassment, discrimination, or offensive comments
-- Personal attacks or trolling
-- Publishing others' private information
-- Any conduct that would be inappropriate in a professional setting
+**Security issues:** please do not open public issues for vulnerabilities. Follow
+[SECURITY.md](SECURITY.md) to report them privately.
 
 ## 🚀 Getting Started
 
@@ -41,7 +31,7 @@ We are committed to providing a welcoming and inclusive environment for all cont
 
 Before contributing, ensure you have:
 
-- Python 3.10 or higher
+- Python 3.11, 3.12 or 3.13
 - Git installed and configured
 - A GitHub account
 - Basic understanding of FastAPI and Streamlit (or willingness to learn)

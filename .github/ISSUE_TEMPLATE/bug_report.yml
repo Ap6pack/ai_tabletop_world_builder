@@ -1,0 +1,63 @@
+name: Bug report
+description: Something doesn't work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Security problems must not be reported here** —
+        use the repository's Security tab → "Report a vulnerability" (see SECURITY.md).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start the stack with `docker compose up`
+        2. Open the War Game page
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release, commit SHA, or image tag.
+      placeholder: v1.0.0 / ghcr.io/ap6pack/ai-tabletop-api:1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How are you running it?
+      options:
+        - docker compose
+        - Prebuilt GHCR images
+        - Local Python (uvicorn + streamlit)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database
+      options:
+        - PostgreSQL
+        - SQLite
+  - type: input
+    id: llm
+    attributes:
+      label: LLM provider and model
+      placeholder: anthropic / claude-sonnet-5
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Remove API keys, tokens and passwords before pasting.
+      render: shell

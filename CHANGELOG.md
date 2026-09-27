@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Community files** — `SECURITY.md` (private reporting via GitHub security advisories),
+  `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue forms and a pull request template
+  under `.github/`, `.github/dependabot.yml` (pip, GitHub Actions and Docker, weekly), and
+  `.github/CODEOWNERS`.
 - Tests: Streamlit AppTest smoke tests render every page against the in-process
   API and with the API down; new tests for the auth, library, LLM, MITRE and
   content-policy routers, the provider factory and Ollama/Together providers, the
