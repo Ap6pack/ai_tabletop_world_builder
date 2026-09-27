@@ -26,8 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   token). Coverage of `api/` is 88%.
 - **Community files** — `SECURITY.md` (private reporting via GitHub security advisories),
   `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue forms and a pull request template
-  under `.github/`, `.github/dependabot.yml` (pip, GitHub Actions and Docker, weekly), and
-  `.github/CODEOWNERS`.
+  under `.github/`, and `.github/CODEOWNERS`.
 - Tests: Streamlit AppTest smoke tests render every page against the in-process
   API and with the API down; new tests for the auth, library, LLM, MITRE and
   content-policy routers, the provider factory and Ollama/Together providers, the
@@ -119,6 +118,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Dependabot version updates are turned off: its hand edits of the `uv` lock files
+  dropped platform markers. Dependencies are updated by editing `requirements*.in` and
+  re-locking with `uv` (see CONTRIBUTING.md); the weekly `pip-audit` job still flags
+  vulnerable pins.
 - Upgraded `openai` to 3.19.2 (verified with a real call). A real-SDK test for the
   OpenAI provider, like the Anthropic one, now runs against a local stub server.
 - Upgraded `anthropic` to 1.8.0. SDK 1.x removed the `temperature` argument from

@@ -52,7 +52,8 @@ Out of scope:
 - Content produced by an LLM provider itself, unless the platform fails to apply
   its documented content policy or prompt-injection protections
 - Vulnerabilities in third-party dependencies without a demonstrated impact on
-  this project (please report those upstream; Dependabot tracks our updates)
+  this project (please report those upstream; the weekly `pip-audit` scan in CI
+  tracks known vulnerabilities in our pinned dependencies)
 - Denial of service through sheer request volume
 
 ## Safe harbor
