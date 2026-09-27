@@ -120,7 +120,8 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. **Install dependencies**
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt                 # runtime (pinned lock file)
+pip install -r requirements-dev.txt             # tests and tooling (optional)
 ```
 
 4. **Configure environment**
@@ -165,11 +166,16 @@ streamlit run Home.py
 
 **Option 2: Docker (Postgres-backed)**
 ```bash
-docker-compose up
+cp .env.example .env   # then set POSTGRES_PASSWORD, REDIS_PASSWORD and JWT_SECRET_KEY
+docker compose up
 ```
 The Compose stack runs the API against the bundled **PostgreSQL** and Redis
-services automatically (it sets `DATABASE_URL`/`REDIS_URL` for you). Override the
-database credentials with `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
+services automatically (it sets `DATABASE_URL`/`REDIS_URL` for you) with
+authentication turned on. It refuses to start until `POSTGRES_PASSWORD`,
+`REDIS_PASSWORD` and `JWT_SECRET_KEY` are set, and only publishes the API (8000)
+and UI (8501); Postgres and Redis stay on the internal network. For local
+debugging, `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`
+also publishes them on `127.0.0.1` and enables hot reload.
 
 ## Database
 
@@ -343,15 +349,17 @@ ai_tabletop_world_builder/
 ├── main.py                 # FastAPI entry point
 ├── Dockerfile              # Container build
 ├── docker-compose.yml      # Multi-service orchestration
-├── requirements.txt        # Python dependencies
+├── requirements.in         # Top-level runtime dependencies
+├── requirements.txt        # Pinned runtime lock file (installed by Docker/CI)
+├── requirements-dev.txt    # Pinned test/dev tooling lock file
 └── README.md               # This file
 ```
 
 ### Running Tests
 
 ```bash
+pip install -r requirements.txt -r requirements-dev.txt
 pytest --tb=short -q
-# 244 passed, 1 skipped
 # Tests are hermetic — no API key or network required (a fake LLM provider is
 # injected via tests/conftest.py). Tests are in the tests/ directory.
 ```
@@ -376,8 +384,14 @@ pytest --tb=short -q
   endpoints then require a valid bearer token and destructive admin operations
   (`/settings/data/clear`, `/settings/update`, config writes) require the
   `admin` role. With auth disabled (the local/dev default) endpoints are open.
-  Note: the Streamlit UI does not yet attach tokens, so run it against an
-  auth-disabled API or behind an authenticating gateway.
+  The Streamlit UI signs in on the Login page and sends the token with every
+  request, refreshing it when it expires.
+- **Data ownership**: with auth on, scenarios, game sessions, exercises,
+  webhooks and API keys belong to the user who created them; other users get
+  `404` and never see them in listings, and admins can manage everything. An
+  exercise's creator is its facilitator, and players act only as the team seat
+  they joined with their own login. Library scenarios can be public, unlisted or
+  private, and only their owner can change that.
 - **Rate Limiting**: Fixed-window limits on all API endpoints, keyed per
   authenticated user (or client IP when anonymous), to protect LLM-backed
   endpoints from abuse. Configure via `RATE_LIMIT_ENABLED`, `RATE_LIMIT_REQUESTS`,
@@ -385,6 +399,8 @@ pytest --tb=short -q
   across instances, otherwise an in-process counter.
 
 ## Contributing
+
+Everyone taking part is expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report security vulnerabilities privately as described in [SECURITY.md](SECURITY.md), not as public issues.
 
 Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
 - Code of conduct

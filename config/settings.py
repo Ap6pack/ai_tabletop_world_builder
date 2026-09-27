@@ -12,6 +12,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Placeholder secret shipped as the default; must never be used with auth enabled.
 DEFAULT_JWT_SECRET = "change-me-in-production"
+# HS256 needs a key at least as long as its 256-bit output (RFC 7518 §3.2).
+MIN_JWT_SECRET_BYTES = 32
 
 
 class Settings(BaseSettings):
@@ -29,12 +31,12 @@ class Settings(BaseSettings):
 
     # OpenAI
     openai_api_key: str = ""
-    openai_model: str = "gpt-4-turbo-preview"
+    openai_model: str = "gpt-5.6-terra"
     openai_temperature: float = 0.7
 
     # Anthropic
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-3-5-sonnet-20241022"
+    anthropic_model: str = "claude-sonnet-5"
     anthropic_temperature: float = 0.7
 
     # Together AI
@@ -76,6 +78,10 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = ""
 
+    # Prometheus metrics (GET /metrics). When set, scrapers must send
+    # "Authorization: Bearer <token>"; leave empty to keep /metrics open.
+    metrics_token: str = ""
+
     # Storage Paths
     scenarios_path: str = "./scenarios/generated"
     data_path: str = "./data"
@@ -99,11 +105,19 @@ class Settings(BaseSettings):
         deploying with the shipped placeholder secret, which would let anyone
         forge valid tokens.
         """
-        if self.require_auth and self.jwt_secret_key.strip() in ("", DEFAULT_JWT_SECRET):
+        if not self.require_auth:
+            return self
+        hint = "(e.g. `python -c 'import secrets; print(secrets.token_urlsafe(48))'`)."
+        secret = self.jwt_secret_key.strip()
+        if secret in ("", DEFAULT_JWT_SECRET):
             raise ValueError(
                 "REQUIRE_AUTH is enabled but JWT_SECRET_KEY is unset or still the default "
-                "placeholder. Set JWT_SECRET_KEY to a strong random secret "
-                "(e.g. `python -c 'import secrets; print(secrets.token_urlsafe(48))'`)."
+                f"placeholder. Set JWT_SECRET_KEY to a strong random secret {hint}"
+            )
+        if len(secret.encode("utf-8")) < MIN_JWT_SECRET_BYTES:
+            raise ValueError(
+                f"JWT_SECRET_KEY must be at least {MIN_JWT_SECRET_BYTES} bytes long when REQUIRE_AUTH "
+                f"is enabled. Generate one {hint}"
             )
         return self
 

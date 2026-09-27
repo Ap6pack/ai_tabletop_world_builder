@@ -38,7 +38,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/test_*.py" = ["S101", "S105", "S106"]
+"tests/test_*.py" = ["S101", "S105", "S106", "S107"]
 
 [tool.ruff.format]
 quote-style = "double"

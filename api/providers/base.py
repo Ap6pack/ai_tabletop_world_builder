@@ -5,12 +5,38 @@
 Base LLM provider interface.
 """
 
+import functools
+import time
 from abc import ABC, abstractmethod
 from typing import Any
 
 
+def _instrument(complete):
+    """Wrap a provider's ``complete`` so every LLM call is counted and timed."""
+
+    @functools.wraps(complete)
+    async def wrapper(self, *args, **kwargs):
+        from api.middleware.telemetry import record_llm_call
+
+        start = time.perf_counter()
+        success = False
+        try:
+            result = await complete(self, *args, **kwargs)
+            success = True
+            return result
+        finally:
+            record_llm_call(self.get_provider_name(), self.get_model_name(), time.perf_counter() - start, success)
+
+    return wrapper
+
+
 class BaseLLMProvider(ABC):
     """Abstract base class for LLM providers."""
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if "complete" in cls.__dict__ and not getattr(cls.complete, "__isabstractmethod__", False):
+            cls.complete = _instrument(cls.complete)
 
     def __init__(self, api_key: str | None = None, **kwargs):
         """

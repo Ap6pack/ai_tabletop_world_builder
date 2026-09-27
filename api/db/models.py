@@ -10,9 +10,10 @@ models the single source of truth while giving durable, concurrency-safe,
 indexed storage.
 """
 
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -50,6 +51,7 @@ class GameSessionRow(Base):
     __tablename__ = "game_sessions"
 
     session_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     status: Mapped[str] = mapped_column(String(32), index=True, default="in-progress")
     player_role: Mapped[str | None] = mapped_column(String(64), nullable=True)
     org_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -63,6 +65,7 @@ class ExerciseRow(Base):
     __tablename__ = "exercises"
 
     exercise_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     name: Mapped[str] = mapped_column(String(255), default="")
     phase: Mapped[str] = mapped_column(String(32), index=True, default="setup")
     facilitator_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -137,6 +140,7 @@ class GeneratedScenarioRow(Base):
     __tablename__ = "generated_scenarios"
 
     filename: Mapped[str] = mapped_column(String(255), primary_key=True)
+    owner_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     name: Mapped[str] = mapped_column(String(255), default="")
     industry: Mapped[str | None] = mapped_column(String(128), nullable=True)
     size: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -150,7 +154,49 @@ class LibraryScenarioRow(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     category: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     difficulty: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
-    rating: Mapped[float] = mapped_column(default=0.0)
+    rating: Mapped[float] = mapped_column(Float, default=0.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[str] = mapped_column(String(64))
     data: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+class AppSettingRow(Base):
+    """Runtime-editable setting overriding the environment/.env value."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[Any] = mapped_column(JSON)
+    updated_at: Mapped[str] = mapped_column(String(64))
+
+
+class AuditLogRow(Base):
+    """Append-only, hash-chained audit log entry.
+
+    ``entry_hash`` is SHA-256 over ``prev_hash`` and the canonical JSON of the
+    entry, so editing or removing a row in the middle of the chain is
+    detectable (see ``AuditLogService.verify_chain``). Timestamps are stored as
+    naive UTC.
+    """
+
+    __tablename__ = "audit_logs"
+
+    seq: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[str] = mapped_column(String(64), unique=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, index=True)
+    event_type: Mapped[str] = mapped_column(String(32), index=True)
+    severity: Mapped[str] = mapped_column(String(16), index=True)
+    session_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    user_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    data: Mapped[dict[str, Any]] = mapped_column(JSON)
+    prev_hash: Mapped[str] = mapped_column(String(64))
+    entry_hash: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class AuditChainHeadRow(Base):
+    """Single-row pointer to the newest audit entry; locked while appending."""
+
+    __tablename__ = "audit_chain_head"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    last_hash: Mapped[str] = mapped_column(String(64))

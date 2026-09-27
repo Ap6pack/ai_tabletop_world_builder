@@ -16,6 +16,8 @@ import requests
 import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.api_client import http
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 POLL_INTERVAL = 4  # seconds
@@ -48,15 +50,23 @@ if not st.session_state.member_id:
     st.markdown("### Join Exercise")
     st.markdown(f"Exercise ID: `{st.session_state.exercise_id}`")
 
-    # Load exercise state to show available teams
+    # Load the exercise's teams (and any seat this login already holds)
     try:
-        resp = requests.get(
-            f"{API_BASE_URL}/exercise/{st.session_state.exercise_id}/state",
+        resp = http.get(
+            f"{API_BASE_URL}/exercise/{st.session_state.exercise_id}/teams",
             timeout=DEFAULT_TIMEOUT,
         )
         if resp.status_code == 200:
-            state = resp.json()
-            teams = state.get("teams", [])
+            info = resp.json()
+            teams = info.get("teams", [])
+            st.session_state.is_facilitator = info.get("is_facilitator", False)
+            seat = info.get("my_seat")
+            if seat:
+                # Already joined with this login: resume that seat.
+                st.session_state.member_id = seat["member_id"]
+                st.session_state.team_id = seat["team_id"]
+                st.session_state.display_name = seat["display_name"]
+                st.rerun()
 
             display_name = st.text_input("Your Name")
             role = st.text_input("Your Role", value="SOC Analyst")
@@ -70,7 +80,7 @@ if not st.session_state.member_id:
                     "role": role,
                     "team_id": team_id,
                 }
-                join_resp = requests.post(
+                join_resp = http.post(
                     f"{API_BASE_URL}/exercise/{st.session_state.exercise_id}/join",
                     json=payload,
                     timeout=DEFAULT_TIMEOUT,
@@ -80,15 +90,11 @@ if not st.session_state.member_id:
                     st.session_state.member_id = data["member_id"]
                     st.session_state.team_id = data["team_id"]
                     st.session_state.display_name = display_name
-                    # Check if facilitator team
-                    for t in teams:
-                        if t["team_id"] == team_id and t["team_type"] == "white":
-                            st.session_state.is_facilitator = True
                     st.rerun()
                 else:
                     st.error(f"Failed to join: {join_resp.json().get('detail', '')}")
-        else:
-            st.error("Could not load exercise state.")
+        elif resp.status_code != 401:
+            st.error("Could not load exercise.")
     except requests.ConnectionError:
         st.error("API server not reachable.")
     st.stop()
@@ -101,7 +107,7 @@ team_id = st.session_state.team_id
 def poll_state():
     """Poll for exercise state updates."""
     try:
-        resp = requests.get(
+        resp = http.get(
             f"{API_BASE_URL}/exercise/{exercise_id}/state",
             params={"team_id": team_id},
             timeout=DEFAULT_TIMEOUT,
@@ -150,7 +156,7 @@ if st.session_state.is_facilitator:
             if phase in ("setup", "paused"):
                 label = "▶️ Start Exercise" if phase == "setup" else "▶️ Resume"
                 if st.button(label, type="primary"):
-                    resp = requests.post(
+                    resp = http.post(
                         f"{API_BASE_URL}/exercise/{exercise_id}/advance",
                         params={"facilitator_id": team_id},
                         timeout=DEFAULT_TIMEOUT,
@@ -161,7 +167,7 @@ if st.session_state.is_facilitator:
                         st.error(resp.json().get("detail", "Failed"))
             elif phase == "active":
                 if st.button("⏭️ Next Round"):
-                    resp = requests.post(
+                    resp = http.post(
                         f"{API_BASE_URL}/exercise/{exercise_id}/advance",
                         params={"facilitator_id": team_id},
                         timeout=DEFAULT_TIMEOUT,
@@ -170,14 +176,14 @@ if st.session_state.is_facilitator:
                         st.rerun()
         with fc2:
             if phase == "active" and st.button("⏸️ Pause"):
-                requests.post(
+                http.post(
                     f"{API_BASE_URL}/exercise/{exercise_id}/pause",
                     timeout=DEFAULT_TIMEOUT,
                 )
                 st.rerun()
         with fc3:
             if phase not in ("completed",) and st.button("🛑 End Exercise"):
-                requests.post(
+                http.post(
                     f"{API_BASE_URL}/exercise/{exercise_id}/end",
                     timeout=DEFAULT_TIMEOUT,
                 )
@@ -216,7 +222,7 @@ if st.session_state.is_facilitator:
                 "target_teams": [],
                 "requires_response": False,
             }
-            resp = requests.post(
+            resp = http.post(
                 f"{API_BASE_URL}/exercise/{exercise_id}/inject",
                 json=payload,
                 timeout=DEFAULT_TIMEOUT,
@@ -274,7 +280,7 @@ with main_col:
                 "action": action_text,
             }
             with st.spinner("Processing action..."):
-                resp = requests.post(
+                resp = http.post(
                     f"{API_BASE_URL}/exercise/{exercise_id}/action",
                     json=payload,
                     timeout=30,

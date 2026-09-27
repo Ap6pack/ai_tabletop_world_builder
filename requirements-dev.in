@@ -1,0 +1,11 @@
+# Development and test tools (never installed in the production images).
+# Regenerate the lock after editing:
+#   uv pip compile requirements-dev.in --universal --python-version 3.11 -o requirements-dev.txt
+-c requirements.txt
+
+pytest
+pytest-asyncio
+pytest-cov
+fakeredis
+httpx2  # Starlette's TestClient transport (replaces the deprecated httpx path)
+ruff

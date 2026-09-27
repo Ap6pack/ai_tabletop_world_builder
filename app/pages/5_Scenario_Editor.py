@@ -14,6 +14,8 @@ import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.api_client import http
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 st.set_page_config(page_title="Scenario Editor", page_icon="✏️", layout="wide")
@@ -36,7 +38,7 @@ if not st.session_state.get("generated_organization"):
     st.markdown("### 📚 Saved Scenarios")
 
     try:
-        response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             scenarios = response.json()
 
@@ -55,7 +57,7 @@ if not st.session_state.get("generated_organization"):
                     with col2:
                         if st.button("✏️ Edit", key=f"edit_{scenario['filename']}", use_container_width=True):
                             # Load scenario for editing
-                            load_response = requests.get(
+                            load_response = http.get(
                                 f"{API_BASE_URL}/scenarios/{scenario['filename']}", timeout=DEFAULT_TIMEOUT
                             )
                             if load_response.status_code == 200:
@@ -67,7 +69,7 @@ if not st.session_state.get("generated_organization"):
                     with col3:
                         if st.button("🗑️ Delete", key=f"delete_{scenario['filename']}", use_container_width=True):
                             # Delete scenario
-                            delete_response = requests.delete(
+                            delete_response = http.delete(
                                 f"{API_BASE_URL}/scenarios/{scenario['filename']}", timeout=DEFAULT_TIMEOUT
                             )
                             if delete_response.status_code == 200:

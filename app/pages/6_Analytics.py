@@ -16,6 +16,8 @@ import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.api_client import http
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 st.set_page_config(page_title="Analytics Dashboard", page_icon="📊", layout="wide")
@@ -28,7 +30,7 @@ st.markdown("---")
 def fetch_dashboard_data():
     """Fetch the main dashboard data from the analytics API."""
     try:
-        response = requests.get(f"{API_BASE_URL}/analytics/dashboard", timeout=DEFAULT_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/analytics/dashboard", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             return response.json(), None
         return None, f"Failed to load dashboard (HTTP {response.status_code})"
@@ -43,7 +45,7 @@ def fetch_dashboard_data():
 def fetch_score_trends(limit=20):
     """Fetch score trend data from the analytics API."""
     try:
-        response = requests.get(
+        response = http.get(
             f"{API_BASE_URL}/analytics/trends", params={"metric": "score", "limit": limit}, timeout=DEFAULT_TIMEOUT
         )
         if response.status_code == 200:
@@ -56,7 +58,7 @@ def fetch_score_trends(limit=20):
 def fetch_sessions():
     """Fetch session list from the game API."""
     try:
-        response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             return response.json(), None
         return None, f"Failed to load sessions (HTTP {response.status_code})"

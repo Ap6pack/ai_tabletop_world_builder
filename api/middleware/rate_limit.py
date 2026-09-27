@@ -10,6 +10,7 @@ limits hold across multiple API instances; otherwise an in-process counter is
 used (suitable for a single instance / local development).
 """
 
+import os
 import time
 
 from fastapi import HTTPException, Request, status
@@ -41,6 +42,11 @@ class FixedWindowRateLimiter:
                 logger.warning("Rate limiter Redis unavailable (%s); using in-process counter", exc)
                 self._redis = None
 
+    @property
+    def shared(self) -> bool:
+        """True when counters are shared across processes (Redis backend)."""
+        return self._redis is not None
+
     def reset(self) -> None:
         """Clear the in-process counters (used by tests)."""
         self._memory.clear()
@@ -66,6 +72,26 @@ class FixedWindowRateLimiter:
 
 # Module-level limiter shared across requests.
 rate_limiter = FixedWindowRateLimiter()
+
+
+def warn_if_limits_not_shared() -> str | None:
+    """Log (and return) a warning when rate-limit counters are per process.
+
+    Without Redis every uvicorn worker and every API instance counts on its
+    own, so N workers allow N times the configured limit. Called at startup.
+    """
+    if not settings.rate_limit_enabled or rate_limiter.shared:
+        return None
+    workers = os.environ.get("WEB_CONCURRENCY", "")
+    multiplier = f"{workers}x" if workers.isdigit() and int(workers) > 1 else "N x"
+    message = (
+        "Rate limiting is using an in-process counter (REDIS_URL is not set or unreachable). "
+        f"Each worker/instance counts separately, so running N workers allows {multiplier} "
+        f"the configured {settings.rate_limit_requests} requests per {settings.rate_limit_window_seconds}s. "
+        "Set REDIS_URL when running more than one worker or instance."
+    )
+    logger.warning(message)
+    return message
 
 
 def _client_key(request: Request) -> str:

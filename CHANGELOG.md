@@ -7,6 +7,130 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The API container applies database migrations on start (`scripts/migrate.py`),
+  stamping databases created by v1.0.0 containers first; `SKIP_MIGRATIONS=1`
+  opts out.
+- `GET /exercise/{id}/teams` lets an invited user list an exercise's teams (and
+  see their own seat) before joining, without exposing game state.
+- Tests: two-user isolation tests for every owned resource, exercise role tests,
+  API flow tests for the game/scenarios/analytics/exercise routers, and AppTest
+  runs of every page with `REQUIRE_AUTH=true` (logged in, logged out, expired
+  token). Coverage of `api/` is 88%.
+- **Community files** — `SECURITY.md` (private reporting via GitHub security advisories),
+  `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue forms and a pull request template
+  under `.github/`, `.github/dependabot.yml` (pip, GitHub Actions and Docker, weekly), and
+  `.github/CODEOWNERS`.
+- Tests: Streamlit AppTest smoke tests render every page against the in-process
+  API and with the API down; new tests for the auth, library, LLM, MITRE and
+  content-policy routers, the provider factory and Ollama/Together providers, the
+  PDF/CSV report generator, the threat response engine, API keys, the audit chain
+  and prompt injection. Coverage of `api/` rose from 68% to 84%.
+- **Reproducible dependencies** — `requirements.in` / `requirements-dev.in` list the
+  top-level packages; `requirements.txt` and `requirements-dev.txt` are fully pinned
+  lock files generated with `uv pip compile --universal`. The Dockerfiles and CI
+  install only from the lock files, and test tools (pytest, fakeredis, ruff, …) no
+  longer ship in the production images.
+- **CI tests Python 3.11, 3.12 and 3.13** (the range `pyproject.toml` declares) and
+  runs `alembic upgrade head && alembic check` on SQLite and PostgreSQL.
+- Scenario duration is read from the scenario's `metadata.duration_minutes`
+  (set by `POST /scenarios/generate`'s new `duration_minutes` field) and drives the
+  escalation timeline; 60 minutes remains the fallback.
+- The API logs a startup warning when rate limiting runs without Redis, since each
+  worker then counts separately; DEPLOY.md now lists Redis as required for more
+  than one worker or instance.
+- **Prometheus metrics** — `GET /metrics` exposes HTTP request counts, latency
+  histograms, error counts, active requests, and LLM call counts/latency, so the
+  bundled Prometheus scrape job and Grafana dashboard now receive data. Grafana
+  gets its datasource and dashboard provisioned automatically. Optional
+  `METRICS_TOKEN` protects the endpoint.
+- `app_settings` table (Alembic migration `238cbfb8c9b4`) for runtime-edited settings.
+
+### Security
+
+- **Per-user data ownership** — game sessions, generated scenarios and exercises
+  have an `owner_id` (migration `c0f41c4f1ff4`). With `REQUIRE_AUTH=true`, lists
+  only show the caller's records and every per-record endpoint (game, scenarios,
+  analytics/AAR/exports, ATT&CK coverage) returns 404 for someone else's; admins
+  bypass. Webhooks and API keys are owned by the logged-in user (no more
+  `user_id` from the request body, and webhook secrets are no longer returned).
+  Library scenarios record their owner: private ones are hidden from others,
+  only the owner can change visibility, and ratings count once per user.
+  Records without an owner are admin-only; `scripts/assign_owner.py` hands them
+  to a user.
+- **Exercise roles come from the login** — the exercise's creator is its
+  facilitator; `advance`, `inject`, `pause`, `end` and the full `/state` are
+  facilitator-only (the `facilitator_id` query parameter is ignored). Players act
+  only as the seat they joined (one seat per user per exercise); `team_id` /
+  `member_id` in the body can no longer impersonate another team. Players only
+  see their own team's view, team actions are visible to the acting team and the
+  facilitator only, and `/poll` filters events the same way.
+- **The Streamlit UI works with `REQUIRE_AUTH=true`** — every page sends the
+  login token through `app/utils/api_client.py`, refreshes an expired access
+  token once, and otherwise clears the login and asks the user to sign in again.
+- **Prompt-injection hardening** — player actions, timeline entries and checked
+  content are wrapped in a `<player_input>` block the system prompt marks as data;
+  angle brackets and the reply markers the parsers look for (`STRUCTURED_DATA:`,
+  `STATUS:` …) are defanged inside it. The game master's structured output is
+  bounded (score change ±25, inventory ±1 on at most 3 tools, known event
+  types/severities/actors only), the action filter and content-policy checks only
+  trust a `STATUS:` line at the start of a line, and likely injection attempts
+  are logged.
+- **Audit logs moved to an append-only, hash-chained database table**
+  (`audit_logs`, migration `b91650fa2a9e`). Entries survive restarts and are shared
+  by all instances; each entry's hash covers the previous one, and the new
+  admin-only `GET /audit/verify` reports modified, inserted or removed entries.
+  On PostgreSQL a trigger refuses UPDATEs. `scripts/import_legacy_data.py`
+  imports old `data/audit_logs/*.jsonl` files.
+- **JWT secrets must be at least 32 bytes** when `REQUIRE_AUTH=true` (HS256 needs a
+  key as long as its output); the test suite now signs with a 48-byte key.
+- **The Settings API no longer rewrites `.env`.** Edited settings are stored in the
+  database, survive restarts, are shared across instances, and values containing
+  newlines or other control characters are rejected (previously a newline could
+  inject extra settings into `.env`).
+- **Webhook SSRF protection** — webhook URLs must be `https` and resolve only to
+  public addresses; loopback, private, link-local (including cloud metadata at
+  `169.254.169.254`) and reserved ranges are refused at registration, on update,
+  and again right before each delivery. Redirects are no longer followed, and
+  delivery runs on a background thread pool instead of blocking the request.
+- **Audit endpoints are admin-only** — `/audit/logs`, `/audit/stats`,
+  `/audit/compliance-report` and `POST /audit/cleanup` now require the `admin`
+  role when `REQUIRE_AUTH=true`.
+- **Safe `docker-compose.yml` defaults** — `REQUIRE_AUTH=true`; `POSTGRES_PASSWORD`,
+  `REDIS_PASSWORD` and `JWT_SECRET_KEY` are required; Redis requires a password;
+  only ports 8000 and 8501 are published. Database and Redis ports moved to
+  `docker-compose.dev.yml` (bound to `127.0.0.1`), and Prometheus/Grafana moved
+  to an opt-in `docker-compose.monitoring.yml` with a required Grafana password.
+
+### Fixed
+
+- Registering on the Login page reported failure even when the account was
+  created (the page expected 200, the API returns 201).
+- `/audit/compliance-report` and `/audit/logs` no longer fail with a 500 for
+  date-only (naive) query parameters, and an inverted date range returns 400
+  instead of 500.
+
+### Changed
+
+- `/audit/stats` now returns `total_entries` and the oldest/newest entry times, and
+  `POST /audit/cleanup` reports `entries_deleted` (audit logs are no longer files).
+- GitHub Actions moved to their Node 24 releases (`actions/checkout@v6`,
+  `actions/setup-python@v6`, `actions/upload-artifact@v6`,
+  `docker/setup-buildx-action@v4`, `docker/build-push-action@v7`,
+  `docker/login-action@v4`, `docker/metadata-action@v6`).
+- The test suite uses `httpx2` for Starlette's `TestClient`, removing the
+  deprecation warning; the suite now runs warning-free.
+- Default models updated to `claude-sonnet-5` (Anthropic) and `gpt-5.6-terra`
+  (OpenAI). The providers omit `temperature` for models that reject it, send
+  `max_completion_tokens` to OpenAI reasoning models, keep thinking off on Claude
+  models where short replies matter, and read text blocks by type instead of
+  assuming the first content block is text.
+- `library_scenarios.rating` is declared as `Float` explicitly, so `alembic check`
+  reports no drift on SQLAlchemy 2.1.
+- `tests/test_audit_api.py` now runs in CI via `TestClient` instead of being
+  skipped unless a live server was running.
+
 ## [1.0.0] - 2026-07-18
 
 First public release — an open-source (Apache-2.0), AI-powered cybersecurity

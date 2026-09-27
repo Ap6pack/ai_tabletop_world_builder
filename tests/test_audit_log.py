@@ -6,10 +6,8 @@ Test script for audit log service.
 Tests comprehensive logging of policy checks, violations, and compliance reporting.
 """
 
-import shutil
 import sys
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 sys.path.insert(0, ".")
 
@@ -20,8 +18,7 @@ def test_audit_log():
     """Test audit logging with various scenarios."""
 
     # Use temporary directory for tests
-    test_log_dir = "./data/audit_logs_test"
-    service = AuditLogService(log_dir=test_log_dir)
+    service = AuditLogService()
 
     print("=" * 80)
     print("AUDIT LOG SERVICE TEST")
@@ -204,34 +201,15 @@ def test_audit_log():
             failed += 1
         print()
 
-        # Test 11: Log file creation and format
-        print("Test 11: Verify log file creation and format")
-        log_file = service.current_log_file
-        if log_file.exists():
-            with open(log_file) as f:
-                lines = f.readlines()
-                if len(lines) > 0:
-                    # Try to parse first line as JSON
-                    import json
-
-                    try:
-                        log_data = json.loads(lines[0])
-                        if "id" in log_data and "timestamp" in log_data:
-                            print("✅ PASS - Log file format valid (JSONL)")
-                            print(f"   Log file: {log_file.name}")
-                            print(f"   Entries: {len(lines)}")
-                            passed += 1
-                        else:
-                            print("❌ FAIL - Log entry missing required fields")
-                            failed += 1
-                    except json.JSONDecodeError:
-                        print("❌ FAIL - Invalid JSON in log file")
-                        failed += 1
-                else:
-                    print("❌ FAIL - Log file is empty")
-                    failed += 1
+        # Test 11: Entries are stored in the database and hash-chained
+        print("Test 11: Verify database storage and hash chain")
+        chain = service.verify_chain()
+        if chain["valid"] and chain["entries_checked"] == len(service.get_logs(limit=1000)):
+            print("✅ PASS - Audit entries stored and chain verifies")
+            print(f"   Entries: {chain['entries_checked']}")
+            passed += 1
         else:
-            print("❌ FAIL - Log file not created")
+            print(f"❌ FAIL - Chain verification failed: {chain}")
             failed += 1
         print()
 
@@ -245,13 +223,7 @@ def test_audit_log():
         print()
 
     finally:
-        # Cleanup test directory
-        print("-" * 80)
-        print("Cleaning up test directory...")
-        if Path(test_log_dir).exists():
-            shutil.rmtree(test_log_dir)
-            print(f"✓ Removed {test_log_dir}")
-        print()
+        pass  # the per-test database fixture discards the entries
 
     print("=" * 80)
     print(f"SUMMARY: {passed} passed, {failed} failed out of {passed + failed} tests")

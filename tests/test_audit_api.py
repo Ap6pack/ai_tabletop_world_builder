@@ -1,182 +1,126 @@
 #!/usr/bin/env python3
 # Copyright 2026 Adam Rhys Heaton (Ap6pack) and contributors
 # SPDX-License-Identifier: Apache-2.0
-"""
-Test script for audit API endpoints.
-
-Requires a running API server at localhost:8000. Automatically skipped
-during `pytest` when the server is not reachable.
-"""
+"""Tests for the audit API endpoints (admin-only)."""
 
 from datetime import datetime, timedelta
 
 import pytest
-import requests
+from fastapi.testclient import TestClient
 
-API_BASE = "http://127.0.0.1:8000"
+from api.middleware.auth import auth_service
+from api.services.audit_log_service import AuditLogService
+from config.settings import settings
 
-
-def _api_reachable() -> bool:
-    try:
-        requests.get(f"{API_BASE}/health", timeout=2)
-        return True
-    except (requests.ConnectionError, requests.Timeout):
-        return False
-
-
-@pytest.mark.skipif(not _api_reachable(), reason="API server not running")
-def test_audit_endpoints():
-    """Test all audit API endpoints."""
-    print("=" * 80)
-    print("AUDIT API ENDPOINTS TEST")
-    print("=" * 80)
-    print()
-
-    passed = 0
-    failed = 0
-
-    # Test 1: Create some audit logs first (via test_audit_log.py)
-    print("Test 1: Creating test audit logs...")
-    import subprocess
-
-    result = subprocess.run(["python", "test_audit_log.py"], capture_output=True, text=True)  # noqa: S607
-    if result.returncode == 0:
-        print("✅ PASS - Test logs created successfully")
-        passed += 1
-    else:
-        print(f"❌ FAIL - Failed to create test logs: {result.stderr}")
-        failed += 1
-    print()
-
-    # Test 2: Get audit stats
-    print("Test 2: GET /audit/stats")
-    try:
-        response = requests.get(f"{API_BASE}/audit/stats", timeout=5)
-        if response.status_code == 200:
-            stats = response.json()
-            print("✅ PASS - Audit stats retrieved")
-            print(f"   Total log files: {stats['total_log_files']}")
-            print(f"   Disk usage: {stats['disk_usage_mb']} MB")
-            print(f"   Date range: {stats.get('oldest_log_date', 'N/A')} to {stats.get('newest_log_date', 'N/A')}")
-            passed += 1
-        else:
-            print(f"❌ FAIL - Status code: {response.status_code}")
-            print(f"   Error: {response.text}")
-            failed += 1
-    except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
-        failed += 1
-    print()
-
-    # Test 3: Get audit logs (no filters)
-    print("Test 3: GET /audit/logs (no filters)")
-    try:
-        response = requests.get(f"{API_BASE}/audit/logs?limit=10", timeout=5)
-        if response.status_code == 200:
-            logs = response.json()
-            print(f"✅ PASS - Retrieved {len(logs)} logs")
-            if logs:
-                first_log = logs[0]
-                print(f"   First log: {first_log['event_type']} - {first_log['severity']}")
-            passed += 1
-        else:
-            print(f"❌ FAIL - Status code: {response.status_code}")
-            failed += 1
-    except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
-        failed += 1
-    print()
-
-    # Test 4: Get audit logs (filtered by event_type)
-    print("Test 4: GET /audit/logs (filter by event_type=violation)")
-    try:
-        response = requests.get(f"{API_BASE}/audit/logs", params={"event_type": "violation", "limit": 10}, timeout=5)
-        if response.status_code == 200:
-            logs = response.json()
-            print(f"✅ PASS - Retrieved {len(logs)} violation logs")
-            passed += 1
-        else:
-            print(f"❌ FAIL - Status code: {response.status_code}")
-            failed += 1
-    except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
-        failed += 1
-    print()
-
-    # Test 5: Get audit logs (filtered by severity)
-    print("Test 5: GET /audit/logs (filter by severity=critical)")
-    try:
-        response = requests.get(f"{API_BASE}/audit/logs", params={"severity": "critical", "limit": 10}, timeout=5)
-        if response.status_code == 200:
-            logs = response.json()
-            print(f"✅ PASS - Retrieved {len(logs)} critical logs")
-            passed += 1
-        else:
-            print(f"❌ FAIL - Status code: {response.status_code}")
-            failed += 1
-    except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
-        failed += 1
-    print()
-
-    # Test 6: Generate compliance report
-    print("Test 6: GET /audit/compliance-report")
-    try:
-        today = datetime.now()
-        yesterday = today - timedelta(days=1)
-
-        response = requests.get(
-            f"{API_BASE}/audit/compliance-report",
-            params={"start_date": yesterday.date().isoformat(), "end_date": today.date().isoformat()},
-            timeout=5,
-        )
-        if response.status_code == 200:
-            report = response.json()
-            print("✅ PASS - Compliance report generated")
-            print(f"   Total checks: {report.get('total_checks', 0)}")
-            print(f"   Total violations: {report.get('total_violations', 0)}")
-            print(f"   Violation rate: {report.get('violation_rate', 0)}%")
-            passed += 1
-        else:
-            print(f"❌ FAIL - Status code: {response.status_code}")
-            print(f"   Error: {response.text}")
-            failed += 1
-    except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
-        failed += 1
-    print()
-
-    # Test 7: Test invalid date format
-    print("Test 7: GET /audit/compliance-report (invalid date)")
-    try:
-        response = requests.get(
-            f"{API_BASE}/audit/compliance-report",
-            params={"start_date": "invalid-date", "end_date": "2025-11-04"},
-            timeout=5,
-        )
-        if response.status_code == 400:
-            print("✅ PASS - Correctly rejected invalid date (400)")
-            passed += 1
-        else:
-            print(f"❌ FAIL - Expected 400, got {response.status_code}")
-            failed += 1
-    except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
-        failed += 1
-    print()
-
-    print("=" * 80)
-    print(f"SUMMARY: {passed} passed, {failed} failed out of {passed + failed} tests")
-    print("=" * 80)
-
-    assert failed == 0, f"{failed} test(s) failed"
+AUDIT_REQUESTS = [
+    ("get", "/audit/logs"),
+    ("get", "/audit/stats"),
+    ("get", "/audit/compliance-report?start_date=2026-01-01&end_date=2026-01-02"),
+    ("post", "/audit/cleanup"),
+    ("get", "/audit/verify"),
+]
 
 
-if __name__ == "__main__":
-    import sys
+@pytest.fixture
+def audit_service(monkeypatch):
+    """Point the audit router at an isolated, pre-populated audit log."""
+    import api.routers.audit as audit_router
 
-    try:
-        test_audit_endpoints()
-        sys.exit(0)
-    except (AssertionError, Exception):
-        sys.exit(1)
+    service = AuditLogService()
+    service.log_policy_check("check the SIEM", "educational", "allowed", session_id="s1", user_id="u1")
+    service.log_violation("rm -rf /", "destructive_command", "critical", "educational", "blocked", session_id="s1")
+    monkeypatch.setattr(audit_router, "audit_service", service)
+    return service
+
+
+@pytest.fixture
+def client(audit_service):
+    from main import app
+
+    return TestClient(app)
+
+
+@pytest.fixture
+def enable_auth(monkeypatch):
+    monkeypatch.setattr(settings, "require_auth", True)
+
+
+def _auth_header(username: str, role: str = "user") -> dict:
+    user = auth_service.register(username, f"{username}@example.com", "password123")
+    if role != "user":
+        auth_service.update_user(user["id"], {"role": role})
+    token = auth_service.create_access_token(user["id"], username, role=role)
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.mark.parametrize(("method", "path"), AUDIT_REQUESTS)
+def test_audit_endpoints_forbidden_for_non_admin(client, enable_auth, method, path):
+    resp = client.request(method, path, headers=_auth_header("player"))
+    assert resp.status_code == 403
+
+
+@pytest.mark.parametrize(("method", "path"), AUDIT_REQUESTS)
+def test_audit_endpoints_require_login(client, enable_auth, method, path):
+    assert client.request(method, path).status_code == 401
+
+
+@pytest.mark.parametrize(("method", "path"), AUDIT_REQUESTS)
+def test_audit_endpoints_allow_admin(client, enable_auth, method, path):
+    resp = client.request(method, path, headers=_auth_header("root", role="admin"))
+    assert resp.status_code == 200
+
+
+def test_get_logs_returns_entries(client):
+    logs = client.get("/audit/logs", params={"limit": 10}).json()
+    assert {log["event_type"] for log in logs} == {"policy_check", "violation"}
+
+
+def test_get_logs_filters(client):
+    violations = client.get("/audit/logs", params={"event_type": "violation"}).json()
+    assert len(violations) == 1
+    assert violations[0]["severity"] == "critical"
+    by_user = client.get("/audit/logs", params={"user_id": "u1"}).json()
+    assert len(by_user) == 1
+
+
+def test_get_logs_rejects_invalid_date(client):
+    assert client.get("/audit/logs", params={"start_date": "not-a-date"}).status_code == 400
+
+
+def test_compliance_report(client):
+    today = datetime.now()
+    resp = client.get(
+        "/audit/compliance-report",
+        params={
+            "start_date": (today - timedelta(days=1)).date().isoformat(),
+            "end_date": (today + timedelta(days=1)).date().isoformat(),
+        },
+    )
+    assert resp.status_code == 200
+    report = resp.json()
+    assert report["total_checks"] >= 1
+    assert report["total_violations"] >= 1
+
+
+def test_compliance_report_rejects_bad_dates(client):
+    assert client.get("/audit/compliance-report", params={"start_date": "x", "end_date": "y"}).status_code == 400
+    resp = client.get("/audit/compliance-report", params={"start_date": "2026-02-01", "end_date": "2026-01-01"})
+    assert resp.status_code == 400
+
+
+def test_stats(client):
+    stats = client.get("/audit/stats").json()
+    assert stats["total_entries"] == 2
+    assert stats["oldest_log_date"] <= stats["newest_log_date"]
+
+
+def test_verify_reports_valid_chain(client):
+    result = client.get("/audit/verify").json()
+    assert result == {"valid": True, "entries_checked": 2, "invalid_entry_id": None, "reason": None}
+
+
+def test_cleanup_validates_retention(client):
+    assert client.post("/audit/cleanup", params={"retention_days": 1}).status_code == 422
+    resp = client.post("/audit/cleanup", params={"retention_days": 30})
+    assert resp.status_code == 200
+    assert resp.json()["retention_days"] == 30

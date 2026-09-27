@@ -7,10 +7,13 @@ Analytics and After Action Review API endpoints.
 
 import io
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from starlette.responses import StreamingResponse
 
+from api.middleware.auth import Caller, get_caller
+from api.middleware.telemetry import record_aar_generation
 from api.models import AARReport, PerformanceDashboard
+from api.routers.access import owner_filter
 from api.services.aar_service import AARService
 from api.services.game_session_service import GameSessionService
 from api.services.report_generator import ReportGenerator
@@ -25,8 +28,16 @@ session_service = GameSessionService()
 report_generator = ReportGenerator()
 
 
+def _get_session(session_id: str, caller: Caller):
+    """Load a session the caller owns; None (reported as 404) otherwise."""
+    game_state = session_service.get_session(session_id)
+    if game_state is None or not caller.owns(game_state.owner_id):
+        return None
+    return game_state
+
+
 @router.post("/aar/{session_id}", response_model=AARReport)
-async def generate_aar(session_id: str, include_alternatives: bool = True):
+async def generate_aar(session_id: str, include_alternatives: bool = True, caller: Caller = Depends(get_caller)):
     """
     Generate an After Action Review for a completed game session.
 
@@ -38,7 +49,7 @@ async def generate_aar(session_id: str, include_alternatives: bool = True):
         AARReport with decision analysis, grades, and recommendations
     """
     try:
-        game_state = session_service.get_session(session_id)
+        game_state = _get_session(session_id, caller)
         if not game_state:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
@@ -48,6 +59,7 @@ async def generate_aar(session_id: str, include_alternatives: bool = True):
             )
 
         report = aar_service.generate_aar(game_state=game_state, include_alternatives=include_alternatives)
+        record_aar_generation(report.overall_grade)
 
         logger.info(
             f"AAR generated for session {session_id}: grade={report.overall_grade}",
@@ -64,7 +76,7 @@ async def generate_aar(session_id: str, include_alternatives: bool = True):
 
 
 @router.get("/aar/{session_id}", response_model=AARReport)
-async def get_aar(session_id: str):
+async def get_aar(session_id: str, caller: Caller = Depends(get_caller)):
     """
     Retrieve a previously generated AAR for a session.
     If no AAR exists, generates one on the fly.
@@ -76,7 +88,7 @@ async def get_aar(session_id: str):
         AARReport
     """
     try:
-        game_state = session_service.get_session(session_id)
+        game_state = _get_session(session_id, caller)
         if not game_state:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
@@ -94,7 +106,7 @@ async def get_aar(session_id: str):
 
 
 @router.get("/metrics/{session_id}")
-async def get_session_metrics(session_id: str):
+async def get_session_metrics(session_id: str, caller: Caller = Depends(get_caller)):
     """
     Get performance metrics for a specific game session.
 
@@ -105,7 +117,7 @@ async def get_session_metrics(session_id: str):
         Dictionary of performance metrics
     """
     try:
-        game_state = session_service.get_session(session_id)
+        game_state = _get_session(session_id, caller)
         if not game_state:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
@@ -132,7 +144,9 @@ async def get_session_metrics(session_id: str):
 
 
 @router.get("/dashboard", response_model=PerformanceDashboard)
-async def get_dashboard(status: str | None = Query("completed", description="Session status filter")):
+async def get_dashboard(
+    status: str | None = Query("completed", description="Session status filter"), caller: Caller = Depends(get_caller)
+):
     """
     Get aggregated performance dashboard across all completed sessions.
 
@@ -143,13 +157,13 @@ async def get_dashboard(status: str | None = Query("completed", description="Ses
         PerformanceDashboard with aggregated metrics and trends
     """
     try:
-        sessions_metadata = session_service.list_sessions(status_filter=status)
+        sessions_metadata = session_service.list_sessions(status_filter=status, owner_id=owner_filter(caller))
 
         # Load full game states for completed sessions
         game_states = []
         for meta in sessions_metadata:
             sid = meta.get("session_id", "")
-            state = session_service.get_session(sid)
+            state = _get_session(sid, caller)
             if state:
                 game_states.append(state)
 
@@ -168,6 +182,7 @@ async def get_dashboard(status: str | None = Query("completed", description="Ses
 async def get_trends(
     metric: str = Query("score", description="Metric to trend (score, time_elapsed, objectives_completed)"),
     limit: int = Query(20, ge=1, le=100, description="Number of recent sessions to include"),
+    caller: Caller = Depends(get_caller),
 ):
     """
     Get trend data for a specific metric across recent sessions.
@@ -180,7 +195,7 @@ async def get_trends(
         List of data points for charting
     """
     try:
-        sessions_metadata = session_service.list_sessions(status_filter="completed")
+        sessions_metadata = session_service.list_sessions(status_filter="completed", owner_id=owner_filter(caller))
 
         # Sort by most recent and limit
         sessions_metadata = sorted(sessions_metadata, key=lambda s: s.get("created_at", ""), reverse=True)[:limit]
@@ -188,7 +203,7 @@ async def get_trends(
         data_points = []
         for meta in sessions_metadata:
             sid = meta.get("session_id", "")
-            state = session_service.get_session(sid)
+            state = _get_session(sid, caller)
             if state:
                 point = {
                     "session_id": sid,
@@ -222,7 +237,7 @@ async def get_trends(
 
 
 @router.get("/export/json/{session_id}")
-async def export_session_json(session_id: str):
+async def export_session_json(session_id: str, caller: Caller = Depends(get_caller)):
     """
     Export full game session data as JSON.
 
@@ -233,7 +248,7 @@ async def export_session_json(session_id: str):
         Complete game state data
     """
     try:
-        game_state = session_service.get_session(session_id)
+        game_state = _get_session(session_id, caller)
         if not game_state:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
@@ -247,7 +262,7 @@ async def export_session_json(session_id: str):
 
 
 @router.get("/export/pdf/{session_id}")
-async def export_session_pdf(session_id: str):
+async def export_session_pdf(session_id: str, caller: Caller = Depends(get_caller)):
     """
     Export AAR as PDF.
 
@@ -258,7 +273,7 @@ async def export_session_pdf(session_id: str):
         PDF file as a streaming response
     """
     try:
-        game_state = session_service.get_session(session_id)
+        game_state = _get_session(session_id, caller)
         if not game_state:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
@@ -289,7 +304,7 @@ async def export_session_pdf(session_id: str):
 
 
 @router.get("/export/csv/{session_id}")
-async def export_session_csv(session_id: str):
+async def export_session_csv(session_id: str, caller: Caller = Depends(get_caller)):
     """
     Export game session timeline as CSV data.
 
@@ -300,7 +315,7 @@ async def export_session_csv(session_id: str):
         CSV-formatted timeline data
     """
     try:
-        game_state = session_service.get_session(session_id)
+        game_state = _get_session(session_id, caller)
         if not game_state:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 

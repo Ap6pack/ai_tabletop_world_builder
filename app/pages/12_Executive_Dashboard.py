@@ -16,6 +16,8 @@ import requests
 import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.api_client import http
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 try:
@@ -38,7 +40,7 @@ exercise_id = st.session_state.get("exercise_id")
 if not game_state and exercise_id:
     # Try loading from exercise
     try:
-        resp = requests.get(
+        resp = http.get(
             f"{API_BASE_URL}/exercise/{exercise_id}/state",
             timeout=DEFAULT_TIMEOUT,
         )

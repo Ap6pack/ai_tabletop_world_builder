@@ -23,7 +23,12 @@ class GameSessionService:
         init_db()
 
     def create_session(
-        self, organization: Organization, scenario_type: str, player_role: str, difficulty: str
+        self,
+        organization: Organization,
+        scenario_type: str,
+        player_role: str,
+        difficulty: str,
+        owner_id: str | None = None,
     ) -> GameState:
         """
         Create a new game session.
@@ -33,6 +38,7 @@ class GameSessionService:
             scenario_type: Type of scenario (incident-response, threat-hunting, etc.)
             player_role: Role the player assumes
             difficulty: Difficulty level
+            owner_id: User who owns the session (None when auth is disabled)
 
         Returns:
             Initial GameState
@@ -55,6 +61,7 @@ class GameSessionService:
             objectives_completed=[],
             objectives_failed=[],
             status="in-progress",
+            owner_id=owner_id,
         )
 
         # Save initial state
@@ -144,6 +151,7 @@ class GameSessionService:
                 db.add(row)
             elif first_ts is not None:
                 row.created_at = first_ts
+            row.owner_id = game_state.owner_id
             row.status = game_state.status
             row.player_role = game_state.player_role
             row.org_name = org_name
@@ -345,12 +353,13 @@ class GameSessionService:
 
         return game_state
 
-    def list_sessions(self, status_filter: str | None = None) -> list:
+    def list_sessions(self, status_filter: str | None = None, owner_id: str | None = None) -> list:
         """
-        List all game sessions.
+        List game sessions.
 
         Args:
             status_filter: Optional filter by status
+            owner_id: When set, only sessions owned by this user
 
         Returns:
             List of session metadata
@@ -358,6 +367,8 @@ class GameSessionService:
         stmt = select(GameSessionRow)
         if status_filter:
             stmt = stmt.where(GameSessionRow.status == status_filter)
+        if owner_id is not None:
+            stmt = stmt.where(GameSessionRow.owner_id == owner_id)
 
         with session_scope() as db:
             rows = db.scalars(stmt).all()

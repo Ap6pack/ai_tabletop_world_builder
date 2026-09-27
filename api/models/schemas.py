@@ -27,8 +27,8 @@ class LLMRequest(BaseModel):
     )
     model: str | None = Field(
         None,
-        description="Model to use. If not specified, uses default for the provider. Examples: 'gpt-4', 'claude-3-5-sonnet-20241022', 'llama3'",
-        examples=["gpt-4-turbo-preview"],
+        description="Model to use. If not specified, uses default for the provider. Examples: 'gpt-5.6-terra', 'claude-sonnet-5', 'llama3'",
+        examples=["claude-sonnet-5"],
     )
     temperature: float | None = Field(
         None,
@@ -153,6 +153,8 @@ class Organization(BaseModel):
     threat_actors: list[ThreatActor] = Field(default_factory=list)
     security_posture: Literal["immature", "developing", "defined", "managed", "optimized"]
     compliance_frameworks: list[str] = Field(default_factory=list)
+    # Free-form scenario settings, e.g. {"duration_minutes": 90}.
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 # ============================================================================
@@ -387,6 +389,7 @@ class GameState(BaseModel):
     resource_pool: ResourcePool | None = None  # Resource management
     active_campaigns: list[ThreatCampaign] = Field(default_factory=list)  # Multi-stage campaigns
     game_started_at: datetime | None = None  # When game actually started
+    owner_id: str | None = None  # User who started the session (None: created with auth off)
 
 
 class PlayerAction(BaseModel):

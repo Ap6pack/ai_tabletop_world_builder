@@ -7,6 +7,7 @@ Content policy service for safety and moderation.
 
 from api.models import ContentCheckRequest, ContentCheckResponse, ContentPolicy
 from api.providers import LLMProviderFactory
+from api.utils.prompt_safety import UNTRUSTED_INPUT_RULES, parse_status_line, wrap_untrusted
 
 
 class ContentPolicyService:
@@ -128,12 +129,13 @@ Analyze the content and respond with:
 2. "UNSAFE" if the content violates the policy
 3. List any specific violations or concerns
 
-Be strict but fair. Remember this is for legitimate security training purposes."""
+Be strict but fair. Remember this is for legitimate security training purposes.
+
+{UNTRUSTED_INPUT_RULES}"""
 
         prompt = f"""Analyze this content for policy compliance:
 
-Content:
-{content}
+{wrap_untrusted(content, "content")}
 
 Respond in this exact format:
 STATUS: [SAFE or UNSAFE]
@@ -152,7 +154,7 @@ REASONING: [brief explanation]"""
             response_text = result["content"].strip()
 
             # Parse the response
-            is_safe = "STATUS: SAFE" in response_text
+            is_safe = parse_status_line(response_text, ("SAFE", "UNSAFE")) == "SAFE"
             violations = []
 
             # Extract violations if any

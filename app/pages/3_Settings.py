@@ -7,6 +7,7 @@ Streamlit Settings Page - Configure platform settings.
 
 import requests
 import streamlit as st
+from utils.api_client import http
 
 from config import API_BASE_URL, DEFAULT_TIMEOUT, HEALTH_CHECK_TIMEOUT
 
@@ -21,7 +22,7 @@ st.markdown("### LLM Provider Configuration")
 
 # Check current provider status
 try:
-    providers_response = requests.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
+    providers_response = http.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
     current_providers = {}
     if providers_response.status_code == 200:
         current_providers = providers_response.json()
@@ -49,9 +50,7 @@ if provider == "OpenAI":
                     st.rerun()
                 else:
                     try:
-                        response = requests.delete(
-                            f"{API_BASE_URL}/settings/provider/openai/key", timeout=DEFAULT_TIMEOUT
-                        )
+                        response = http.delete(f"{API_BASE_URL}/settings/provider/openai/key", timeout=DEFAULT_TIMEOUT)
                         if response.status_code == 200:
                             st.success("✅ OpenAI API key removed")
                             st.session_state.confirm_clear_openai = False
@@ -72,7 +71,7 @@ if provider == "OpenAI":
             st.info("ℹ️ No API Key Configured")
             api_key = st.text_input("OpenAI API Key", type="password", help="Get your API key from platform.openai.com")
 
-        model = st.selectbox("Model", ["gpt-4-turbo-preview", "gpt-4", "gpt-3.5-turbo"])
+        model = st.selectbox("Model", ["gpt-5.6-terra", "gpt-6-astra"])
     with col2:
         temperature = st.slider(
             "Temperature", 0.0, 2.0, 0.7, 0.1, help="Higher = more creative, Lower = more deterministic"
@@ -92,7 +91,7 @@ elif provider == "Anthropic":
                     st.rerun()
                 else:
                     try:
-                        response = requests.delete(
+                        response = http.delete(
                             f"{API_BASE_URL}/settings/provider/anthropic/key", timeout=DEFAULT_TIMEOUT
                         )
                         if response.status_code == 200:
@@ -117,9 +116,7 @@ elif provider == "Anthropic":
                 "Anthropic API Key", type="password", help="Get your API key from console.anthropic.com"
             )
 
-        model = st.selectbox(
-            "Model", ["claude-3-5-sonnet-20241022", "claude-3-opus-20240229", "claude-3-sonnet-20240229"]
-        )
+        model = st.selectbox("Model", ["claude-sonnet-5", "claude-opus-5", "claude-haiku-4-5"])
     with col2:
         temperature = st.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
         max_tokens = st.number_input("Max Tokens", 100, 8000, 4096, 100)
@@ -137,7 +134,7 @@ elif provider == "Together":
                     st.rerun()
                 else:
                     try:
-                        response = requests.delete(
+                        response = http.delete(
                             f"{API_BASE_URL}/settings/provider/together/key", timeout=DEFAULT_TIMEOUT
                         )
                         if response.status_code == 200:
@@ -202,7 +199,7 @@ if st.button("🔍 Test Connection", type="primary"):
                 test_payload["model"] = model
 
             # Call API test endpoint
-            response = requests.post(f"{API_BASE_URL}/llm/complete", json=test_payload, timeout=10)
+            response = http.post(f"{API_BASE_URL}/llm/complete", json=test_payload, timeout=10)
 
             if response.status_code == 200:
                 st.success("✅ Connection successful! Provider is working correctly.")
@@ -371,7 +368,7 @@ if st.button("Load Audit Logs", use_container_width=True):
         if log_severity != "all":
             params["severity"] = log_severity
 
-        response = requests.get(f"{API_BASE_URL}/audit/logs", params=params, timeout=DEFAULT_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/audit/logs", params=params, timeout=DEFAULT_TIMEOUT)
 
         if response.status_code == 200:
             logs = response.json()
@@ -425,7 +422,7 @@ if st.button("Generate Compliance Report", use_container_width=True):
         try:
             params = {"start_date": report_start_date.isoformat(), "end_date": report_end_date.isoformat()}
 
-            response = requests.get(f"{API_BASE_URL}/audit/compliance-report", params=params, timeout=DEFAULT_TIMEOUT)
+            response = http.get(f"{API_BASE_URL}/audit/compliance-report", params=params, timeout=DEFAULT_TIMEOUT)
 
             if response.status_code == 200:
                 report = response.json()
@@ -537,7 +534,7 @@ with col1:
 with col2:
     st.markdown("**Storage Statistics**")
     try:
-        stats_response = requests.get(f"{API_BASE_URL}/settings/storage/stats", timeout=HEALTH_CHECK_TIMEOUT)
+        stats_response = http.get(f"{API_BASE_URL}/settings/storage/stats", timeout=HEALTH_CHECK_TIMEOUT)
         if stats_response.status_code == 200:
             stats = stats_response.json()
             st.metric("Saved Scenarios", stats["saved_scenarios"])
@@ -593,7 +590,7 @@ with col1:
             update_payload["ollama_temperature"] = temperature
 
         try:
-            response = requests.post(f"{API_BASE_URL}/settings/update", json=update_payload, timeout=DEFAULT_TIMEOUT)
+            response = http.post(f"{API_BASE_URL}/settings/update", json=update_payload, timeout=DEFAULT_TIMEOUT)
 
             if response.status_code == 200:
                 result = response.json()
@@ -609,7 +606,7 @@ with col1:
 with col2:
     if st.button("Reset to Defaults", use_container_width=True):
         try:
-            response = requests.post(f"{API_BASE_URL}/settings/reset/defaults", timeout=DEFAULT_TIMEOUT)
+            response = http.post(f"{API_BASE_URL}/settings/reset/defaults", timeout=DEFAULT_TIMEOUT)
             if response.status_code == 200:
                 result = response.json()
                 st.success("✅ " + result["message"])
@@ -623,7 +620,7 @@ with col2:
 with col3:
     if st.button("Export Config", use_container_width=True):
         try:
-            response = requests.post(f"{API_BASE_URL}/settings/export", timeout=DEFAULT_TIMEOUT)
+            response = http.post(f"{API_BASE_URL}/settings/export", timeout=DEFAULT_TIMEOUT)
             if response.status_code == 200:
                 config_data = response.json()
                 import json
@@ -649,7 +646,7 @@ with st.sidebar:
     # Check API status
     st.markdown("**API Status**")
     try:
-        health_response = requests.get(f"{API_BASE_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
+        health_response = http.get(f"{API_BASE_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
         if health_response.status_code == 200:
             st.success("✅ API Running")
         else:
@@ -660,7 +657,7 @@ with st.sidebar:
     # Check configured providers
     st.markdown("**Configured Providers**")
     try:
-        providers_response = requests.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
+        providers_response = http.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
         if providers_response.status_code == 200:
             providers = providers_response.json()
             configured = [p for p, is_available in providers.items() if is_available]
@@ -701,7 +698,7 @@ with st.sidebar:
                 st.rerun()
             else:
                 try:
-                    response = requests.delete(f"{API_BASE_URL}/settings/data/clear", timeout=10)
+                    response = http.delete(f"{API_BASE_URL}/settings/data/clear", timeout=10)
                     if response.status_code == 200:
                         result = response.json()
                         st.success(f"✅ {result['message']}")

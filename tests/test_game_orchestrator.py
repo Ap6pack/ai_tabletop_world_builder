@@ -4,7 +4,7 @@
 """Tests for GameOrchestrator — game session coordination."""
 
 import os
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -15,7 +15,7 @@ from api.models.schemas import (
     System,
     ThreatActor,
 )
-from api.services.game_orchestrator import GameOrchestrator
+from api.services.game_orchestrator import GameOrchestrator, scenario_duration_minutes
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -129,6 +129,36 @@ class TestStartNewGame:
             organization=_make_org(),
         )
         assert "ta-1" in response.game_state.threat_states
+
+    @pytest.mark.asyncio
+    async def test_start_uses_scenario_duration_from_metadata(self, orch):
+        orch.game_master.start_game = AsyncMock(return_value="Begin!")
+        spy = MagicMock(wraps=orch.time_pressure_service.create_scenario_escalation_rules)
+        orch.time_pressure_service.create_scenario_escalation_rules = spy
+
+        org = _make_org()
+        org.metadata["duration_minutes"] = 120
+        await orch.start_new_game(organization=org)
+
+        assert spy.call_args.kwargs["duration_minutes"] == 120
+
+
+@pytest.mark.parametrize(
+    ("metadata", "expected"),
+    [
+        ({}, 60),
+        ({"duration_minutes": 90}, 90),
+        ({"duration_minutes": "45"}, 45),
+        ({"duration_minutes": "x"}, 60),
+        ({"duration_minutes": 5}, 60),
+        ({"duration_minutes": 10_000}, 60),
+        ({"duration_minutes": True}, 60),
+    ],
+)
+def test_scenario_duration_minutes(metadata, expected):
+    org = _make_org()
+    org.metadata.update(metadata)
+    assert scenario_duration_minutes(org) == expected
 
 
 # ---------------------------------------------------------------------------

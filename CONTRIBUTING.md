@@ -18,22 +18,12 @@ Thank you for your interest in contributing to the Cybersecurity War Gaming Plat
 
 ## 📜 Code of Conduct
 
-### Our Pledge
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
+By participating you agree to uphold it. Report unacceptable behavior as described
+in that document.
 
-We are committed to providing a welcoming and inclusive environment for all contributors, regardless of background or experience level. We expect all participants to:
-
-- Be respectful and professional
-- Accept constructive criticism gracefully
-- Focus on what's best for the project and community
-- Show empathy towards other community members
-- Respect differing viewpoints and experiences
-
-### Unacceptable Behavior
-
-- Harassment, discrimination, or offensive comments
-- Personal attacks or trolling
-- Publishing others' private information
-- Any conduct that would be inappropriate in a professional setting
+**Security issues:** please do not open public issues for vulnerabilities. Follow
+[SECURITY.md](SECURITY.md) to report them privately.
 
 ## 🚀 Getting Started
 
@@ -41,7 +31,7 @@ We are committed to providing a welcoming and inclusive environment for all cont
 
 Before contributing, ensure you have:
 
-- Python 3.10 or higher
+- Python 3.11, 3.12 or 3.13
 - Git installed and configured
 - A GitHub account
 - Basic understanding of FastAPI and Streamlit (or willingness to learn)
@@ -85,12 +75,23 @@ git remote add upstream https://github.com/Ap6pack/ai_tabletop_world_builder.git
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Install development dependencies
-pip install pytest pytest-asyncio black flake8 mypy
+# Install runtime + development dependencies (both are fully pinned lock files)
+pip install -r requirements.txt -r requirements-dev.txt
 ```
+
+#### Changing dependencies
+
+Edit the top-level lists in `requirements.in` (runtime) or `requirements-dev.in`
+(tests and tooling), then regenerate the lock files with
+[uv](https://docs.astral.sh/uv/):
+
+```bash
+uv pip compile requirements.in --universal --python-version 3.11 -o requirements.txt
+uv pip compile requirements-dev.in --universal --python-version 3.11 -o requirements-dev.txt
+```
+
+The Dockerfiles and CI install only from the lock files, so commit both the
+`.in` and `.txt` changes together.
 
 ### 3. Configure Environment
 
@@ -289,9 +290,7 @@ We follow [PEP 8](https://pep8.org/) with some modifications:
 ```python
 # Good
 def generate_organization(
-    industry: str,
-    size: OrganizationSize,
-    complexity: Complexity = Complexity.MODERATE
+    industry: str, size: OrganizationSize, complexity: Complexity = Complexity.MODERATE
 ) -> Organization:
     """
     Generate a realistic organization for training scenarios.
@@ -333,13 +332,9 @@ Always use type hints:
 
 ```python
 # Good ✅
-async def complete(
-    self,
-    prompt: str,
-    temperature: float = 0.7,
-    max_tokens: Optional[int] = None
-) -> Dict[str, Any]:
+async def complete(self, prompt: str, temperature: float = 0.7, max_tokens: Optional[int] = None) -> Dict[str, Any]:
     pass
+
 
 # Bad ❌
 async def complete(self, prompt, temperature=0.7, max_tokens=None):
@@ -370,6 +365,7 @@ class OrganizationGenerator:
         ...     size="medium"
         ... )
     """
+
     pass
 ```
 
@@ -382,20 +378,18 @@ class OrganizationGenerator:
 import pytest
 from api.services.organization_generator import OrganizationGenerator
 
+
 @pytest.mark.asyncio
 async def test_generate_organization():
     """Test basic organization generation."""
     generator = OrganizationGenerator()
 
-    org = await generator.generate(
-        industry="Finance",
-        size="medium",
-        complexity="moderate"
-    )
+    org = await generator.generate(industry="Finance", size="medium", complexity="moderate")
 
     assert org.name is not None
     assert org.industry == "Finance"
     assert len(org.departments) > 0
+
 
 @pytest.mark.asyncio
 async def test_generate_with_invalid_industry():
@@ -403,10 +397,7 @@ async def test_generate_with_invalid_industry():
     generator = OrganizationGenerator()
 
     with pytest.raises(ValueError):
-        await generator.generate(
-            industry="InvalidIndustry",
-            size="medium"
-        )
+        await generator.generate(industry="InvalidIndustry", size="medium")
 ```
 
 ### Running Tests

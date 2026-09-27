@@ -157,13 +157,16 @@ class ScenarioOrchestrator:
         mapping = {"basic": 1, "moderate": 2, "complex": 3}
         return mapping.get(complexity, 2)
 
-    async def save_scenario(self, organization: Organization, filename: str | None = None) -> str:
+    async def save_scenario(
+        self, organization: Organization, filename: str | None = None, owner_id: str | None = None
+    ) -> str:
         """
         Save generated scenario to JSON file.
 
         Args:
             organization: Complete organization to save
             filename: Optional filename (auto-generated if not provided)
+            owner_id: Owner recorded when the scenario is first saved (updates keep the original owner)
 
         Returns:
             Path to saved file
@@ -177,7 +180,7 @@ class ScenarioOrchestrator:
         with session_scope() as db:
             row = db.get(GeneratedScenarioRow, filename)
             if row is None:
-                row = GeneratedScenarioRow(filename=filename, created_at=datetime.now().isoformat())
+                row = GeneratedScenarioRow(filename=filename, created_at=datetime.now().isoformat(), owner_id=owner_id)
                 db.add(row)
             row.name = organization.name
             row.industry = organization.industry
@@ -205,6 +208,18 @@ class ScenarioOrchestrator:
                 raise FileNotFoundError(f"Scenario not found: {filename}")
             return Organization(**row.data)
 
+    def get_scenario_owner(self, filename: str) -> str | None:
+        """Owner of a saved scenario.
+
+        Raises:
+            FileNotFoundError: If the scenario does not exist
+        """
+        with session_scope() as db:
+            row = db.get(GeneratedScenarioRow, filename)
+            if row is None:
+                raise FileNotFoundError(f"Scenario not found: {filename}")
+            return row.owner_id
+
     def delete_scenario(self, filename: str) -> None:
         """
         Delete a saved scenario.
@@ -218,15 +233,18 @@ class ScenarioOrchestrator:
                 raise FileNotFoundError(f"Scenario not found: {filename}")
             db.delete(row)
 
-    def list_scenarios(self) -> list[dict]:
+    def list_scenarios(self, owner_id: str | None = None) -> list[dict]:
         """
-        List all saved scenarios.
+        List saved scenarios, optionally only those owned by ``owner_id``.
 
         Returns:
             List of scenario metadata (filename, name, industry, size, created_at)
         """
         with session_scope() as db:
-            rows = db.scalars(select(GeneratedScenarioRow)).all()
+            stmt = select(GeneratedScenarioRow)
+            if owner_id is not None:
+                stmt = stmt.where(GeneratedScenarioRow.owner_id == owner_id)
+            rows = db.scalars(stmt).all()
             scenarios = [
                 {
                     "filename": row.filename,

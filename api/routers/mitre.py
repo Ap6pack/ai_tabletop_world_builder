@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """MITRE ATT&CK API endpoints."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from api.middleware.auth import Caller, get_caller
 from api.services.game_session_service import GameSessionService
 from api.services.mitre_attack_service import MITREAttackService
 from api.utils.logger import setup_logger
@@ -53,10 +54,10 @@ async def list_tactics():
 
 
 @router.get("/coverage/{session_id}")
-async def get_session_coverage(session_id: str):
+async def get_session_coverage(session_id: str, caller: Caller = Depends(get_caller)):
     """Get ATT&CK technique coverage report for a game session."""
     game_state = session_service.get_session(session_id)
-    if not game_state:
+    if not game_state or not caller.owns(game_state.owner_id):
         raise HTTPException(status_code=404, detail="Session not found")
     report = attack_service.analyze_session_coverage(game_state)
     return report.model_dump()

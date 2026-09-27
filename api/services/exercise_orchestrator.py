@@ -39,8 +39,12 @@ class ExerciseOrchestrator:
         self.game_orchestrator = GameOrchestrator()
         self.scenario_orchestrator = ScenarioOrchestrator()
 
-    async def create_exercise(self, config: ExerciseConfig) -> ExerciseState:
-        """Create a new multi-team exercise from a scenario."""
+    async def create_exercise(self, config: ExerciseConfig, owner_id: str | None = None) -> ExerciseState:
+        """Create a new multi-team exercise from a scenario.
+
+        ``owner_id`` is the creating user, who facilitates the exercise and also
+        owns its underlying game session.
+        """
         logger.info("Creating exercise: %s", config.name)
 
         # Load scenario
@@ -55,6 +59,7 @@ class ExerciseOrchestrator:
             scenario_type=config.scenario_type,
             player_role="mixed",
             difficulty=config.difficulty,
+            owner_id=owner_id,
         )
         game_state = game_response.game_state
 
@@ -94,6 +99,7 @@ class ExerciseOrchestrator:
         state = ExerciseState(
             name=config.name,
             description=config.description,
+            owner_id=owner_id,
             facilitator_id=facilitator_id,
             teams=teams,
             game_state=game_state,
@@ -130,6 +136,10 @@ class ExerciseOrchestrator:
 
         if not target_team:
             raise ValueError(f"Team {member.team_id} not found in exercise")
+
+        # One seat per user per exercise, so nobody can act for two teams.
+        if member.user_id and self.find_membership(state, member.user_id):
+            raise ValueError("You have already joined this exercise")
 
         # Check for duplicate member names on the team
         for existing in target_team.members:
@@ -198,12 +208,13 @@ class ExerciseOrchestrator:
             state.team_actions[team_id] = []
         state.team_actions[team_id].append(team_action)
 
-        # Log the event
+        # Log the event. Only the acting team (and the facilitator, who sees the
+        # full state) can read a team's actions.
         event = ExerciseEvent(
             event_type="team_action",
             source_team_id=team_id,
             description=f"[{team.name}] {member.display_name}: {action_text}",
-            visibility="all",
+            visibility="team_only",
             round_number=state.current_round,
         )
         state.exercise_log.append(event)
@@ -344,18 +355,7 @@ class ExerciseOrchestrator:
             return None
 
         is_facilitator = self._is_facilitator_team(state, team_id)
-
-        # Filter events by visibility
-        visible_events = []
-        for event in state.exercise_log:
-            if (
-                event.visibility == "all"
-                or event.visibility == "team_only"
-                and event.source_team_id == team_id
-                or event.visibility == "facilitator_only"
-                and is_facilitator
-            ):
-                visible_events.append(event)
+        visible_events = self.visible_events(state, team_id)
 
         # Filter injects visible to this team
         active_injects = []
@@ -363,10 +363,18 @@ class ExerciseOrchestrator:
             if inject.delivered and (not inject.target_teams or team_id in inject.target_teams or is_facilitator):
                 active_injects.append(inject)
 
+        # The world state is shared, but its timeline records every team's raw
+        # actions; teams see their own actions through visible_events instead.
+        game_state = state.game_state
+        if game_state is not None and not is_facilitator:
+            game_state = game_state.model_copy(
+                update={"incident_timeline": [e for e in game_state.incident_timeline if e.actor != "player"]}
+            )
+
         return TeamGameView(
             exercise_id=exercise_id,
             team=team,
-            game_state=state.game_state,
+            game_state=game_state,
             visible_events=visible_events[-50:],
             active_injects=active_injects,
             current_round=state.current_round,
@@ -427,6 +435,25 @@ class ExerciseOrchestrator:
             logger.warning("Failed to archive exercise: %s", e)
 
         return state
+
+    def visible_events(self, state: ExerciseState, team_id: str) -> list[ExerciseEvent]:
+        """Exercise log entries a team may see."""
+        is_facilitator = self._is_facilitator_team(state, team_id)
+        return [
+            event
+            for event in state.exercise_log
+            if event.visibility == "all"
+            or (event.visibility == "team_only" and event.source_team_id == team_id)
+            or (event.visibility == "facilitator_only" and is_facilitator)
+        ]
+
+    def find_membership(self, state: ExerciseState, user_id: str) -> tuple[ExerciseTeam, TeamMember] | None:
+        """The team and seat a logged-in user holds in this exercise, if any."""
+        for team in state.teams:
+            for member in team.members:
+                if member.user_id == user_id:
+                    return team, member
+        return None
 
     # -----------------------------------------------------------------------
     # Private helpers

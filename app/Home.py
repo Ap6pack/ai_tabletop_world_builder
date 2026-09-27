@@ -7,6 +7,7 @@ Streamlit Home Page - Main entry point for the war gaming platform.
 
 import requests
 import streamlit as st
+from utils.api_client import http
 
 from config import API_BASE_URL, DEFAULT_TIMEOUT, HEALTH_CHECK_TIMEOUT
 
@@ -173,7 +174,7 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     try:
-        response = requests.get(f"{API_BASE_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/health", timeout=HEALTH_CHECK_TIMEOUT)
         if response.status_code == 200:
             st.metric("API Status", "✅ Running", delta="Ready")
         else:
@@ -185,7 +186,7 @@ with col1:
 
 with col2:
     try:
-        response = requests.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/llm/providers", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             providers = response.json()
             configured = [p for p, is_available in providers.items() if is_available]
@@ -209,7 +210,7 @@ with col2:
 
 with col3:
     try:
-        response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=HEALTH_CHECK_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/scenarios/list", timeout=HEALTH_CHECK_TIMEOUT)
         if response.status_code == 200:
             count = len(response.json())
             st.metric("Saved Scenarios", count)

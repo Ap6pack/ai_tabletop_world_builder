@@ -8,39 +8,58 @@ Provides comprehensive logging for compliance and security investigation.
 
 import hashlib
 import json
+import threading
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from typing import Any
 
+from sqlalchemy import delete, func, select
+
+from api.db import AuditChainHeadRow, AuditLogRow, session_scope
 from api.models import AuditLog, ComplianceReport
 from api.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+# prev_hash of the first entry ever written.
+GENESIS_HASH = "0" * 64
+_CHAIN_HEAD_ID = 1
+# Serializes appends within a process; the chain-head row lock (SELECT ... FOR
+# UPDATE) serializes them across processes and instances on PostgreSQL.
+_append_lock = threading.Lock()
+
+
+def _to_naive_utc(value: datetime) -> datetime:
+    """Normalize to naive UTC, the storage form of ``AuditLogRow.timestamp``."""
+    if value.tzinfo is not None:
+        value = value.astimezone(UTC).replace(tzinfo=None)
+    return value
+
+
+def _canonical(entry: dict[str, Any]) -> str:
+    return json.dumps(entry, sort_keys=True, separators=(",", ":"), default=str)
+
+
+def _chain_hash(prev_hash: str, entry: dict[str, Any]) -> str:
+    return hashlib.sha256((prev_hash + _canonical(entry)).encode("utf-8")).hexdigest()
+
 
 class AuditLogService:
-    """Service for managing audit logs and compliance tracking."""
+    """Service for managing audit logs and compliance tracking.
 
-    def __init__(self, log_dir: str = "./data/audit_logs"):
+    Entries live in the append-only ``audit_logs`` table, so they survive
+    container restarts and are shared by every API instance. Each entry is
+    chained to the previous one by hash; :meth:`verify_chain` detects edits and
+    deletions in the middle of the log.
+    """
+
+    def __init__(self, log_dir: str | None = None):
         """
         Initialize audit log service.
 
         Args:
-            log_dir: Directory for storing audit logs
+            log_dir: Ignored; kept for backward compatibility with the old
+                file-based storage (audit logs now live in the database).
         """
-        self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(parents=True, exist_ok=True)
-        self.current_log_file = self._get_current_log_file()
-
-    def _get_current_log_file(self) -> Path:
-        """
-        Get the current log file path (daily rotation).
-
-        Returns:
-            Path to current log file
-        """
-        today = datetime.now(UTC).strftime("%Y-%m-%d")
-        return self.log_dir / f"audit_{today}.jsonl"
 
     def _hash_content(self, content: str) -> str:
         """
@@ -268,19 +287,31 @@ class AuditLogService:
         return log_entry
 
     def _write_log_entry(self, log_entry: AuditLog) -> None:
-        """
-        Write a log entry to the current log file.
-
-        Args:
-            log_entry: AuditLog to write
-        """
-        # Convert to JSON-serializable dict
-        log_dict = log_entry.model_dump()
-        log_dict["timestamp"] = log_dict["timestamp"].isoformat()
-
-        # Append to JSONL file
-        with open(self.current_log_file, "a") as f:
-            f.write(json.dumps(log_dict) + "\n")
+        """Append a log entry to the hash chain."""
+        entry = log_entry.model_dump(mode="json")
+        with _append_lock, session_scope() as db:
+            head = db.execute(
+                select(AuditChainHeadRow).where(AuditChainHeadRow.id == _CHAIN_HEAD_ID).with_for_update()
+            ).scalar_one_or_none()
+            if head is None:
+                head = AuditChainHeadRow(id=_CHAIN_HEAD_ID, last_hash=GENESIS_HASH)
+                db.add(head)
+                db.flush()
+            entry_hash = _chain_hash(head.last_hash, entry)
+            db.add(
+                AuditLogRow(
+                    id=log_entry.id,
+                    timestamp=_to_naive_utc(log_entry.timestamp),
+                    event_type=log_entry.event_type,
+                    severity=log_entry.severity,
+                    session_id=log_entry.session_id,
+                    user_id=log_entry.user_id,
+                    data=entry,
+                    prev_hash=head.last_hash,
+                    entry_hash=entry_hash,
+                )
+            )
+            head.last_hash = entry_hash
 
     def get_logs(
         self,
@@ -293,11 +324,11 @@ class AuditLogService:
         limit: int = 100,
     ) -> list[AuditLog]:
         """
-        Retrieve audit logs with filters.
+        Retrieve audit logs with filters, oldest first.
 
         Args:
-            start_date: Filter logs after this date
-            end_date: Filter logs before this date
+            start_date: Filter logs at or after this time (naive values are UTC)
+            end_date: Filter logs at or before this time (naive values are UTC)
             event_type: Filter by event type
             severity: Filter by severity
             session_id: Filter by session ID
@@ -307,81 +338,70 @@ class AuditLogService:
         Returns:
             List of matching AuditLog entries
         """
-        logs = []
+        stmt = select(AuditLogRow.data).order_by(AuditLogRow.seq).limit(limit)
+        if start_date:
+            stmt = stmt.where(AuditLogRow.timestamp >= _to_naive_utc(start_date))
+        if end_date:
+            stmt = stmt.where(AuditLogRow.timestamp <= _to_naive_utc(end_date))
+        if event_type:
+            stmt = stmt.where(AuditLogRow.event_type == event_type)
+        if severity:
+            stmt = stmt.where(AuditLogRow.severity == severity)
+        if session_id:
+            stmt = stmt.where(AuditLogRow.session_id == session_id)
+        if user_id:
+            stmt = stmt.where(AuditLogRow.user_id == user_id)
+        with session_scope() as db:
+            return [AuditLog(**data) for data in db.scalars(stmt).all()]
 
-        # Determine which log files to read
-        log_files = self._get_log_files_in_range(start_date, end_date)
+    def get_stats(self) -> dict[str, Any]:
+        """Entry count and time range of the stored audit log."""
+        with session_scope() as db:
+            total, oldest, newest = db.execute(
+                select(func.count(AuditLogRow.seq), func.min(AuditLogRow.timestamp), func.max(AuditLogRow.timestamp))
+            ).one()
+        return {
+            "total_entries": total,
+            "oldest_log_date": oldest.replace(tzinfo=UTC).isoformat() if oldest else None,
+            "newest_log_date": newest.replace(tzinfo=UTC).isoformat() if newest else None,
+        }
 
-        for log_file in log_files:
-            if not log_file.exists():
-                continue
+    def verify_chain(self) -> dict[str, Any]:
+        """Check that no stored entry was modified, inserted, or removed mid-chain.
 
-            with open(log_file) as f:
-                for line in f:
-                    if len(logs) >= limit:
-                        break
-
-                    try:
-                        log_dict = json.loads(line)
-                        log_dict["timestamp"] = datetime.fromisoformat(log_dict["timestamp"])
-
-                        # Apply filters
-                        if start_date and log_dict["timestamp"] < start_date:
-                            continue
-                        if end_date and log_dict["timestamp"] > end_date:
-                            continue
-                        if event_type and log_dict["event_type"] != event_type:
-                            continue
-                        if severity and log_dict["severity"] != severity:
-                            continue
-                        if session_id and log_dict.get("session_id") != session_id:
-                            continue
-                        if user_id and log_dict.get("user_id") != user_id:
-                            continue
-
-                        logs.append(AuditLog(**log_dict))
-
-                    except (json.JSONDecodeError, KeyError) as e:
-                        logger.error(f"Failed to parse log entry: {e}")
-                        continue
-
-            if len(logs) >= limit:
-                break
-
-        return logs[:limit]
-
-    def _get_log_files_in_range(self, start_date: datetime | None, end_date: datetime | None) -> list[Path]:
+        Entries purged by :meth:`cleanup_old_logs` are expected: verification
+        anchors on the oldest remaining entry's ``prev_hash``.
         """
-        Get log files that might contain entries in the date range.
-
-        Args:
-            start_date: Start of date range
-            end_date: End of date range
-
-        Returns:
-            List of log file paths
-        """
-        if not start_date and not end_date:
-            # Return all log files
-            return sorted(self.log_dir.glob("audit_*.jsonl"))
-
-        # Generate list of dates in range
-        if not start_date:
-            start_date = datetime.now(UTC) - timedelta(days=30)  # Default: last 30 days
-        if not end_date:
-            end_date = datetime.now(UTC)
-
-        log_files = []
-        current_date = start_date.date()
-        end = end_date.date()
-
-        while current_date <= end:
-            log_file = self.log_dir / f"audit_{current_date.isoformat()}.jsonl"
-            if log_file.exists():
-                log_files.append(log_file)
-            current_date += timedelta(days=1)
-
-        return log_files
+        with session_scope() as db:
+            head = db.get(AuditChainHeadRow, _CHAIN_HEAD_ID)
+            expected_prev = None
+            checked = 0
+            for row in db.scalars(select(AuditLogRow).order_by(AuditLogRow.seq)).yield_per(500):
+                if expected_prev is not None and row.prev_hash != expected_prev:
+                    return {
+                        "valid": False,
+                        "entries_checked": checked,
+                        "invalid_entry_id": row.id,
+                        "reason": "entry does not follow the previous entry (inserted or removed rows)",
+                    }
+                if _chain_hash(row.prev_hash, row.data) != row.entry_hash:
+                    return {
+                        "valid": False,
+                        "entries_checked": checked,
+                        "invalid_entry_id": row.id,
+                        "reason": "entry content does not match its hash (modified)",
+                    }
+                expected_prev = row.entry_hash
+                checked += 1
+            head_hash = head.last_hash if head else GENESIS_HASH
+            if (expected_prev or GENESIS_HASH) != head_hash:
+                return {
+                    "valid": False,
+                    "entries_checked": checked,
+                    "invalid_entry_id": None,
+                    "reason": "newest entries are missing (chain head does not match)",
+                }
+        return {"valid": True, "entries_checked": checked, "invalid_entry_id": None, "reason": None}
 
     def generate_compliance_report(self, start_date: datetime, end_date: datetime) -> ComplianceReport:
         """
@@ -457,31 +477,16 @@ class AuditLogService:
 
     def cleanup_old_logs(self, retention_days: int = 90) -> int:
         """
-        Clean up audit logs older than retention period.
+        Delete audit entries older than the retention period.
 
         Args:
             retention_days: Number of days to retain logs
 
         Returns:
-            Number of log files deleted
+            Number of entries deleted
         """
-        cutoff_date = datetime.now(UTC) - timedelta(days=retention_days)
-        deleted_count = 0
-
-        for log_file in self.log_dir.glob("audit_*.jsonl"):
-            try:
-                # Parse date from filename
-                date_str = log_file.stem.replace("audit_", "")
-                file_date = datetime.fromisoformat(date_str).replace(tzinfo=UTC)
-
-                if file_date < cutoff_date:
-                    log_file.unlink()
-                    deleted_count += 1
-                    logger.info(f"Deleted old audit log: {log_file.name}")
-
-            except (ValueError, OSError) as e:
-                logger.error(f"Failed to process log file {log_file.name}: {e}")
-                continue
-
-        logger.info(f"Audit log cleanup complete: {deleted_count} files deleted")
-        return deleted_count
+        cutoff = _to_naive_utc(datetime.now(UTC) - timedelta(days=retention_days))
+        with _append_lock, session_scope() as db:
+            deleted = db.execute(delete(AuditLogRow).where(AuditLogRow.timestamp < cutoff)).rowcount or 0
+        logger.info(f"Audit log cleanup complete: {deleted} entries deleted")
+        return deleted

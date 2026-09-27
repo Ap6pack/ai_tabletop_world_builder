@@ -2,89 +2,89 @@
 # Copyright 2026 Adam Rhys Heaton (Ap6pack) and contributors
 # SPDX-License-Identifier: Apache-2.0
 """
-OpenTelemetry instrumentation middleware for FastAPI.
+Prometheus instrumentation for the API.
 
-Provides request metrics, custom application metrics, and distributed tracing
-with a graceful no-op fallback when OpenTelemetry packages are not installed.
+Collects HTTP request metrics plus a few domain metrics (LLM calls, game
+actions, after-action reports) and serves them in the Prometheus text format
+at ``GET /metrics`` for the scrape job in ``monitoring/prometheus.yml``.
+
+Metrics live in a process-local registry. With several uvicorn workers each
+worker keeps its own counters; run one worker per container (and scale
+containers) if you need exact totals, or set ``PROMETHEUS_MULTIPROC_DIR``
+as described in the prometheus_client documentation.
 """
 
 from __future__ import annotations
 
+import hmac
 import time
 from collections.abc import Callable
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.utils.logger import setup_logger
+from config.settings import settings
 
 logger = setup_logger(__name__)
 
-try:
-    from opentelemetry import metrics, trace
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+# Standard HTTP metrics (names match monitoring/grafana/dashboards/api_metrics.json)
+request_count = Counter("http_requests", "Total HTTP requests", ["method", "path", "status_code"])
+request_duration = Histogram("http_request_duration_seconds", "Request duration in seconds", ["method", "path"])
+active_requests = Gauge("http_active_requests", "Currently active requests")
+error_count = Counter("http_errors", "Total HTTP error responses", ["method", "path", "status_code"])
 
-    meter = metrics.get_meter("ai_tabletop_world_builder")
-    tracer = trace.get_tracer("ai_tabletop_world_builder")
+# Domain-specific metrics
+llm_calls_total = Counter("llm_calls", "Total LLM API calls", ["provider", "model", "outcome"])
+llm_call_duration = Histogram("llm_call_duration_seconds", "LLM call duration in seconds", ["provider"])
+game_actions_total = Counter("game_actions", "Total in-game actions processed", ["action_type"])
+aar_generated_total = Counter("aar_generated", "Total after-action reports generated", ["grade"])
 
-    # Standard HTTP metrics
-    request_count = meter.create_counter("http_requests_total", description="Total HTTP requests")
-    request_duration = meter.create_histogram(
-        "http_request_duration_seconds", description="Request duration in seconds"
-    )
-    active_requests = meter.create_up_down_counter("http_active_requests", description="Currently active requests")
-    error_count = meter.create_counter("http_errors_total", description="Total HTTP error responses")
+METRICS_PATH = "/metrics"
 
-    # Domain-specific metrics
-    llm_calls_total = meter.create_counter("llm_calls_total", description="Total LLM API calls")
-    game_actions_total = meter.create_counter("game_actions_total", description="Total in-game actions processed")
-    aar_generated_total = meter.create_counter(
-        "aar_generated_total", description="Total after-action reports generated"
-    )
 
-    OTEL_AVAILABLE = True
-    logger.info("OpenTelemetry instrumentation loaded")
-except ImportError:
-    OTEL_AVAILABLE = False
-    logger.info("OpenTelemetry not installed; telemetry disabled")
+def _route_template(request: Request) -> str:
+    """Label by route template (``/game/{session_id}``), not the raw path, to bound cardinality."""
+    route = request.scope.get("route")
+    return getattr(route, "path", None) or "unmatched"
 
 
 class TelemetryMiddleware(BaseHTTPMiddleware):
-    """Collect per-request metrics when OpenTelemetry is available."""
+    """Collect per-request Prometheus metrics."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        if not OTEL_AVAILABLE:
+        if request.url.path == METRICS_PATH:
             return await call_next(request)
 
         method = request.method
-        path = request.url.path
-        attrs = {"method": method, "path": path}
-
-        active_requests.add(1, attrs)
+        active_requests.inc()
         start = time.perf_counter()
+        status = "500"
         try:
             response = await call_next(request)
-            duration = time.perf_counter() - start
-            status = response.status_code
-            request_count.add(1, {**attrs, "status_code": str(status)})
-            request_duration.record(duration, attrs)
-            if status >= 400:
-                error_count.add(1, {**attrs, "status_code": str(status)})
+            status = str(response.status_code)
             return response
-        except Exception:
-            error_count.add(1, {**attrs, "status_code": "500"})
-            raise
         finally:
-            active_requests.add(-1, attrs)
+            path = _route_template(request)
+            request_count.labels(method, path, status).inc()
+            request_duration.labels(method, path).observe(time.perf_counter() - start)
+            if int(status) >= 400:
+                error_count.labels(method, path, status).inc()
+            active_requests.dec()
 
     @staticmethod
     def setup_telemetry(app: FastAPI) -> None:
-        """Instrument the FastAPI application with OpenTelemetry."""
-        if not OTEL_AVAILABLE:
-            logger.info("Skipping telemetry setup; OpenTelemetry unavailable")
-            return
-        FastAPIInstrumentor.instrument_app(app)
-        logger.info("FastAPI OpenTelemetry instrumentation applied")
+        """Expose ``GET /metrics`` on the application."""
+
+        @app.get(METRICS_PATH, include_in_schema=False)
+        async def metrics(request: Request) -> Response:
+            token = settings.metrics_token
+            if token:
+                supplied = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+                if not hmac.compare_digest(supplied.encode(), token.encode()):
+                    raise HTTPException(status_code=401, detail="Invalid metrics token")
+            return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 # ---------------------------------------------------------------------------
@@ -92,23 +92,17 @@ class TelemetryMiddleware(BaseHTTPMiddleware):
 # ---------------------------------------------------------------------------
 
 
-def record_llm_call(provider: str, model: str, duration: float) -> None:
+def record_llm_call(provider: str, model: str, duration: float, success: bool = True) -> None:
     """Record an LLM API call with provider, model, and duration."""
-    if not OTEL_AVAILABLE:
-        return
-    llm_calls_total.add(1, {"provider": provider, "model": model})
-    logger.debug("LLM call recorded: provider=%s model=%s duration=%.3fs", provider, model, duration)
+    llm_calls_total.labels(provider, model, "success" if success else "error").inc()
+    llm_call_duration.labels(provider).observe(duration)
 
 
-def record_game_action(session_id: str, action_type: str) -> None:
+def record_game_action(action_type: str) -> None:
     """Record a game action executed within a session."""
-    if not OTEL_AVAILABLE:
-        return
-    game_actions_total.add(1, {"session_id": session_id, "action_type": action_type})
+    game_actions_total.labels(action_type).inc()
 
 
-def record_aar_generation(session_id: str, grade: str) -> None:
+def record_aar_generation(grade: str) -> None:
     """Record generation of an after-action report."""
-    if not OTEL_AVAILABLE:
-        return
-    aar_generated_total.add(1, {"session_id": session_id, "grade": grade})
+    aar_generated_total.labels(grade).inc()

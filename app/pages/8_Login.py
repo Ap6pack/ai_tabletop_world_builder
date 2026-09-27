@@ -12,6 +12,8 @@ import requests
 import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.api_client import http
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 st.set_page_config(page_title="Login", page_icon="🔐", layout="centered")
@@ -26,7 +28,7 @@ if "current_user" not in st.session_state:
 def login(username: str, password: str) -> bool:
     """Authenticate user and store token."""
     try:
-        response = requests.post(
+        response = http.post(
             f"{API_BASE_URL}/auth/login",
             json={"username": username, "password": password},
             timeout=DEFAULT_TIMEOUT,
@@ -36,7 +38,7 @@ def login(username: str, password: str) -> bool:
             st.session_state.auth_token = data["access_token"]
             st.session_state.refresh_token = data.get("refresh_token", "")
             # Fetch user profile
-            profile_resp = requests.get(
+            profile_resp = http.get(
                 f"{API_BASE_URL}/auth/me",
                 headers={"Authorization": f"Bearer {data['access_token']}"},
                 timeout=DEFAULT_TIMEOUT,
@@ -58,7 +60,7 @@ def login(username: str, password: str) -> bool:
 def register(username: str, email: str, password: str, display_name: str) -> bool:
     """Register a new user account."""
     try:
-        response = requests.post(
+        response = http.post(
             f"{API_BASE_URL}/auth/register",
             json={
                 "username": username,
@@ -68,7 +70,7 @@ def register(username: str, email: str, password: str, display_name: str) -> boo
             },
             timeout=DEFAULT_TIMEOUT,
         )
-        if response.status_code == 200:
+        if response.status_code in (200, 201):
             return True
         else:
             detail = response.json().get("detail", "Registration failed")
@@ -130,7 +132,7 @@ if st.session_state.current_user:
                 st.error("Password must be at least 8 characters.")
             else:
                 try:
-                    resp = requests.post(
+                    resp = http.post(
                         f"{API_BASE_URL}/auth/change-password",
                         json={"old_password": old_pw, "new_password": new_pw},
                         headers={"Authorization": f"Bearer {st.session_state.auth_token}"},
@@ -199,4 +201,4 @@ with st.sidebar:
     if st.session_state.current_user:
         st.info(f"Logged in as **{st.session_state.current_user.get('username', 'User')}**")
     else:
-        st.info("Not logged in. Auth is optional — the platform works without an account.")
+        st.info("Not logged in. Sign in to keep your scenarios and sessions private to you.")

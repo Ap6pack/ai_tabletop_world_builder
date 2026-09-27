@@ -5,10 +5,12 @@
 Scenarios API router for generating and managing cybersecurity training scenarios.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from api.middleware.auth import Caller, get_caller
 from api.models import Organization
+from api.routers.access import owner_filter, require_scenario_access
 from api.services import ScenarioOrchestrator
 from api.utils import setup_logger
 
@@ -25,6 +27,7 @@ class GenerateScenarioRequest(BaseModel):
     complexity: str = Field("moderate", description="Scenario complexity", examples=["moderate"])
     focus_areas: list[str] | None = Field(None, description="Focus areas", examples=[["ransomware", "phishing"]])
     num_departments: int = Field(3, ge=1, le=10, description="Number of departments to generate")
+    duration_minutes: int = Field(60, ge=15, le=480, description="Planned exercise length in minutes")
 
 
 class ScenarioListItem(BaseModel):
@@ -39,7 +42,7 @@ class ScenarioListItem(BaseModel):
 
 
 @router.post("/generate", response_model=Organization)
-async def generate_scenario(request: GenerateScenarioRequest):
+async def generate_scenario(request: GenerateScenarioRequest, caller: Caller = Depends(get_caller)):
     """
     Generate a complete cybersecurity training scenario.
 
@@ -62,9 +65,10 @@ async def generate_scenario(request: GenerateScenarioRequest):
             focus_areas=request.focus_areas,
             num_departments=request.num_departments,
         )
+        organization.metadata["duration_minutes"] = request.duration_minutes
 
         # Auto-save the generated scenario
-        filepath = await orchestrator.save_scenario(organization)
+        filepath = await orchestrator.save_scenario(organization, owner_id=caller.user_id)
         logger.info(f"Generated and saved scenario: {organization.name} -> {filepath}")
 
         return organization
@@ -112,7 +116,7 @@ async def get_industry_info(industry: str):
 
 
 @router.get("/list", response_model=list[ScenarioListItem])
-async def list_scenarios():
+async def list_scenarios(caller: Caller = Depends(get_caller)):
     """
     List all saved scenarios.
 
@@ -121,13 +125,13 @@ async def list_scenarios():
     """
     try:
         orchestrator = ScenarioOrchestrator()
-        return orchestrator.list_scenarios()
+        return orchestrator.list_scenarios(owner_id=owner_filter(caller))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list scenarios: {str(e)}") from e
 
 
 @router.get("/{filename}", response_model=Organization)
-async def get_scenario(filename: str):
+async def get_scenario(filename: str, caller: Caller = Depends(get_caller)):
     """
     Load a saved scenario by filename.
 
@@ -140,6 +144,7 @@ async def get_scenario(filename: str):
     Raises:
         HTTPException: If file not found
     """
+    require_scenario_access(filename, caller)
     try:
         orchestrator = ScenarioOrchestrator()
         organization = await orchestrator.load_scenario(filename)
@@ -151,7 +156,7 @@ async def get_scenario(filename: str):
 
 
 @router.delete("/{filename}")
-async def delete_scenario(filename: str):
+async def delete_scenario(filename: str, caller: Caller = Depends(get_caller)):
     """
     Delete a saved scenario.
 
@@ -164,6 +169,7 @@ async def delete_scenario(filename: str):
     Raises:
         HTTPException: If file not found or deletion fails
     """
+    require_scenario_access(filename, caller)
     try:
         orchestrator = ScenarioOrchestrator()
         orchestrator.delete_scenario(filename)

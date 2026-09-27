@@ -1,8 +1,13 @@
 #!/bin/bash
 set -e
 
-# Users, sessions, exercises, keys, webhooks, and scenarios are database-backed.
-# Only the append-only audit log and the local SQLite dir remain file-based.
-mkdir -p /app/data/audit_logs
+# All application state, including the audit log, lives in the database.
+mkdir -p /app/data
+
+# Apply schema migrations before starting (set SKIP_MIGRATIONS=1 to skip,
+# e.g. when a separate job runs them).
+if [ "${SKIP_MIGRATIONS:-0}" != "1" ]; then
+    python /app/scripts/migrate.py
+fi
 
 exec "$@"

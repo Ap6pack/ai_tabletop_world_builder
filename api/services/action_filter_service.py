@@ -9,6 +9,7 @@ Checks player actions before they are processed to ensure policy compliance.
 from api.providers import LLMProviderFactory
 from api.utils.logger import setup_logger
 from api.utils.pattern_matcher import PatternMatch, PatternMatcher
+from api.utils.prompt_safety import UNTRUSTED_INPUT_RULES, parse_status_line, wrap_untrusted
 
 logger = setup_logger(__name__)
 
@@ -205,11 +206,13 @@ Analyze the action and respond with:
 3. A brief explanation
 4. If blocked, suggest a safer alternative
 
-Remember: This is for legitimate cybersecurity training. Focus on educational value vs. risk."""
+Remember: This is for legitimate cybersecurity training. Focus on educational value vs. risk.
+
+{UNTRUSTED_INPUT_RULES}"""
 
             prompt = f"""Analyze this player action:
 
-Action: "{action}"
+{wrap_untrusted(action, "player_action")}
 
 Respond in this format:
 STATUS: [ALLOWED or BLOCKED]
@@ -232,7 +235,7 @@ SEVERITY: [low, medium, high, or critical if blocked]"""
             response_text = result["content"].strip()
 
             # Parse response
-            is_allowed = "STATUS: ALLOWED" in response_text
+            is_allowed = parse_status_line(response_text, ("ALLOWED", "BLOCKED")) == "ALLOWED"
             reason = None
             suggested_alternative = None
             severity = "medium"

@@ -11,11 +11,14 @@ from openai import AsyncOpenAI
 
 from .base import BaseLLMProvider
 
+# Reasoning models take max_completion_tokens and reject temperature.
+_REASONING_PREFIXES = ("gpt-5", "gpt-6", "o1", "o3", "o4")
+
 
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI GPT provider."""
 
-    def __init__(self, api_key: str, model: str = "gpt-4-turbo-preview", **kwargs):
+    def __init__(self, api_key: str, model: str = "gpt-5.6-terra", **kwargs):
         super().__init__(api_key, **kwargs)
         self.client = AsyncOpenAI(api_key=api_key)
         self.model = model
@@ -36,9 +39,17 @@ class OpenAIProvider(BaseLLMProvider):
 
         messages.append({"role": "user", "content": prompt})
 
-        response = await self.client.chat.completions.create(
-            model=self.model, messages=messages, temperature=temperature, max_tokens=max_tokens, **kwargs
-        )
+        params: dict[str, Any] = {}
+        if self.model.startswith(_REASONING_PREFIXES):
+            params["reasoning_effort"] = "low"
+            if max_tokens is not None:
+                params["max_completion_tokens"] = max_tokens
+        else:
+            params["temperature"] = temperature
+            params["max_tokens"] = max_tokens
+        params.update(kwargs)
+
+        response = await self.client.chat.completions.create(model=self.model, messages=messages, **params)
 
         return {
             "content": response.choices[0].message.content,

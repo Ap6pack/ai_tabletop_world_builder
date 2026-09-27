@@ -7,6 +7,7 @@ Streamlit Session Manager Page - View and manage game sessions.
 
 import requests
 import streamlit as st
+from utils.api_client import http
 
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
@@ -18,7 +19,7 @@ st.markdown("---")
 
 # Fetch sessions
 try:
-    response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
+    response = http.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
 
     if response.status_code == 200:
         data = response.json()
@@ -114,7 +115,7 @@ try:
 
                             # Load full state
                             try:
-                                state_response = requests.get(
+                                state_response = http.get(
                                     f"{API_BASE_URL}/game/state/{session['session_id']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if state_response.status_code == 200:
@@ -150,7 +151,7 @@ try:
                         # Delete session - allow for any status
                         if st.button("🗑️ Delete", key=f"delete_{session['session_id']}", use_container_width=True):
                             try:
-                                delete_response = requests.delete(
+                                delete_response = http.delete(
                                     f"{API_BASE_URL}/game/sessions/{session['session_id']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if delete_response.status_code == 200:
@@ -169,7 +170,7 @@ try:
 
                         # Get full session state
                         try:
-                            state_response = requests.get(
+                            state_response = http.get(
                                 f"{API_BASE_URL}/game/state/{session['session_id']}", timeout=DEFAULT_TIMEOUT
                             )
                             if state_response.status_code == 200:
@@ -269,7 +270,7 @@ with st.sidebar:
 
     st.markdown("## Quick Stats")
     try:
-        response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             sessions = response.json().get("sessions", [])
 

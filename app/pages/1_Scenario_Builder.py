@@ -14,6 +14,7 @@ import streamlit as st
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from constants import COMPLEXITY_LEVELS, DIFFICULTY_LEVELS, ORG_SIZES, PLAYER_ROLES, SCENARIO_TYPES
+from utils.api_client import http
 
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
@@ -119,7 +120,7 @@ with col2:
             progress_bar.progress(20)
 
             # Call API with extended timeout
-            response = requests.post(
+            response = http.post(
                 f"{API_BASE_URL}/scenarios/generate",
                 json=payload,
                 timeout=180,  # Increased to 3 minutes
@@ -302,7 +303,7 @@ with st.sidebar:
 
     try:
         # List scenarios from API
-        response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             scenarios_list = response.json()
 
