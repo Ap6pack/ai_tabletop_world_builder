@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Tests: Streamlit AppTest smoke tests render every page against the in-process
+  API and with the API down; new tests for the auth, library, LLM, MITRE and
+  content-policy routers, the provider factory and Ollama/Together providers, the
+  PDF/CSV report generator, the threat response engine, API keys, the audit chain
+  and prompt injection. Coverage of `api/` rose from 68% to 84%.
 - **Reproducible dependencies** — `requirements.in` / `requirements-dev.in` list the
   top-level packages; `requirements.txt` and `requirements-dev.txt` are fully pinned
   lock files generated with `uv pip compile --universal`. The Dockerfiles and CI
@@ -31,6 +36,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Prompt-injection hardening** — player actions, timeline entries and checked
+  content are wrapped in a `<player_input>` block the system prompt marks as data;
+  angle brackets and the reply markers the parsers look for (`STRUCTURED_DATA:`,
+  `STATUS:` …) are defanged inside it. The game master's structured output is
+  bounded (score change ±25, inventory ±1 on at most 3 tools, known event
+  types/severities/actors only), the action filter and content-policy checks only
+  trust a `STATUS:` line at the start of a line, and likely injection attempts
+  are logged.
+- **Audit logs moved to an append-only, hash-chained database table**
+  (`audit_logs`, migration `b91650fa2a9e`). Entries survive restarts and are shared
+  by all instances; each entry's hash covers the previous one, and the new
+  admin-only `GET /audit/verify` reports modified, inserted or removed entries.
+  On PostgreSQL a trigger refuses UPDATEs. `scripts/import_legacy_data.py`
+  imports old `data/audit_logs/*.jsonl` files.
 - **JWT secrets must be at least 32 bytes** when `REQUIRE_AUTH=true` (HS256 needs a
   key as long as its output); the test suite now signs with a 48-byte key.
 - **The Settings API no longer rewrites `.env`.** Edited settings are stored in the
@@ -59,6 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `/audit/stats` now returns `total_entries` and the oldest/newest entry times, and
+  `POST /audit/cleanup` reports `entries_deleted` (audit logs are no longer files).
 - GitHub Actions moved to their Node 24 releases (`actions/checkout@v6`,
   `actions/setup-python@v6`, `actions/upload-artifact@v6`,
   `docker/setup-buildx-action@v4`, `docker/build-push-action@v7`,

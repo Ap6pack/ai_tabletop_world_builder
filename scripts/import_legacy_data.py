@@ -4,7 +4,7 @@
 """Import legacy file-based data into the database.
 
 Earlier versions stored users, sessions, exercises, API keys, webhooks, and
-scenarios as JSON files. This one-time script upserts that data into the
+scenarios as JSON files, and audit logs as JSONL files under data/audit_logs. This one-time script upserts that data into the
 database (keyed by primary key, so it is safe to re-run).
 
 Usage:
@@ -18,10 +18,13 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from sqlalchemy import select
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from api.db import (  # noqa: E402
     ApiKeyRow,
+    AuditLogRow,
     ExerciseRow,
     GameSessionRow,
     GeneratedScenarioRow,
@@ -32,6 +35,8 @@ from api.db import (  # noqa: E402
     init_db,
     session_scope,
 )
+from api.models import AuditLog  # noqa: E402
+from api.services.audit_log_service import AuditLogService  # noqa: E402
 
 
 def _read_json_files(directory: Path):
@@ -173,6 +178,29 @@ def _import_library(db, data_dir: Path) -> int:
     return count
 
 
+def _import_audit_logs(data_dir: Path) -> int:
+    """Append legacy JSONL audit entries to the hash-chained audit table (oldest first)."""
+    log_dir = data_dir / "audit_logs"
+    if not log_dir.exists():
+        return 0
+    entries = []
+    for path in sorted(log_dir.glob("audit_*.jsonl")):
+        for line in path.read_text().splitlines():
+            try:
+                entries.append(AuditLog(**json.loads(line)))
+            except (ValueError, TypeError) as exc:
+                print(f"  ! skipping a line in {path.name}: {exc}")
+    with session_scope() as db:
+        existing = set(db.scalars(select(AuditLogRow.id)).all())
+    service = AuditLogService()
+    count = 0
+    for entry in sorted(entries, key=lambda e: e.timestamp):
+        if entry.id not in existing:
+            service._write_log_entry(entry)
+            count += 1
+    return count
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Import legacy file-based data into the database.")
     parser.add_argument("--data-dir", default="data")
@@ -193,6 +221,8 @@ def main() -> int:
             "generated_scenarios": _import_generated_scenarios(db, scenarios_dir),
             "library_scenarios": _import_library(db, data_dir),
         }
+
+    results["audit_logs"] = _import_audit_logs(data_dir)
 
     print("Imported:")
     for store, n in results.items():

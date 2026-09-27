@@ -17,15 +17,16 @@ AUDIT_REQUESTS = [
     ("get", "/audit/stats"),
     ("get", "/audit/compliance-report?start_date=2026-01-01&end_date=2026-01-02"),
     ("post", "/audit/cleanup"),
+    ("get", "/audit/verify"),
 ]
 
 
 @pytest.fixture
-def audit_service(tmp_path, monkeypatch):
+def audit_service(monkeypatch):
     """Point the audit router at an isolated, pre-populated audit log."""
     import api.routers.audit as audit_router
 
-    service = AuditLogService(log_dir=str(tmp_path / "audit_logs"))
+    service = AuditLogService()
     service.log_policy_check("check the SIEM", "educational", "allowed", session_id="s1", user_id="u1")
     service.log_violation("rm -rf /", "destructive_command", "critical", "educational", "blocked", session_id="s1")
     monkeypatch.setattr(audit_router, "audit_service", service)
@@ -109,7 +110,13 @@ def test_compliance_report_rejects_bad_dates(client):
 
 def test_stats(client):
     stats = client.get("/audit/stats").json()
-    assert stats["total_log_files"] >= 1
+    assert stats["total_entries"] == 2
+    assert stats["oldest_log_date"] <= stats["newest_log_date"]
+
+
+def test_verify_reports_valid_chain(client):
+    result = client.get("/audit/verify").json()
+    assert result == {"valid": True, "entries_checked": 2, "invalid_entry_id": None, "reason": None}
 
 
 def test_cleanup_validates_retention(client):

@@ -10,9 +10,10 @@ models the single source of truth while giving durable, concurrency-safe,
 indexed storage.
 """
 
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, Float, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -164,3 +165,35 @@ class AppSettingRow(Base):
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[Any] = mapped_column(JSON)
     updated_at: Mapped[str] = mapped_column(String(64))
+
+
+class AuditLogRow(Base):
+    """Append-only, hash-chained audit log entry.
+
+    ``entry_hash`` is SHA-256 over ``prev_hash`` and the canonical JSON of the
+    entry, so editing or removing a row in the middle of the chain is
+    detectable (see ``AuditLogService.verify_chain``). Timestamps are stored as
+    naive UTC.
+    """
+
+    __tablename__ = "audit_logs"
+
+    seq: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[str] = mapped_column(String(64), unique=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, index=True)
+    event_type: Mapped[str] = mapped_column(String(32), index=True)
+    severity: Mapped[str] = mapped_column(String(16), index=True)
+    session_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    user_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
+    data: Mapped[dict[str, Any]] = mapped_column(JSON)
+    prev_hash: Mapped[str] = mapped_column(String(64))
+    entry_hash: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class AuditChainHeadRow(Base):
+    """Single-row pointer to the newest audit entry; locked while appending."""
+
+    __tablename__ = "audit_chain_head"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    last_hash: Mapped[str] = mapped_column(String(64))
