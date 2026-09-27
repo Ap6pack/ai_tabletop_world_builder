@@ -10,12 +10,13 @@ annotated-doc==0.0.5
     # via fastapi
 annotated-types==0.8.0
     # via pydantic
-anthropic==0.72.0
+anthropic==1.8.0
     # via -r requirements.in
 anyio==4.15.1
     # via
     #   anthropic
     #   httpx
+    #   httpx2
     #   openai
     #   starlette
     #   streamlit
@@ -46,9 +47,7 @@ click==8.5.0
 defusedxml==0.7.1
     # via fpdf2
 distro==1.9.0
-    # via
-    #   anthropic
-    #   openai
+    # via openai
 docstring-parser==0.18.0
     # via anthropic
 fastapi==0.141.1
@@ -60,9 +59,12 @@ fpdf2==2.8.8
 h11==0.16.0
     # via
     #   httpcore
+    #   httpcore2
     #   uvicorn
 httpcore==1.0.9
     # via httpx
+httpcore2==2.13.1
+    # via httpx2
 httptools==0.8.0
     # via
     #   streamlit
@@ -70,12 +72,14 @@ httptools==0.8.0
 httpx==0.28.1
     # via
     #   -r requirements.in
-    #   anthropic
     #   openai
+httpx2==2.13.1
+    # via anthropic
 idna==3.20
     # via
     #   anyio
     #   httpx
+    #   httpx2
     #   requests
 itsdangerous==2.2.0
     # via streamlit
@@ -219,6 +223,10 @@ toml==0.10.2
     # via streamlit
 tqdm==4.70.1
     # via openai
+truststore==0.10.4
+    # via
+    #   httpcore2
+    #   httpx2
 typing-extensions==4.16.0
     # via
     #   alembic
@@ -226,6 +234,7 @@ typing-extensions==4.16.0
     #   anthropic
     #   anyio
     #   fastapi
+    #   httpx2
     #   openai
     #   psycopg
     #   pydantic
