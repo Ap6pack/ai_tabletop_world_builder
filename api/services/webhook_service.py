@@ -8,9 +8,13 @@ to external systems via HTTP callbacks. Backed by the application database.
 
 import hashlib
 import hmac
+import ipaddress
 import json
+import socket
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from urllib.parse import urlsplit
 
 import requests
 from sqlalchemy import select
@@ -31,6 +35,57 @@ VALID_EVENTS = [
 # Number of most-recent delivery attempts retained per webhook.
 DELIVERY_LOG_LIMIT = 100
 
+# Deliveries run off the request path so a slow receiver can't stall the API.
+_delivery_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="webhook")
+
+
+class UnsafeWebhookURLError(ValueError):
+    """Raised when a webhook URL is not a public https endpoint."""
+
+
+def _resolve_host(host: str, port: int) -> list[str]:
+    """Return every IP address ``host`` resolves to (patched in tests)."""
+    infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    return [info[4][0] for info in infos]
+
+
+def _is_public_ip(address: str) -> bool:
+    ip = ipaddress.ip_address(address.split("%", 1)[0])
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+    return ip.is_global and not ip.is_multicast
+
+
+def validate_webhook_url(url: str) -> None:
+    """Reject webhook URLs that could reach internal services (SSRF).
+
+    Only ``https`` URLs are allowed, and every address the host resolves to
+    must be publicly routable: loopback, private (RFC 1918 / ULA), link-local
+    (including cloud metadata at 169.254.169.254), and other reserved ranges
+    are refused. Called at registration and again right before each delivery,
+    so a DNS record changed after registration is caught too.
+    """
+    try:
+        parts = urlsplit(url)
+        port = parts.port or 443
+    except ValueError as exc:
+        raise UnsafeWebhookURLError(f"Invalid webhook URL: {exc}") from exc
+    if parts.scheme != "https":
+        raise UnsafeWebhookURLError("Webhook URL must use https")
+    if not parts.hostname:
+        raise UnsafeWebhookURLError("Webhook URL must include a host")
+    if parts.username or parts.password:
+        raise UnsafeWebhookURLError("Webhook URL must not contain credentials")
+    try:
+        addresses = _resolve_host(parts.hostname, port)
+    except (OSError, UnicodeError) as exc:
+        raise UnsafeWebhookURLError(f"Webhook host could not be resolved: {parts.hostname}") from exc
+    if not addresses:
+        raise UnsafeWebhookURLError(f"Webhook host could not be resolved: {parts.hostname}")
+    for address in addresses:
+        if not _is_public_ip(address):
+            raise UnsafeWebhookURLError("Webhook URL must point to a public address")
+
 
 class WebhookService:
     """Service for managing webhook registrations and event delivery."""
@@ -45,6 +100,7 @@ class WebhookService:
         invalid = [e for e in events if e not in VALID_EVENTS]
         if invalid:
             raise ValueError(f"Invalid event types: {invalid}")
+        validate_webhook_url(url)
 
         row = WebhookRow(
             id=str(uuid.uuid4()),
@@ -93,6 +149,12 @@ class WebhookService:
     def update_webhook(self, webhook_id: str, updates: dict) -> dict | None:
         """Update a webhook's configuration."""
         protected = {"id", "created_at", "user_id"}
+        if "url" in updates:
+            validate_webhook_url(updates["url"])
+        if "events" in updates:
+            invalid = [e for e in updates["events"] if e not in VALID_EVENTS]
+            if invalid:
+                raise ValueError(f"Invalid event types: {invalid}")
         with session_scope() as db:
             row = db.get(WebhookRow, webhook_id)
             if row is None:
@@ -106,7 +168,11 @@ class WebhookService:
         return result
 
     def deliver_event(self, event_type: str, payload: dict) -> None:
-        """Deliver an event to all matching active webhooks."""
+        """Queue an event for background delivery to all matching active webhooks."""
+        _delivery_executor.submit(self.deliver_event_now, event_type, payload)
+
+    def deliver_event_now(self, event_type: str, payload: dict) -> None:
+        """Deliver an event synchronously (runs on the background executor)."""
         for webhook in self.list_webhooks():
             if not webhook.get("active", False):
                 continue
@@ -123,7 +189,11 @@ class WebhookService:
 
         record = {"event": event_type, "timestamp": datetime.now(UTC).isoformat(), "url": webhook["url"]}
         try:
-            resp = requests.post(webhook["url"], data=body, headers=headers, timeout=5)
+            # Re-check at delivery time: the host's DNS may have changed since
+            # registration. Redirects are not followed, so a public endpoint
+            # can't bounce the request to an internal one.
+            validate_webhook_url(webhook["url"])
+            resp = requests.post(webhook["url"], data=body, headers=headers, timeout=5, allow_redirects=False)
             record["status_code"] = resp.status_code
             record["success"] = 200 <= resp.status_code < 300
             logger.info("Webhook %s delivered %s: %s", webhook["id"], event_type, resp.status_code)

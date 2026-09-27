@@ -91,7 +91,10 @@ async def update_webhook(webhook_id: str, request: WebhookUpdateRequest) -> dict
     updates = {k: v for k, v in request.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
-    webhook = webhook_service.update_webhook(webhook_id, updates)
+    try:
+        webhook = webhook_service.update_webhook(webhook_id, updates)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     if webhook is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Webhook not found")
     return webhook

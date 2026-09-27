@@ -289,9 +289,7 @@ We follow [PEP 8](https://pep8.org/) with some modifications:
 ```python
 # Good
 def generate_organization(
-    industry: str,
-    size: OrganizationSize,
-    complexity: Complexity = Complexity.MODERATE
+    industry: str, size: OrganizationSize, complexity: Complexity = Complexity.MODERATE
 ) -> Organization:
     """
     Generate a realistic organization for training scenarios.
@@ -333,13 +331,9 @@ Always use type hints:
 
 ```python
 # Good ✅
-async def complete(
-    self,
-    prompt: str,
-    temperature: float = 0.7,
-    max_tokens: Optional[int] = None
-) -> Dict[str, Any]:
+async def complete(self, prompt: str, temperature: float = 0.7, max_tokens: Optional[int] = None) -> Dict[str, Any]:
     pass
+
 
 # Bad ❌
 async def complete(self, prompt, temperature=0.7, max_tokens=None):
@@ -370,6 +364,7 @@ class OrganizationGenerator:
         ...     size="medium"
         ... )
     """
+
     pass
 ```
 
@@ -382,20 +377,18 @@ class OrganizationGenerator:
 import pytest
 from api.services.organization_generator import OrganizationGenerator
 
+
 @pytest.mark.asyncio
 async def test_generate_organization():
     """Test basic organization generation."""
     generator = OrganizationGenerator()
 
-    org = await generator.generate(
-        industry="Finance",
-        size="medium",
-        complexity="moderate"
-    )
+    org = await generator.generate(industry="Finance", size="medium", complexity="moderate")
 
     assert org.name is not None
     assert org.industry == "Finance"
     assert len(org.departments) > 0
+
 
 @pytest.mark.asyncio
 async def test_generate_with_invalid_industry():
@@ -403,10 +396,7 @@ async def test_generate_with_invalid_industry():
     generator = OrganizationGenerator()
 
     with pytest.raises(ValueError):
-        await generator.generate(
-            industry="InvalidIndustry",
-            size="medium"
-        )
+        await generator.generate(industry="InvalidIndustry", size="medium")
 ```
 
 ### Running Tests

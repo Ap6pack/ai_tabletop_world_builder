@@ -1,3 +1,7 @@
+# Local development overrides. Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Publishes Postgres and Redis on the host's loopback interface for debugging
+# and enables hot reload. Never use this file on a shared or public host.
 services:
   api:
     volumes:
@@ -9,3 +13,11 @@ services:
   frontend:
     volumes:
       - ./app:/app/app
+
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"

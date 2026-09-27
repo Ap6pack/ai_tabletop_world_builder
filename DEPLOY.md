@@ -11,6 +11,13 @@ multi-user environment. For local development see the README.
 - **Cache (optional)**: Redis — a low-latency fast-path for live multi-team
   exercises and shared rate-limit counters across instances.
 
+> **Warning — single trusted team only (for now).** Game sessions, generated
+> scenarios and exercises are not yet scoped to their owner, and exercise roles
+> (facilitator, team) are taken from the request rather than the login token.
+> Any logged-in user can therefore read and change every other user's data.
+> Until per-user ownership lands, run the platform for one trusted team only and
+> do not open registration to the public.
+
 ## 1. Prerequisites
 
 - Python 3.13
@@ -92,9 +99,22 @@ streamlit run app/Home.py --server.port 8501
 ### Docker Compose
 
 `docker-compose.yml` brings up the API, frontend, PostgreSQL, and Redis wired
-together (the API points at the bundled Postgres by default). Override
-`POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` as needed. For production,
-prefer a managed Postgres over the bundled container.
+together (the API points at the bundled Postgres by default) with
+`REQUIRE_AUTH=true`. It is safe by default:
+
+- `POSTGRES_PASSWORD`, `REDIS_PASSWORD` and `JWT_SECRET_KEY` are required —
+  `docker compose up` refuses to start until they are set in `.env`. Use
+  URL-safe values (e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`),
+  because the passwords are embedded in connection URLs.
+- Only the API (8000) and UI (8501) are published. Postgres and Redis are
+  reachable only on the internal compose network; Redis requires a password.
+- `docker-compose.dev.yml` is a local-only override that publishes Postgres and
+  Redis on `127.0.0.1` and enables hot reload. Never use it on a shared host.
+- `docker-compose.monitoring.yml` adds Prometheus and Grafana, bound to
+  `127.0.0.1` and requiring `GRAFANA_ADMIN_PASSWORD`.
+
+Override `POSTGRES_DB` / `POSTGRES_USER` as needed. For production, prefer a
+managed Postgres over the bundled container.
 
 ### Prebuilt container images
 

@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Webhook SSRF protection** — webhook URLs must be `https` and resolve only to
+  public addresses; loopback, private, link-local (including cloud metadata at
+  `169.254.169.254`) and reserved ranges are refused at registration, on update,
+  and again right before each delivery. Redirects are no longer followed, and
+  delivery runs on a background thread pool instead of blocking the request.
+- **Audit endpoints are admin-only** — `/audit/logs`, `/audit/stats`,
+  `/audit/compliance-report` and `POST /audit/cleanup` now require the `admin`
+  role when `REQUIRE_AUTH=true`.
+- **Safe `docker-compose.yml` defaults** — `REQUIRE_AUTH=true`; `POSTGRES_PASSWORD`,
+  `REDIS_PASSWORD` and `JWT_SECRET_KEY` are required; Redis requires a password;
+  only ports 8000 and 8501 are published. Database and Redis ports moved to
+  `docker-compose.dev.yml` (bound to `127.0.0.1`), and Prometheus/Grafana moved
+  to an opt-in `docker-compose.monitoring.yml` with a required Grafana password.
+
+### Fixed
+
+- `/audit/compliance-report` and `/audit/logs` no longer fail with a 500 for
+  date-only (naive) query parameters, and an inverted date range returns 400
+  instead of 500.
+
+### Changed
+
+- `tests/test_audit_api.py` now runs in CI via `TestClient` instead of being
+  skipped unless a live server was running.
+- README and DEPLOY.md warn that data is not yet scoped per user, so the
+  platform should serve a single trusted team until ownership checks land.
+
 ## [1.0.0] - 2026-07-18
 
 First public release — an open-source (Apache-2.0), AI-powered cybersecurity

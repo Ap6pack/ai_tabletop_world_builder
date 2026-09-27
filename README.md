@@ -165,11 +165,23 @@ streamlit run Home.py
 
 **Option 2: Docker (Postgres-backed)**
 ```bash
-docker-compose up
+cp .env.example .env   # then set POSTGRES_PASSWORD, REDIS_PASSWORD and JWT_SECRET_KEY
+docker compose up
 ```
 The Compose stack runs the API against the bundled **PostgreSQL** and Redis
-services automatically (it sets `DATABASE_URL`/`REDIS_URL` for you). Override the
-database credentials with `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`.
+services automatically (it sets `DATABASE_URL`/`REDIS_URL` for you) with
+authentication turned on. It refuses to start until `POSTGRES_PASSWORD`,
+`REDIS_PASSWORD` and `JWT_SECRET_KEY` are set, and only publishes the API (8000)
+and UI (8501); Postgres and Redis stay on the internal network. For local
+debugging, `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`
+also publishes them on `127.0.0.1` and enables hot reload.
+
+> **Warning — single trusted team only (for now).** Game sessions, generated
+> scenarios and exercises are not yet scoped to their owner, and exercise roles
+> (facilitator, team) are taken from the request rather than the login token.
+> Any logged-in user can therefore read and change every other user's data.
+> Until per-user ownership lands, run the platform for one trusted team only and
+> do not open registration to the public.
 
 ## Database
 
@@ -366,6 +378,13 @@ pytest --tb=short -q
 | **Unrestricted** | Full realism | Expert researchers, controlled environments | Detailed exploitation, advanced TTPs | Illegal activities |
 
 ## Security Considerations
+
+> **Warning — single trusted team only (for now).** Game sessions, generated
+> scenarios and exercises are not yet scoped to their owner, and exercise roles
+> (facilitator, team) are taken from the request rather than the login token.
+> Any logged-in user can therefore read and change every other user's data.
+> Until per-user ownership lands, run the platform for one trusted team only and
+> do not open registration to the public.
 
 - **API Keys**: Never commit API keys. Use `.env` file
 - **Content Policy**: Set appropriate policy for your team's skill level
