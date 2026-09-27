@@ -98,30 +98,19 @@ async def test_openai_classic_model_params():
 # TypeError). These run the installed SDK for real, pointed at a local server.
 
 
-@pytest.fixture
-def anthropic_stub(monkeypatch):
+def _stub_server(reply_for):
+    """Start a local HTTP server; reply_for(request_json) -> response dict."""
     import json
     import threading
     from http.server import BaseHTTPRequestHandler, HTTPServer
 
-    requests_seen = []
+    seen = []
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):  # noqa: N802 - http.server API
             body = self.rfile.read(int(self.headers["Content-Length"]))
-            requests_seen.append(json.loads(body))
-            reply = json.dumps(
-                {
-                    "id": "msg_test",
-                    "type": "message",
-                    "role": "assistant",
-                    "model": requests_seen[-1]["model"],
-                    "content": [{"type": "text", "text": "ready"}],
-                    "stop_reason": "end_turn",
-                    "stop_sequence": None,
-                    "usage": {"input_tokens": 5, "output_tokens": 1},
-                }
-            ).encode()
+            seen.append({"path": self.path, **json.loads(body)})
+            reply = json.dumps(reply_for(seen[-1])).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(reply)))
@@ -132,10 +121,43 @@ def anthropic_stub(monkeypatch):
             pass
 
     server = HTTPServer(("127.0.0.1", 0), Handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, seen
+
+
+@pytest.fixture
+def anthropic_stub(monkeypatch):
+    server, seen = _stub_server(
+        lambda req: {
+            "id": "msg_test",
+            "type": "message",
+            "role": "assistant",
+            "model": req["model"],
+            "content": [{"type": "text", "text": "ready"}],
+            "stop_reason": "end_turn",
+            "stop_sequence": None,
+            "usage": {"input_tokens": 5, "output_tokens": 1},
+        }
+    )
     monkeypatch.setenv("ANTHROPIC_BASE_URL", f"http://127.0.0.1:{server.server_port}")
-    yield requests_seen
+    yield seen
+    server.shutdown()
+
+
+@pytest.fixture
+def openai_stub(monkeypatch):
+    server, seen = _stub_server(
+        lambda req: {
+            "id": "chatcmpl-test",
+            "object": "chat.completion",
+            "created": 0,
+            "model": req["model"],
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": "ready"}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": 5, "completion_tokens": 1, "total_tokens": 6},
+        }
+    )
+    monkeypatch.setenv("OPENAI_BASE_URL", f"http://127.0.0.1:{server.server_port}/v1")
+    yield seen
     server.shutdown()
 
 
@@ -154,3 +176,25 @@ async def test_anthropic_real_sdk_request(anthropic_stub, model, expect_temperat
     if expect_temperature:
         assert sent["temperature"] == 0.3
     assert ("thinking" in sent) is expect_thinking
+
+
+@pytest.mark.parametrize(
+    ("model", "reasoning"),
+    [("gpt-5.6-terra", True), ("gpt-6-astra", True), ("gpt-4.1", False)],
+)
+async def test_openai_real_sdk_request(openai_stub, model, reasoning):
+    provider = OpenAIProvider(api_key="test-key", model=model)
+    result = await provider.complete("hi", system_message="sys", temperature=0.3, max_tokens=50)
+
+    assert result["content"] == "ready"
+    sent = openai_stub[-1]
+    assert sent["path"].endswith("/chat/completions")
+    assert sent["model"] == model
+    assert sent["messages"][0] == {"role": "system", "content": "sys"}
+    if reasoning:
+        assert sent["max_completion_tokens"] == 50
+        assert sent["reasoning_effort"] == "low"
+        assert "temperature" not in sent and "max_tokens" not in sent
+    else:
+        assert sent["temperature"] == 0.3
+        assert sent["max_tokens"] == 50

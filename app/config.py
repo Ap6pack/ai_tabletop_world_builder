@@ -19,5 +19,5 @@ LONG_OPERATION_TIMEOUT = 30
 
 # Application Settings
 APP_TITLE = "Cybersecurity War Gaming Platform"
-APP_VERSION = "0.4.0"
+APP_VERSION = "1.1.0"
 APP_ICON = ""

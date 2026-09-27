@@ -46,12 +46,8 @@ click==8.5.0
     # via
     #   streamlit
     #   uvicorn
-colorama==0.4.6 ; sys_platform == 'win32'
-    # via tqdm
 defusedxml==0.7.1
     # via fpdf2
-distro==1.9.0
-    # via openai
 docstring-parser==0.18.0
     # via anthropic
 fastapi==0.141.1
@@ -74,11 +70,11 @@ httptools==0.8.0
     #   streamlit
     #   uvicorn
 httpx==0.28.1
-    # via
-    #   -r requirements.in
-    #   openai
+    # via -r requirements.in
 httpx2==2.13.1
-    # via anthropic
+    # via
+    #   anthropic
+    #   openai
 httpx2-jsfetch==1.0 ; python_full_version >= '3.12' and sys_platform == 'emscripten'
     # via httpx2
 idna==3.20
@@ -122,7 +118,7 @@ numpy==2.4.6
     #   pandas
     #   pydeck
     #   streamlit
-openai==2.6.1
+openai==3.19.2
     # via -r requirements.in
 orjson==3.12.0
     # via kaleido
@@ -227,8 +223,6 @@ streamlit-chat==0.1.1
     # via -r requirements.in
 toml==0.10.2
     # via streamlit
-tqdm==4.70.1
-    # via openai
 truststore==0.10.4 ; sys_platform != 'emscripten'
     # via
     #   httpcore2

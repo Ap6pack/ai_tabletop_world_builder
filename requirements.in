@@ -16,7 +16,7 @@ streamlit-chat==0.1.1
 pyarrow>=24.0.0  # pinned for security fixes (also a Streamlit dependency)
 
 # LLM Providers
-openai==2.6.1
+openai==3.19.2
 anthropic==1.8.0
 
 # Data & Storage

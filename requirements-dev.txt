@@ -9,9 +9,7 @@ async-timeout==5.0.1 ; python_full_version < '3.11.3'
     #   -c requirements.txt
     #   redis
 colorama==0.4.6 ; sys_platform == 'win32'
-    # via
-    #   -c requirements.txt
-    #   pytest
+    # via pytest
 coverage==7.16.1
     # via pytest-cov
 fakeredis==2.38.0

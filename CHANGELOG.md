@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-27
+
 ### Added
 
 - A provider test that runs the real Anthropic SDK against a local stub server, so SDK
@@ -117,6 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgraded `openai` to 3.19.2 (verified with a real call). A real-SDK test for the
+  OpenAI provider, like the Anthropic one, now runs against a local stub server.
 - Upgraded `anthropic` to 1.8.0. SDK 1.x removed the `temperature` argument from
   `messages.create()`; the Anthropic provider now sends it through `extra_body` for
   models that still honour it (older Claude models previously failed with a `TypeError`).
