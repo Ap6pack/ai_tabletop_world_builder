@@ -54,7 +54,12 @@ rewritten, so the container filesystem can be read-only.
 
 ## 3. Database schema
 
-Run migrations against the (empty) production database before first start:
+The API container runs `scripts/migrate.py` on start, which applies any pending
+migrations (and first stamps databases created by v1.0.0 containers, which had
+no migration history). Set `SKIP_MIGRATIONS=1` if a separate job runs them.
+
+Outside the container, run migrations against the production database before
+first start:
 
 ```bash
 alembic upgrade head

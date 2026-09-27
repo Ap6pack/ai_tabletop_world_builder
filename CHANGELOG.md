@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The API container applies database migrations on start (`scripts/migrate.py`),
+  stamping databases created by v1.0.0 containers first; `SKIP_MIGRATIONS=1`
+  opts out.
 - `GET /exercise/{id}/teams` lets an invited user list an exercise's teams (and
   see their own seat) before joining, without exposing game state.
 - Tests: two-user isolation tests for every owned resource, exercise role tests,
