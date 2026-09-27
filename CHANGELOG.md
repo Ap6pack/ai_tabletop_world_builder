@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scripts/smoke_test_llm.py` makes one tiny real call per configured LLM provider, to
+  check SDK upgrades that the (fully mocked) test suite cannot.
 - The API container applies database migrations on start (`scripts/migrate.py`),
   stamping databases created by v1.0.0 containers first; `SKIP_MIGRATIONS=1`
   opts out.
