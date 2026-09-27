@@ -170,7 +170,7 @@ python-dotenv==1.2.3
     #   -r requirements.in
     #   pydantic-settings
     #   uvicorn
-python-json-logger==2.0.7
+python-json-logger==4.2.0
     # via -r requirements.in
 python-multipart==0.0.32
     # via
