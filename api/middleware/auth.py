@@ -5,6 +5,8 @@
 FastAPI dependency functions for authentication and authorization.
 """
 
+from dataclasses import dataclass
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
@@ -100,3 +102,41 @@ def require_role(required_role: str):
         )
 
     return _check_role
+
+
+@dataclass(frozen=True)
+class Caller:
+    """Who is making a request, for per-record ownership checks.
+
+    With authentication disabled (local/dev mode) there is no identity:
+    ``user_id`` is None and every record is accessible, matching that mode's
+    single-trusted-user model. With authentication enabled, a record is
+    accessible to its owner and to admins only; records without an owner
+    (created before ownership existed, or while auth was off) are admin-only.
+    """
+
+    user_id: str | None = None
+    username: str | None = None
+    display_name: str | None = None
+    is_admin: bool = False
+
+    @property
+    def unrestricted(self) -> bool:
+        """True when this caller may access every record (auth off, or admin)."""
+        return self.user_id is None or self.is_admin
+
+    def owns(self, owner_id: str | None) -> bool:
+        """True when the caller may read and change a record owned by ``owner_id``."""
+        return self.unrestricted or (owner_id is not None and owner_id == self.user_id)
+
+
+async def get_caller(user: dict | None = Depends(get_current_user)) -> Caller:
+    """Dependency returning the :class:`Caller` for the current request."""
+    if user is None:
+        return Caller()
+    return Caller(
+        user_id=user["id"],
+        username=user.get("username"),
+        display_name=user.get("display_name") or user.get("username"),
+        is_admin=user.get("role") == "admin",
+    )

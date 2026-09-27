@@ -56,6 +56,7 @@ class GameOrchestrator:
         scenario_type: str = "incident-response",
         player_role: str = "soc-analyst",
         difficulty: str = "intermediate",
+        owner_id: str | None = None,
     ) -> GameResponse:
         """
         Start a new war game session.
@@ -65,13 +66,18 @@ class GameOrchestrator:
             scenario_type: Type of scenario
             player_role: Role the player assumes
             difficulty: Difficulty level
+            owner_id: User who owns the new session (None when auth is disabled)
 
         Returns:
             GameResponse with initial narrative and game state
         """
         # Create new session
         game_state = self.session_service.create_session(
-            organization=organization, scenario_type=scenario_type, player_role=player_role, difficulty=difficulty
+            organization=organization,
+            scenario_type=scenario_type,
+            player_role=player_role,
+            difficulty=difficulty,
+            owner_id=owner_id,
         )
 
         # Generate objectives automatically
@@ -319,7 +325,7 @@ class GameOrchestrator:
 
         return game_state
 
-    def list_sessions(self, status_filter: str | None = None) -> list:
+    def list_sessions(self, status_filter: str | None = None, owner_id: str | None = None) -> list:
         """
         List all game sessions.
 
@@ -329,7 +335,7 @@ class GameOrchestrator:
         Returns:
             List of session metadata
         """
-        return self.session_service.list_sessions(status_filter)
+        return self.session_service.list_sessions(status_filter, owner_id=owner_id)
 
     def delete_session(self, session_id: str) -> bool:
         """

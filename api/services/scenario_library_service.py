@@ -60,7 +60,7 @@ class ScenarioLibraryService:
         """Get full scenario data by ID."""
         return self._load_scenario(scenario_id)
 
-    def add_to_library(self, scenario_data: dict, author: str = "system") -> dict:
+    def add_to_library(self, scenario_data: dict, author: str = "system", owner_id: str | None = None) -> dict:
         """Add a scenario to the library with metadata."""
         scenario_id = str(uuid.uuid4())[:8]
         now = datetime.now(UTC).isoformat()
@@ -73,6 +73,7 @@ class ScenarioLibraryService:
             "difficulty": scenario_data.get("difficulty", "intermediate"),
             "category": scenario_data.get("category", "incident-response"),
             "author": author,
+            "owner_id": owner_id,
             "rating": 0.0,
             "rating_count": 0,
             "ratings": {},
@@ -113,7 +114,7 @@ class ScenarioLibraryService:
             "rating_count": scenario["rating_count"],
         }
 
-    def fork_scenario(self, scenario_id: str, user_id: str = "anonymous") -> dict:
+    def fork_scenario(self, scenario_id: str, user_id: str = "anonymous", owner_id: str | None = None) -> dict:
         """Create a copy of a scenario with a new ID."""
         original = self._load_scenario(scenario_id)
         if original is None:
@@ -127,6 +128,7 @@ class ScenarioLibraryService:
             "id": new_id,
             "name": f"{original.get('name', 'Scenario')} (fork)",
             "author": user_id,
+            "owner_id": owner_id,
             "rating": 0.0,
             "rating_count": 0,
             "ratings": {},

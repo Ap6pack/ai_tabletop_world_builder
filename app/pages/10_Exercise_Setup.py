@@ -12,6 +12,8 @@ import requests
 import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.api_client import http
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT, LONG_OPERATION_TIMEOUT
 
 st.set_page_config(page_title="Exercise Setup", page_icon="🏗️", layout="wide")
@@ -62,7 +64,7 @@ with col2:
 # Scenario selection
 st.markdown("### Scenario")
 try:
-    resp = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
+    resp = http.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
     if resp.status_code == 200:
         scenarios = resp.json()
         if scenarios:
@@ -147,7 +149,7 @@ if st.button("🚀 Launch Exercise", type="primary", use_container_width=True, d
             "round_time_limit_minutes": round_time if round_time > 0 else None,
         }
         try:
-            resp = requests.post(
+            resp = http.post(
                 f"{API_BASE_URL}/exercise/create",
                 json=payload,
                 timeout=LONG_OPERATION_TIMEOUT,
@@ -172,7 +174,7 @@ if st.button("🚀 Launch Exercise", type="primary", use_container_width=True, d
 st.markdown("---")
 st.markdown("### Existing Exercises")
 try:
-    resp = requests.get(f"{API_BASE_URL}/exercise/list", timeout=DEFAULT_TIMEOUT)
+    resp = http.get(f"{API_BASE_URL}/exercise/list", timeout=DEFAULT_TIMEOUT)
     if resp.status_code == 200:
         exercises = resp.json().get("exercises", [])
         if exercises:

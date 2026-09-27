@@ -389,6 +389,7 @@ class GameState(BaseModel):
     resource_pool: ResourcePool | None = None  # Resource management
     active_campaigns: list[ThreatCampaign] = Field(default_factory=list)  # Multi-stage campaigns
     game_started_at: datetime | None = None  # When game actually started
+    owner_id: str | None = None  # User who started the session (None: created with auth off)
 
 
 class PlayerAction(BaseModel):

@@ -5,14 +5,42 @@
 API endpoints for the scenario library: browsing, rating, sharing, and forking.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from api.middleware.auth import Caller, get_caller
 from api.services.scenario_library_service import ScenarioLibraryService
 
 router = APIRouter(prefix="/library", tags=["library"])
 
 library_service = ScenarioLibraryService()
+
+# Visibility: "public" scenarios are listed for everyone, "unlisted" ones can be
+# opened by anyone with the ID, and "private" ones only by their owner (and
+# admins). Only the owner or an admin can change a scenario's visibility.
+# Built-in templates have no owner, so only admins can change them.
+
+
+def _can_view(scenario: dict, caller: Caller) -> bool:
+    return scenario.get("visibility", "public") != "private" or caller.owns(scenario.get("owner_id"))
+
+
+def _listed(scenario: dict, caller: Caller) -> bool:
+    return scenario.get("visibility", "public") == "public" or caller.owns(scenario.get("owner_id"))
+
+
+def _public(scenario: dict, caller: Caller) -> dict:
+    """Response form: hide who rated what and the owner's user ID."""
+    shown = {k: v for k, v in scenario.items() if k not in ("ratings", "owner_id")}
+    shown["is_mine"] = caller.user_id is not None and scenario.get("owner_id") == caller.user_id
+    return shown
+
+
+def _visible_or_404(scenario_id: str, caller: Caller) -> dict:
+    scenario = library_service.get_scenario(scenario_id)
+    if scenario is None or not _can_view(scenario, caller):
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    return scenario
 
 
 class RateRequest(BaseModel):
@@ -55,53 +83,63 @@ async def list_scenarios(
     category: str | None = Query(None, description="Filter by category"),
     difficulty: str | None = Query(None, description="Filter by difficulty"),
     sort_by: str = Query("rating", description="Sort field"),
+    caller: Caller = Depends(get_caller),
 ):
     """List library scenarios with optional filters."""
-    scenarios = library_service.list_scenarios(category=category, difficulty=difficulty, sort_by=sort_by)
+    scenarios = [
+        _public(s, caller)
+        for s in library_service.list_scenarios(category=category, difficulty=difficulty, sort_by=sort_by)
+        if _listed(s, caller)
+    ]
     return {"scenarios": scenarios, "total": len(scenarios)}
 
 
 @router.get("/scenarios/{scenario_id}")
-async def get_scenario(scenario_id: str):
+async def get_scenario(scenario_id: str, caller: Caller = Depends(get_caller)):
     """Get full scenario details."""
-    scenario = library_service.get_scenario(scenario_id)
-    if scenario is None:
-        raise HTTPException(status_code=404, detail="Scenario not found")
-    return scenario
+    return _public(_visible_or_404(scenario_id, caller), caller)
 
 
 @router.post("/scenarios")
-async def add_scenario(request: AddScenarioRequest):
-    """Add a scenario to the library."""
+async def add_scenario(request: AddScenarioRequest, caller: Caller = Depends(get_caller)):
+    """Add a scenario to the library. With auth on, the caller is the author."""
     scenario_data = request.model_dump()
-    author = scenario_data.pop("author", "system")
-    scenario = library_service.add_to_library(scenario_data, author=author)
-    return {"message": "Scenario added to library", "scenario": scenario}
+    requested_author = scenario_data.pop("author", "system")
+    author = caller.username if caller.user_id else requested_author
+    scenario = library_service.add_to_library(scenario_data, author=author, owner_id=caller.user_id)
+    return {"message": "Scenario added to library", "scenario": _public(scenario, caller)}
 
 
 @router.post("/scenarios/{scenario_id}/rate")
-async def rate_scenario(scenario_id: str, request: RateRequest):
-    """Rate a scenario from 1 to 5."""
-    result = library_service.rate_scenario(scenario_id, request.rating, request.user_id)
+async def rate_scenario(scenario_id: str, request: RateRequest, caller: Caller = Depends(get_caller)):
+    """Rate a scenario from 1 to 5 (one rating per user)."""
+    _visible_or_404(scenario_id, caller)
+    rater = caller.user_id or request.user_id
+    result = library_service.rate_scenario(scenario_id, request.rating, rater)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
 
 
 @router.post("/scenarios/{scenario_id}/fork")
-async def fork_scenario(scenario_id: str, request: ForkRequest = None):
-    """Fork (copy) a scenario for customization."""
+async def fork_scenario(scenario_id: str, request: ForkRequest = None, caller: Caller = Depends(get_caller)):
+    """Fork (copy) a scenario for customization; the copy is private to the caller."""
+    _visible_or_404(scenario_id, caller)
     if request is None:
         request = ForkRequest()
-    result = library_service.fork_scenario(scenario_id, request.user_id)
+    author = caller.username if caller.user_id else request.user_id
+    result = library_service.fork_scenario(scenario_id, author, owner_id=caller.user_id)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
-    return {"message": "Scenario forked successfully", "scenario": result}
+    return {"message": "Scenario forked successfully", "scenario": _public(result, caller)}
 
 
 @router.post("/scenarios/{scenario_id}/share")
-async def share_scenario(scenario_id: str, request: ShareRequest):
-    """Set scenario visibility (public/private/unlisted)."""
+async def share_scenario(scenario_id: str, request: ShareRequest, caller: Caller = Depends(get_caller)):
+    """Set scenario visibility (public/private/unlisted). Owner or admin only."""
+    scenario = _visible_or_404(scenario_id, caller)
+    if not caller.owns(scenario.get("owner_id")):
+        raise HTTPException(status_code=403, detail="Only the scenario's owner can change its visibility")
     result = library_service.share_scenario(scenario_id, request.visibility)
     if "error" in result:
         status = 404 if "not found" in result["error"].lower() else 400
@@ -119,7 +157,8 @@ async def get_templates():
 @router.get("/search")
 async def search_scenarios(
     q: str = Query(..., min_length=1, description="Search query"),
+    caller: Caller = Depends(get_caller),
 ):
     """Search scenarios by name, description, and tags."""
-    results = library_service.search_scenarios(q)
+    results = [_public(s, caller) for s in library_service.search_scenarios(q) if _listed(s, caller)]
     return {"results": results, "total": len(results), "query": q}

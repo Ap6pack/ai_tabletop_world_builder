@@ -137,21 +137,26 @@ class ExerciseStore:
             return self._redis_delete(exercise_id)
         return self._db_delete(exercise_id)
 
-    def list_exercises(self, phase: str | None = None) -> list[dict]:
+    def list_exercises(self, phase: str | None = None, user_id: str | None = None) -> list[dict]:
         """
         List exercises with summary information.
 
         Args:
             phase: Optional filter (e.g., "active", "completed").
+            user_id: When set, only exercises this user created or joined.
 
         Returns:
             List of dicts with keys: exercise_id, name, phase, team_count,
-            current_round, version.
+            current_round, version, owner_id, participant_ids.
         """
         summaries = self._redis_list() if self._use_redis else self._db_list()
 
         if phase:
             summaries = [s for s in summaries if s.get("phase") == phase]
+        if user_id is not None:
+            summaries = [
+                s for s in summaries if s.get("owner_id") == user_id or user_id in s.get("participant_ids", [])
+            ]
 
         return summaries
 
@@ -220,6 +225,7 @@ class ExerciseStore:
                 row = ExerciseRow(exercise_id=state.exercise_id)
                 db.add(row)
             row.name = state.name
+            row.owner_id = state.owner_id
             row.phase = state.phase
             row.facilitator_id = state.facilitator_id
             row.current_round = state.current_round
@@ -238,17 +244,7 @@ class ExerciseStore:
     def _db_list(self) -> list[dict]:
         with session_scope() as db:
             rows = db.scalars(select(ExerciseRow)).all()
-            return [
-                {
-                    "exercise_id": row.exercise_id,
-                    "name": row.name,
-                    "phase": row.phase,
-                    "team_count": row.team_count,
-                    "current_round": row.current_round,
-                    "version": row.version,
-                }
-                for row in rows
-            ]
+            return [self._make_summary(ExerciseState.model_validate(row.data)) for row in rows]
 
     def _db_get_version(self, exercise_id: str) -> int:
         with session_scope() as db:
@@ -396,4 +392,6 @@ class ExerciseStore:
             "team_count": len(state.teams),
             "current_round": state.current_round,
             "version": state.version,
+            "owner_id": state.owner_id,
+            "participant_ids": sorted({m.user_id for t in state.teams for m in t.members if m.user_id}),
         }

@@ -14,6 +14,8 @@ import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.api_client import http
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT, LONG_OPERATION_TIMEOUT
 
 st.set_page_config(page_title="After Action Review", page_icon="📊", layout="wide")
@@ -50,7 +52,7 @@ st.markdown("### Select Game Session")
 
 sessions = []
 try:
-    resp = requests.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
+    resp = http.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
     if resp.status_code == 200:
         all_sessions = resp.json().get("sessions", [])
         sessions = [s for s in all_sessions if s.get("status") != "in-progress"]
@@ -93,7 +95,7 @@ else:
     if generate_clicked:
         with st.spinner("Generating After Action Review..."):
             try:
-                resp = requests.post(
+                resp = http.post(
                     f"{API_BASE_URL}/analytics/aar/{session_id}",
                     params={"include_alternatives": True},
                     timeout=LONG_OPERATION_TIMEOUT,
@@ -115,7 +117,7 @@ else:
     if view_clicked:
         with st.spinner("Fetching After Action Review..."):
             try:
-                resp = requests.get(
+                resp = http.get(
                     f"{API_BASE_URL}/analytics/aar/{session_id}",
                     timeout=DEFAULT_TIMEOUT,
                 )
@@ -284,7 +286,7 @@ else:
         with col_json:
             if st.button("Export JSON", use_container_width=True):
                 try:
-                    resp = requests.get(
+                    resp = http.get(
                         f"{API_BASE_URL}/analytics/export/json/{session_id}",
                         timeout=DEFAULT_TIMEOUT,
                     )
@@ -308,7 +310,7 @@ else:
         with col_csv:
             if st.button("Export CSV", use_container_width=True):
                 try:
-                    resp = requests.get(
+                    resp = http.get(
                         f"{API_BASE_URL}/analytics/export/csv/{session_id}",
                         timeout=DEFAULT_TIMEOUT,
                     )

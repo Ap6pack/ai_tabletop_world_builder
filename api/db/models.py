@@ -51,6 +51,7 @@ class GameSessionRow(Base):
     __tablename__ = "game_sessions"
 
     session_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     status: Mapped[str] = mapped_column(String(32), index=True, default="in-progress")
     player_role: Mapped[str | None] = mapped_column(String(64), nullable=True)
     org_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -64,6 +65,7 @@ class ExerciseRow(Base):
     __tablename__ = "exercises"
 
     exercise_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     name: Mapped[str] = mapped_column(String(255), default="")
     phase: Mapped[str] = mapped_column(String(32), index=True, default="setup")
     facilitator_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -138,6 +140,7 @@ class GeneratedScenarioRow(Base):
     __tablename__ = "generated_scenarios"
 
     filename: Mapped[str] = mapped_column(String(255), primary_key=True)
+    owner_id: Mapped[str | None] = mapped_column(String(64), index=True, nullable=True)
     name: Mapped[str] = mapped_column(String(255), default="")
     industry: Mapped[str | None] = mapped_column(String(128), nullable=True)
     size: Mapped[str | None] = mapped_column(String(64), nullable=True)

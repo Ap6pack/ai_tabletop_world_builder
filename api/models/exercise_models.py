@@ -62,6 +62,7 @@ class TeamMember(BaseModel):
     display_name: str
     role: str  # "SOC Analyst", "CISO", "Legal Counsel", etc.
     team_id: str
+    user_id: str | None = None  # Logged-in user holding this seat (None: unassigned or auth off)
     is_facilitator: bool = False
     joined_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -124,6 +125,7 @@ class ExerciseState(BaseModel):
     exercise_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     description: str = ""
+    owner_id: str | None = None  # Creating user; acts as facilitator (None: created with auth off)
     facilitator_id: str = ""
     teams: list[ExerciseTeam] = Field(default_factory=list)
     game_state: GameState | None = None  # Shared world state

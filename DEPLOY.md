@@ -11,13 +11,6 @@ multi-user environment. For local development see the README.
 - **Cache**: Redis — shared rate-limit counters (required with more than one
   worker or instance) and a low-latency fast-path for live multi-team exercises.
 
-> **Warning — single trusted team only (for now).** Game sessions, generated
-> scenarios and exercises are not yet scoped to their owner, and exercise roles
-> (facilitator, team) are taken from the request rather than the login token.
-> Any logged-in user can therefore read and change every other user's data.
-> Until per-user ownership lands, run the platform for one trusted team only and
-> do not open registration to the public.
-
 ## 1. Prerequisites
 
 - Python 3.11, 3.12 or 3.13
@@ -84,6 +77,23 @@ Register a user via the UI or `POST /auth/register`, then promote them:
 python scripts/create_admin.py <username>
 ```
 
+### Data ownership
+
+With `REQUIRE_AUTH=true`, generated scenarios, game sessions, exercises,
+webhooks and API keys belong to the user who created them. Other users get
+`404` for them and never see them in listings; admins can see and manage
+everything. The user who creates an exercise is its facilitator (only they can
+start rounds, fire injects, pause, end, or read the full state), and players act
+only as the team seat they joined with their own login.
+
+Records created before this version, or while auth was off, have no owner and
+are visible to admins only. To hand them to a user:
+
+```bash
+python scripts/assign_owner.py <username> --dry-run   # show what would change
+python scripts/assign_owner.py <username>
+```
+
 ## 5. Run
 
 **API** (multiple workers behind a reverse proxy that terminates TLS):
@@ -103,9 +113,8 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 streamlit run app/Home.py --server.port 8501
 ```
 
-> The Streamlit UI does not yet attach auth tokens. For a public deployment with
-> `REQUIRE_AUTH=true`, either keep the UI on an internal network / behind an
-> authenticating proxy, or expose only the API and build a token-aware client.
+With `REQUIRE_AUTH=true`, users sign in on the UI's Login page; every page then
+sends the token with its API calls and refreshes it when it expires.
 
 ### Docker Compose
 

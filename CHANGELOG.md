@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `GET /exercise/{id}/teams` lets an invited user list an exercise's teams (and
+  see their own seat) before joining, without exposing game state.
+- Tests: two-user isolation tests for every owned resource, exercise role tests,
+  API flow tests for the game/scenarios/analytics/exercise routers, and AppTest
+  runs of every page with `REQUIRE_AUTH=true` (logged in, logged out, expired
+  token). Coverage of `api/` is 88%.
 - **Community files** — `SECURITY.md` (private reporting via GitHub security advisories),
   `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), issue forms and a pull request template
   under `.github/`, `.github/dependabot.yml` (pip, GitHub Actions and Docker, weekly), and
@@ -40,6 +46,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Per-user data ownership** — game sessions, generated scenarios and exercises
+  have an `owner_id` (migration `c0f41c4f1ff4`). With `REQUIRE_AUTH=true`, lists
+  only show the caller's records and every per-record endpoint (game, scenarios,
+  analytics/AAR/exports, ATT&CK coverage) returns 404 for someone else's; admins
+  bypass. Webhooks and API keys are owned by the logged-in user (no more
+  `user_id` from the request body, and webhook secrets are no longer returned).
+  Library scenarios record their owner: private ones are hidden from others,
+  only the owner can change visibility, and ratings count once per user.
+  Records without an owner are admin-only; `scripts/assign_owner.py` hands them
+  to a user.
+- **Exercise roles come from the login** — the exercise's creator is its
+  facilitator; `advance`, `inject`, `pause`, `end` and the full `/state` are
+  facilitator-only (the `facilitator_id` query parameter is ignored). Players act
+  only as the seat they joined (one seat per user per exercise); `team_id` /
+  `member_id` in the body can no longer impersonate another team. Players only
+  see their own team's view, team actions are visible to the acting team and the
+  facilitator only, and `/poll` filters events the same way.
+- **The Streamlit UI works with `REQUIRE_AUTH=true`** — every page sends the
+  login token through `app/utils/api_client.py`, refreshes an expired access
+  token once, and otherwise clears the login and asks the user to sign in again.
 - **Prompt-injection hardening** — player actions, timeline entries and checked
   content are wrapped in a `<player_input>` block the system prompt marks as data;
   angle brackets and the reply markers the parsers look for (`STRUCTURED_DATA:`,
@@ -76,6 +102,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Registering on the Login page reported failure even when the account was
+  created (the page expected 200, the API returns 201).
 - `/audit/compliance-report` and `/audit/logs` no longer fail with a 500 for
   date-only (naive) query parameters, and an inverted date range returns 400
   instead of 500.
@@ -99,8 +127,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reports no drift on SQLAlchemy 2.1.
 - `tests/test_audit_api.py` now runs in CI via `TestClient` instead of being
   skipped unless a live server was running.
-- README and DEPLOY.md warn that data is not yet scoped per user, so the
-  platform should serve a single trusted team until ownership checks land.
 
 ## [1.0.0] - 2026-07-18
 

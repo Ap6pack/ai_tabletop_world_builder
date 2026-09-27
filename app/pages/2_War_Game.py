@@ -15,6 +15,7 @@ import streamlit as st
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from constants import DIFFICULTY_LEVELS_DISPLAY, PLAYER_ROLES_DISPLAY
+from utils.api_client import http
 
 from config import API_BASE_URL, DEFAULT_TIMEOUT, LONG_OPERATION_TIMEOUT
 
@@ -120,7 +121,7 @@ else:
                 # Process action via API
                 with st.spinner("🤖 Processing your action..."):
                     try:
-                        response = requests.post(
+                        response = http.post(
                             f"{API_BASE_URL}/game/action",
                             json={"session_id": st.session_state.game_session_id, "action": user_action},
                             timeout=LONG_OPERATION_TIMEOUT,
@@ -162,7 +163,7 @@ else:
 
                         # Try to get from saved scenarios list
                         try:
-                            list_response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
+                            list_response = http.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
                             if list_response.status_code == 200:
                                 scenarios = list_response.json()
                                 # Find matching scenario by name
@@ -176,7 +177,7 @@ else:
                         if not scenario_filename:
                             st.error("❌ Could not determine scenario filename. Please reload the scenario.")
                         else:
-                            response = requests.post(
+                            response = http.post(
                                 f"{API_BASE_URL}/game/start",
                                 json={
                                     "scenario_filename": scenario_filename,
@@ -216,7 +217,7 @@ else:
             if st.session_state.game_active and st.button("💡 Get Hint", use_container_width=True):
                 with st.spinner("💭 Generating hint..."):
                     try:
-                        response = requests.post(
+                        response = http.post(
                             f"{API_BASE_URL}/game/hint",
                             params={"session_id": st.session_state.game_session_id},
                             timeout=15,
@@ -239,7 +240,7 @@ else:
             if st.session_state.game_active and st.button("🛑 End Game", use_container_width=True):
                 with st.spinner("Ending game..."):
                     try:
-                        response = requests.post(
+                        response = http.post(
                             f"{API_BASE_URL}/game/end",
                             json={"session_id": st.session_state.game_session_id, "status": "completed"},
                             timeout=DEFAULT_TIMEOUT,
@@ -996,7 +997,7 @@ with st.sidebar:
 
     # List active sessions
     try:
-        response = requests.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/game/sessions", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             sessions = response.json().get("sessions", [])
 
@@ -1013,7 +1014,7 @@ with st.sidebar:
                             st.session_state.game_session_id = session["session_id"]
                             # Load game state
                             try:
-                                state_response = requests.get(
+                                state_response = http.get(
                                     f"{API_BASE_URL}/game/state/{session['session_id']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if state_response.status_code == 200:
@@ -1072,7 +1073,7 @@ with st.sidebar:
 
     # List available scenarios
     try:
-        response = requests.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
+        response = http.get(f"{API_BASE_URL}/scenarios/list", timeout=DEFAULT_TIMEOUT)
         if response.status_code == 200:
             scenarios_list = response.json()
 
@@ -1093,7 +1094,7 @@ with st.sidebar:
                         if st.button("📂 Load", use_container_width=True, key="sidebar_load_scenario"):
                             try:
                                 # Load scenario from API
-                                load_response = requests.get(
+                                load_response = http.get(
                                     f"{API_BASE_URL}/scenarios/{scenario_info['filename']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if load_response.status_code == 200:
@@ -1124,7 +1125,7 @@ with st.sidebar:
                     with col2:
                         if st.button("🗑️ Delete", use_container_width=True, key="sidebar_delete_scenario"):
                             try:
-                                delete_response = requests.delete(
+                                delete_response = http.delete(
                                     f"{API_BASE_URL}/scenarios/{scenario_info['filename']}", timeout=DEFAULT_TIMEOUT
                                 )
                                 if delete_response.status_code == 200:

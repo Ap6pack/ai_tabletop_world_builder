@@ -5,11 +5,13 @@
 Game API router for interactive war gaming sessions.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from api.middleware.auth import Caller, get_caller
 from api.middleware.telemetry import record_game_action
 from api.models import GameResponse, GameState
+from api.routers.access import owned_session, owner_filter, require_scenario_access
 from api.services import GameOrchestrator, ScenarioOrchestrator
 from api.utils import setup_logger
 
@@ -42,7 +44,7 @@ class EndGameRequest(BaseModel):
 
 
 @router.post("/start", response_model=GameResponse)
-async def start_game(request: StartGameRequest):
+async def start_game(request: StartGameRequest, caller: Caller = Depends(get_caller)):
     """
     Start a new war gaming session.
 
@@ -58,6 +60,7 @@ async def start_game(request: StartGameRequest):
     Raises:
         HTTPException: If scenario not found or game creation fails
     """
+    require_scenario_access(request.scenario_filename, caller)
     try:
         # Load the scenario
         scenario_service = ScenarioOrchestrator()
@@ -70,6 +73,7 @@ async def start_game(request: StartGameRequest):
             scenario_type=request.scenario_type,
             player_role=request.player_role,
             difficulty=request.difficulty,
+            owner_id=caller.user_id,
         )
 
         return response
@@ -83,7 +87,7 @@ async def start_game(request: StartGameRequest):
 
 
 @router.post("/action", response_model=GameResponse)
-async def process_action(request: PlayerActionRequest):
+async def process_action(request: PlayerActionRequest, caller: Caller = Depends(get_caller)):
     """
     Process a player action in an ongoing game.
 
@@ -99,6 +103,7 @@ async def process_action(request: PlayerActionRequest):
     Raises:
         HTTPException: If session not found or action processing fails
     """
+    owned_session(request.session_id, caller)
     try:
         game_orchestrator = GameOrchestrator()
         response = await game_orchestrator.process_player_action(session_id=request.session_id, action=request.action)
@@ -113,7 +118,7 @@ async def process_action(request: PlayerActionRequest):
 
 
 @router.get("/state/{session_id}", response_model=GameState)
-async def get_game_state(session_id: str):
+async def get_game_state(session_id: str, caller: Caller = Depends(get_caller)):
     """
     Get the current state of a game session.
 
@@ -126,23 +131,11 @@ async def get_game_state(session_id: str):
     Raises:
         HTTPException: If session not found
     """
-    try:
-        game_orchestrator = GameOrchestrator()
-        game_state = game_orchestrator.get_session_state(session_id)
-
-        if game_state is None:
-            raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
-
-        return game_state
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get game state: {str(e)}") from e
+    return owned_session(session_id, caller)
 
 
 @router.post("/hint")
-async def get_hint(session_id: str):
+async def get_hint(session_id: str, caller: Caller = Depends(get_caller)):
     """
     Get a hint for the current situation.
 
@@ -155,6 +148,7 @@ async def get_hint(session_id: str):
     Raises:
         HTTPException: If session not found or hint generation fails
     """
+    owned_session(session_id, caller)
     try:
         game_orchestrator = GameOrchestrator()
         hint = await game_orchestrator.get_hint(session_id)
@@ -168,7 +162,7 @@ async def get_hint(session_id: str):
 
 
 @router.post("/end", response_model=GameState)
-async def end_game(request: EndGameRequest):
+async def end_game(request: EndGameRequest, caller: Caller = Depends(get_caller)):
     """
     End a game session.
 
@@ -181,6 +175,7 @@ async def end_game(request: EndGameRequest):
     Raises:
         HTTPException: If session not found
     """
+    owned_session(request.session_id, caller)
     try:
         game_orchestrator = GameOrchestrator()
         game_state = game_orchestrator.end_game(session_id=request.session_id, status=request.status)
@@ -194,7 +189,7 @@ async def end_game(request: EndGameRequest):
 
 
 @router.get("/sessions")
-async def list_sessions(status: str | None = None):
+async def list_sessions(status: str | None = None, caller: Caller = Depends(get_caller)):
     """
     List all game sessions.
 
@@ -206,7 +201,7 @@ async def list_sessions(status: str | None = None):
     """
     try:
         game_orchestrator = GameOrchestrator()
-        sessions = game_orchestrator.list_sessions(status_filter=status)
+        sessions = game_orchestrator.list_sessions(status_filter=status, owner_id=owner_filter(caller))
 
         return {"sessions": sessions}
 
@@ -215,7 +210,7 @@ async def list_sessions(status: str | None = None):
 
 
 @router.delete("/sessions/{session_id}")
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, caller: Caller = Depends(get_caller)):
     """
     Delete a game session.
 
@@ -228,6 +223,7 @@ async def delete_session(session_id: str):
     Raises:
         HTTPException: If session not found or deletion fails
     """
+    owned_session(session_id, caller)
     try:
         game_orchestrator = GameOrchestrator()
         success = game_orchestrator.delete_session(session_id)
@@ -246,7 +242,9 @@ async def delete_session(session_id: str):
 
 
 @router.post("/objective")
-async def complete_objective(session_id: str, objective: str, success: bool = True):
+async def complete_objective(
+    session_id: str, objective: str, success: bool = True, caller: Caller = Depends(get_caller)
+):
     """
     Mark an objective as completed or failed.
 
@@ -261,6 +259,7 @@ async def complete_objective(session_id: str, objective: str, success: bool = Tr
     Raises:
         HTTPException: If session not found
     """
+    owned_session(session_id, caller)
     try:
         game_orchestrator = GameOrchestrator()
         game_state = game_orchestrator.complete_objective(session_id=session_id, objective=objective, success=success)

@@ -177,13 +177,6 @@ and UI (8501); Postgres and Redis stay on the internal network. For local
 debugging, `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`
 also publishes them on `127.0.0.1` and enables hot reload.
 
-> **Warning — single trusted team only (for now).** Game sessions, generated
-> scenarios and exercises are not yet scoped to their owner, and exercise roles
-> (facilitator, team) are taken from the request rather than the login token.
-> Any logged-in user can therefore read and change every other user's data.
-> Until per-user ownership lands, run the platform for one trusted team only and
-> do not open registration to the public.
-
 ## Database
 
 Mutable application state — users, game sessions, exercises, API keys, and
@@ -382,13 +375,6 @@ pytest --tb=short -q
 
 ## Security Considerations
 
-> **Warning — single trusted team only (for now).** Game sessions, generated
-> scenarios and exercises are not yet scoped to their owner, and exercise roles
-> (facilitator, team) are taken from the request rather than the login token.
-> Any logged-in user can therefore read and change every other user's data.
-> Until per-user ownership lands, run the platform for one trusted team only and
-> do not open registration to the public.
-
 - **API Keys**: Never commit API keys. Use `.env` file
 - **Content Policy**: Set appropriate policy for your team's skill level
 - **Data Privacy**: Scenarios and game data stored locally
@@ -398,8 +384,14 @@ pytest --tb=short -q
   endpoints then require a valid bearer token and destructive admin operations
   (`/settings/data/clear`, `/settings/update`, config writes) require the
   `admin` role. With auth disabled (the local/dev default) endpoints are open.
-  Note: the Streamlit UI does not yet attach tokens, so run it against an
-  auth-disabled API or behind an authenticating gateway.
+  The Streamlit UI signs in on the Login page and sends the token with every
+  request, refreshing it when it expires.
+- **Data ownership**: with auth on, scenarios, game sessions, exercises,
+  webhooks and API keys belong to the user who created them; other users get
+  `404` and never see them in listings, and admins can manage everything. An
+  exercise's creator is its facilitator, and players act only as the team seat
+  they joined with their own login. Library scenarios can be public, unlisted or
+  private, and only their owner can change that.
 - **Rate Limiting**: Fixed-window limits on all API endpoints, keyed per
   authenticated user (or client IP when anonymous), to protect LLM-backed
   endpoints from abuse. Configure via `RATE_LIMIT_ENABLED`, `RATE_LIMIT_REQUESTS`,

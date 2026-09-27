@@ -13,6 +13,8 @@ import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.api_client import http
+
 from config import API_BASE_URL, DEFAULT_TIMEOUT
 
 st.set_page_config(page_title="Scenario Library", page_icon="", layout="wide")
@@ -43,7 +45,7 @@ with col_difficulty:
 scenarios = []
 try:
     if search_query:
-        response = requests.get(
+        response = http.get(
             f"{API_BASE_URL}/library/search",
             params={"q": search_query},
             timeout=DEFAULT_TIMEOUT,
@@ -56,7 +58,7 @@ try:
             params["category"] = category_filter
         if difficulty_filter != "All":
             params["difficulty"] = difficulty_filter
-        response = requests.get(
+        response = http.get(
             f"{API_BASE_URL}/library/scenarios",
             params=params,
             timeout=DEFAULT_TIMEOUT,
@@ -121,7 +123,7 @@ else:
                         use_container_width=True,
                     ):
                         try:
-                            resp = requests.post(
+                            resp = http.post(
                                 f"{API_BASE_URL}/library/scenarios/{scenario_id}/fork",
                                 json={"user_id": "local_user"},
                                 timeout=DEFAULT_TIMEOUT,
@@ -142,7 +144,7 @@ else:
                     )
                     if user_rating > 0:
                         try:
-                            resp = requests.post(
+                            resp = http.post(
                                 f"{API_BASE_URL}/library/scenarios/{scenario_id}/rate",
                                 json={"rating": user_rating},
                                 timeout=DEFAULT_TIMEOUT,
@@ -158,7 +160,7 @@ if selected_id:
     st.markdown("---")
     st.markdown("### Scenario Details")
     try:
-        detail_resp = requests.get(
+        detail_resp = http.get(
             f"{API_BASE_URL}/library/scenarios/{selected_id}",
             timeout=DEFAULT_TIMEOUT,
         )
@@ -198,7 +200,7 @@ st.markdown("### Pre-Built Templates")
 st.caption("Curated scenario templates ready for immediate use")
 
 try:
-    tpl_resp = requests.get(f"{API_BASE_URL}/library/templates", timeout=DEFAULT_TIMEOUT)
+    tpl_resp = http.get(f"{API_BASE_URL}/library/templates", timeout=DEFAULT_TIMEOUT)
     if tpl_resp.status_code == 200:
         templates = tpl_resp.json().get("templates", [])
         if templates:
