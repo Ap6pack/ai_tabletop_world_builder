@@ -17,7 +17,7 @@ pyarrow>=24.0.0  # pinned for security fixes (also a Streamlit dependency)
 
 # LLM Providers
 openai==2.6.1
-anthropic==0.72.0
+anthropic==1.8.0
 
 # Data & Storage
 sqlalchemy>=2.0.0

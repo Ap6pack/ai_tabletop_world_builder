@@ -55,7 +55,9 @@ class AnthropicProvider(BaseLLMProvider):
             # caller's max_tokens budget goes to the answer.
             params["thinking"] = {"type": "disabled"}
         else:
-            params["temperature"] = temperature
+            # anthropic>=1.0 removed `temperature` from messages.create(); models
+            # that still honour it receive it through extra_body (works on 0.x too).
+            params["extra_body"] = {"temperature": temperature}
         params.update(kwargs)
 
         response = await self.client.messages.create(
