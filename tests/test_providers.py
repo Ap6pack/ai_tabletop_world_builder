@@ -35,6 +35,7 @@ async def test_anthropic_sonnet_5_omits_temperature_and_disables_thinking():
     result = await provider.complete("hi", temperature=0.3, max_tokens=500)
     kwargs = provider.client.messages.create.call_args.kwargs
     assert "temperature" not in kwargs
+    assert "extra_body" not in kwargs
     assert kwargs["thinking"] == {"type": "disabled"}
     assert kwargs["max_tokens"] == 500
     assert result["content"] == "hello"
@@ -53,7 +54,8 @@ async def test_anthropic_older_model_keeps_temperature():
     provider = _anthropic("claude-haiku-4-5")
     await provider.complete("hi", temperature=0.3)
     kwargs = provider.client.messages.create.call_args.kwargs
-    assert kwargs["temperature"] == 0.3
+    assert kwargs["extra_body"] == {"temperature": 0.3}
+    assert "temperature" not in kwargs  # a TypeError on anthropic>=1.0
     assert "thinking" not in kwargs
 
 
@@ -85,3 +87,70 @@ async def test_openai_classic_model_params():
     kwargs = provider.client.chat.completions.create.call_args.kwargs
     assert kwargs["temperature"] == 0.2
     assert kwargs["max_tokens"] == 50
+
+
+# ---------------------------------------------------------------------------
+# Real SDK against a local stub server
+# ---------------------------------------------------------------------------
+#
+# The tests above mock the SDK client, so they can't notice when an SDK release
+# changes its method signatures (anthropic 1.0 turned `temperature=` into a
+# TypeError). These run the installed SDK for real, pointed at a local server.
+
+
+@pytest.fixture
+def anthropic_stub(monkeypatch):
+    import json
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    requests_seen = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):  # noqa: N802 - http.server API
+            body = self.rfile.read(int(self.headers["Content-Length"]))
+            requests_seen.append(json.loads(body))
+            reply = json.dumps(
+                {
+                    "id": "msg_test",
+                    "type": "message",
+                    "role": "assistant",
+                    "model": requests_seen[-1]["model"],
+                    "content": [{"type": "text", "text": "ready"}],
+                    "stop_reason": "end_turn",
+                    "stop_sequence": None,
+                    "usage": {"input_tokens": 5, "output_tokens": 1},
+                }
+            ).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(reply)))
+            self.end_headers()
+            self.wfile.write(reply)
+
+        def log_message(self, *args):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", f"http://127.0.0.1:{server.server_port}")
+    yield requests_seen
+    server.shutdown()
+
+
+@pytest.mark.parametrize(
+    ("model", "expect_temperature", "expect_thinking"),
+    [("claude-haiku-4-5", True, False), ("claude-sonnet-5", False, True), ("claude-fable-5-1", False, False)],
+)
+async def test_anthropic_real_sdk_request(anthropic_stub, model, expect_temperature, expect_thinking):
+    provider = AnthropicProvider(api_key="test-key", model=model)
+    result = await provider.complete("hi", system_message="sys", temperature=0.3, max_tokens=50)
+
+    assert result["content"] == "ready"
+    sent = anthropic_stub[-1]
+    assert sent["model"] == model
+    assert ("temperature" in sent) is expect_temperature
+    if expect_temperature:
+        assert sent["temperature"] == 0.3
+    assert ("thinking" in sent) is expect_thinking

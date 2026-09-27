@@ -21,11 +21,17 @@ h11==0.16.0 ; sys_platform != 'emscripten'
     #   -c requirements.txt
     #   httpcore2
 httpcore2==2.13.1 ; sys_platform != 'emscripten'
-    # via httpx2
+    # via
+    #   -c requirements.txt
+    #   httpx2
 httpx2==2.13.1
-    # via -r requirements-dev.in
+    # via
+    #   -c requirements.txt
+    #   -r requirements-dev.in
 httpx2-jsfetch==1.0 ; python_full_version >= '3.12' and sys_platform == 'emscripten'
-    # via httpx2
+    # via
+    #   -c requirements.txt
+    #   httpx2
 idna==3.20
     # via
     #   -c requirements.txt
@@ -64,6 +70,7 @@ tomli==2.4.1 ; python_full_version <= '3.11'
     # via coverage
 truststore==0.10.4 ; sys_platform != 'emscripten'
     # via
+    #   -c requirements.txt
     #   httpcore2
     #   httpx2
 typing-extensions==4.16.0 ; (python_full_version < '3.15' and sys_platform != 'emscripten') or (python_full_version < '3.13' and sys_platform == 'emscripten')

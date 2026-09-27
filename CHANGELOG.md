@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A provider test that runs the real Anthropic SDK against a local stub server, so SDK
+  signature changes fail CI instead of production.
+- `scripts/smoke_test_llm.py` makes one tiny real call per configured LLM provider, to
+  check SDK upgrades that the (fully mocked) test suite cannot.
 - The API container applies database migrations on start (`scripts/migrate.py`),
   stamping databases created by v1.0.0 containers first; `SKIP_MIGRATIONS=1`
   opts out.
@@ -113,6 +117,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgraded `anthropic` to 1.8.0. SDK 1.x removed the `temperature` argument from
+  `messages.create()`; the Anthropic provider now sends it through `extra_body` for
+  models that still honour it (older Claude models previously failed with a `TypeError`).
+  Lock files regenerated with `uv`, restoring platform markers lost in Dependabot edits.
 - `/audit/stats` now returns `total_entries` and the oldest/newest entry times, and
   `POST /audit/cleanup` reports `entries_deleted` (audit logs are no longer files).
 - GitHub Actions moved to their Node 24 releases (`actions/checkout@v6`,
