@@ -23,7 +23,7 @@ anthropic==0.72.0
 sqlalchemy>=2.0.0
 alembic>=1.13.0  # database schema migrations
 psycopg[binary]>=3.1.0  # PostgreSQL driver (production database)
-aiofiles==23.2.1
+aiofiles==25.1.0
 python-json-logger==4.2.0
 
 # Utilities
